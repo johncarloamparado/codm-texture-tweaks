@@ -66,6 +66,7 @@
 #define TTEXF DIR "testtex.txt"
 #define TTSZF DIR "ttsize.txt"
 #define TTSMF DIR "ttsm.txt"
+#define HDLYF DIR "hookdelay.txt"
 
 static std::mutex mu;
 static FILE *lf = nullptr;
@@ -711,6 +712,7 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     int64_t t = t_post;
     if (g_t0.load() == 0) g_t0 = t;
     frame_no++;
+    if (frame_no == 1) L("GFX api=gles (eglSwapBuffers seen)\n");
     if (frame_no == 30) log_gl_info();
 
     /* FPS cap: sleep the remaining time so frame intervals stay even */
@@ -840,6 +842,11 @@ static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
 
 static void *wrap(const char *n, void *r) {
     if (!n || !r) return r;
+    if (n[0] == 'v' && n[1] == 'k') {          /* Vulkan entry point requested by libunity */
+        static std::atomic<int> vk_once{0};
+        if (!vk_once.exchange(1)) L("GFX vk-symbol %s requested\n", n);
+        return r;
+    }
     if (!strcmp(n, "glTexParameteri")) { if (!real_tp) real_tp = (decltype(real_tp))r; return (g_near.load() || g_style.load() || g_flat.load() || g_testtex.load()) ? (void *)h_tp : r; }
     if (!strcmp(n, "glTexParameterf")) { if (!o_tpf) o_tpf = (decltype(o_tpf))r; return (g_style.load() || g_flat.load() || g_testtex.load()) ? (void *)h_tpf : r; }
     if (g_near.load() || g_style.load() || g_flat.load() || g_testtex.load()) {
@@ -1070,6 +1077,19 @@ static int read_mode() {
     return 4;
 }
 
+/* hookdelay.txt: 0 = hook the moment libunity loads (default).
+   N > 0 = wait N seconds after libunity appears, then hook. Slower, but can avoid
+   clashes with other loaders / injectors that touch the same library at startup. */
+static int read_hookdelay() {
+    int v = 0;
+    FILE *f = fopen(HDLYF, "r");
+    if (f) {
+        if (fscanf(f, "%d", &v) != 1) v = 0;
+        fclose(f);
+    }
+    return std::max(0, std::min(v, 30));
+}
+
 /* Register every hook on a single libunity mapping */
 static void reg_hooks(dev_t dv, ino_t in) {
     lsplt::RegisterHook(dv, in, "dlsym", (void *)h_dlsym, (void **)&o_dlsym);
@@ -1146,7 +1166,10 @@ static void run(int mode) {
     load_cfg();
     std::set<std::pair<dev_t, ino_t>> done;
     std::map<std::pair<dev_t, ino_t>, int64_t> first;   /* when libunity was first seen */
-    L("=== start v26 mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n", mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+    L("=== start v27 mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n", mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+    int hd = read_hookdelay();
+    int64_t settle_ns = (int64_t)std::max(3, hd) * 1000000000LL;   /* wait this long after libunity appears */
+    if (mode >= 3) L("HOOK late: %d s after libunity appears\n", std::max(3, hd));
     int total = (mode == 1) ? 60 : 1200;
     for (int i = 0; i < total; i++) {
         if (mode >= 2) {
@@ -1158,7 +1181,7 @@ static void run(int mode) {
                 if (done.count(key)) continue;
                 auto it = first.find(key);
                 if (it == first.end()) { first[key] = now_ns(); L("SEEN libunity i=%d\n", i); continue; }
-                if (now_ns() - it->second < 3000000000LL) continue;   /* give libunity time to finish loading */
+                if (now_ns() - it->second < settle_ns) continue;   /* give libunity time to finish loading */
                 done.insert(key);
                 if (mode == 2) { L("mode2: stable, no hooks\n"); continue; }
                 reg_hooks(m.dev, m.inode);
@@ -1188,8 +1211,10 @@ public:
         if (!target) return;
         int mode = read_mode();
         if (mode == 4) {
+            if (read_hookdelay() > 0) { std::thread(run, 3).detach(); return; }   /* late hooking: run() logs its own start line */
             load_cfg();
-            L("=== start v26 mode=4 bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n", g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+            L("=== start v27 mode=4 bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n", g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+            L("HOOK early (at libunity load)\n");
             hook_nativeloader();
             return;
         }
