@@ -641,7 +641,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       <div class="kv"><span>Author</span><b>Q9 Papyrus</b></div>
       <div class="kv"><span>Module mode</span><b id="aMode">—</b></div>
       <div class="kv"><span>Settings folder</span><b id="aDir" style="font-size:12px;font-weight:500;word-break:break-all;text-align:right">—</b></div>
-      <p class="pnote">Module mode 4 hooks the game's engine the moment it loads, with no background polling. That is the mode this module needs. Modes 0–3 are only for testing.</p>
+      <p class="pnote">The module always runs in mode 4: it hooks the game's engine the moment it loads, with no background polling. If this value ever shows anything else, it is corrected automatically.</p>
     </section>
 
     <p class="foot">Settings are read when CODM starts. Apply closes the game so your next launch uses them.</p>
@@ -713,16 +713,17 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   };
   /* what a missing settings file counts as (mirrors how the page reads it) */
   var FALLBACK = {
-    blk: 0, bias: 0, near: 1, scale: 0, fps: 0, fz: 1, th: 1, core: 1, mode: 0,
+    blk: 0, bias: 0, near: 1, scale: 0, fps: 0, fz: 1, th: 1, core: 1, mode: 4,
     minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 0, ttsize: 0, ttsm: 0
   };
+  var modeFixTried = false;
 
   var demo = (typeof ksu === "undefined");
   var fake = {
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
-    skip: "", bloff: "", bldel: "", ver: "v0.25",
+    skip: "", bloff: "", bldel: "", ver: "v0.26",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
     ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
   };
@@ -1145,15 +1146,24 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       return;
     }
     if (s.err) banner("bad", "Could not read settings: " + s.err);
-    var modeOk = demo || s.mode === "4";
-    $("aMode").textContent = demo ? "4 · demo" : (s.mode === "4" ? "4 · ready" : (s.mode || "empty") + " · needs 4");
-    $("aMode").className = modeOk ? "ok" : "warn";
-    if (!demo && s.mode !== undefined && s.mode !== "4") {
-      banner("warn", "mode.txt is " + (s.mode || "empty") + ". It must be 4 for the module to work.", {
-        label: "Set to 4",
-        fn: function () { save({ mode: 4 }, "Mode").then(refresh); }
+    /* The module only works in mode 4. If mode.txt holds anything else (0-3, empty, missing),
+       repair it right away instead of asking the user to. */
+    var oldMode = s.mode, fixing = false;
+    if (!demo && s.mode !== "4" && !modeFixTried) {
+      modeFixTried = true;
+      fixing = true;
+      writeFiles({ mode: 4 }).then(function (r) {
+        if (r.ok) {
+          $("aMode").textContent = "4 · ready"; $("aMode").className = "ok";
+          toast("Module mode was " + (oldMode || "empty") + ". It is now 4. Tap Apply to restart CODM.");
+        } else {
+          banner("warn", "Module mode is " + (oldMode || "empty") + " and could not be set to 4. Open CODM once, then check again.");
+        }
       });
     }
+    var modeOk = demo || fixing || s.mode === "4";
+    $("aMode").textContent = demo ? "4 · demo" : (modeOk ? "4 · ready" : (s.mode || "empty") + " · needs 4");
+    $("aMode").className = modeOk ? "ok" : "warn";
 
     /* determine look mode from files */
     var sty = parseInt(s.style, 10) || 0;
@@ -1207,6 +1217,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     fill($("delay"));
 
     cur = fromState(s);
+    if (fixing) cur.mode = "4";
     if (!demo && (parseInt(s.bias, 10) || 0) > 0) writeFiles({ bias: 0 });
     if (!demo && s.near !== "1") writeFiles({ near: 1 });
     if (!demo && s.sedge !== "1") writeFiles({ sedge: 1 });
@@ -1545,7 +1556,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       "echo '== module'; ls /data/adb/modules/codm_tex_logger 2>&1; sed -n 's/^version=//p' /data/adb/modules/codm_tex_logger/module.prop 2>&1; " +
       "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
     sh(cmd, 25000).then(function (r) {
-      var head = "Send a screenshot of this to the developer.\nUI: v0.25 | shell mode: " + ["direct", "nsenter", "su"][WR] +
+      var head = "Send a screenshot of this to the developer.\nUI: v0.26 | shell mode: " + ["direct", "nsenter", "su"][WR] +
         " | folder used: " + D + "\nexec errno: " + r.errno + (r.stderr ? " | " + r.stderr : "") + "\n\n";
       $("logt").textContent = head + (r.stdout.trim() || "(no output)");
       $("logt").scrollTop = 0;
@@ -1635,7 +1646,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 
   function cancelChanges() {
     var map = {}, n = 0;
-    KEYS.forEach(function (k) { if (cur[k] !== base[k]) { map[k] = base[k]; n++; } });
+    KEYS.forEach(function (k) { if (k !== "mode" && cur[k] !== base[k]) { map[k] = base[k]; n++; } });
     blOff = Object.assign({}, baseBlOff);
     blDel = Object.assign({}, baseBlDel);
     var p = n ? writeFiles(map) : Promise.resolve({ ok: true });
