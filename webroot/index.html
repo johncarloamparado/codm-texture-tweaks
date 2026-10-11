@@ -614,6 +614,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
           <button class="btn warn" id="clr" type="button">Clear log</button>
           <button class="btn" id="logref" type="button">Refresh status</button>
         </div>
+        <button class="btn" id="diag" type="button">Run diagnostics</button>
       </div>
       <p class="pnote">Export saves to <b>CODM Log/codm_tex.log</b> in internal storage and replaces the previous file.</p>
     </section>
@@ -639,7 +640,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       <div class="kv"><span>Version</span><b id="aVer">—</b></div>
       <div class="kv"><span>Author</span><b>Q9 Papyrus</b></div>
       <div class="kv"><span>Module mode</span><b id="aMode">—</b></div>
-      <div class="kv"><span>Settings folder</span><b style="font-size:12px;font-weight:500">/data/data/com.garena.game.codm/files</b></div>
+      <div class="kv"><span>Settings folder</span><b id="aDir" style="font-size:12px;font-weight:500;word-break:break-all;text-align:right">—</b></div>
       <p class="pnote">Module mode 4 hooks the game's engine the moment it loads, with no background polling. That is the mode this module needs. Modes 0–3 are only for testing.</p>
     </section>
 
@@ -683,8 +684,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 
 <script>
 (function () {
-  var D = "/data/data/com.garena.game.codm/files";
   var PKG = "com.garena.game.codm";
+  var D = "/data/data/" + PKG + "/files";   /* replaced by findDir() when the folder lives elsewhere */
+  var WR = 0;                               /* 0 = run directly, 1 = via nsenter, 2 = via su -c */
   var PROP = "/data/adb/modules/codm_tex_logger/module.prop";
 
   /* Pixel Blocks sizes (index 0 = Off is handled by mode) */
@@ -720,7 +722,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
-    skip: "", bloff: "", bldel: "", ver: "v0.24",
+    skip: "", bloff: "", bldel: "", ver: "v0.25",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
     ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
   };
@@ -800,7 +802,12 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   }
 
   /* ---------- shell ---------- */
-  function sh(cmd) {
+  function wrap(cmd) {
+    if (!WR) return cmd;
+    var e = cmd.replace(/'/g, "'\\''");
+    return WR === 1 ? "nsenter -t 1 -m -- sh -c '" + e + "'" : "su -c '" + e + "'";
+  }
+  function sh(cmd, ms) {
     return new Promise(function (resolve) {
       if (demo) {
         resolve({ errno: 0, stdout: "", stderr: "", demo: true });
@@ -817,8 +824,8 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       window[name] = function (errno, stdout, stderr) {
         fin({ errno: errno, stdout: String(stdout || ""), stderr: String(stderr || "") });
       };
-      setTimeout(function () { fin({ errno: -3, stdout: "", stderr: "timeout" }); }, 8000);
-      try { ksu.exec(cmd, "{}", name); } catch (e) {
+      setTimeout(function () { fin({ errno: -3, stdout: "", stderr: "timeout" }); }, ms || 8000);
+      try { ksu.exec(wrap(cmd), "{}", name); } catch (e) {
         fin({ errno: -2, stdout: "", stderr: String(e) });
       }
     });
@@ -1111,14 +1118,14 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       var d = document.createElement("div");
       d.className = "banner " + cls;
       d.textContent = text;
-      if (btn) {
+      (Array.isArray(btn) ? btn : (btn ? [btn] : [])).forEach(function (bt) {
         var b = document.createElement("button");
         b.className = "btn";
         b.type = "button";
-        b.textContent = btn.label;
-        b.addEventListener("click", btn.fn);
+        b.textContent = bt.label;
+        b.addEventListener("click", bt.fn);
         d.appendChild(b);
-      }
+      });
       ban.appendChild(d);
     }
     if (demo) {
@@ -1127,9 +1134,14 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     $("ver").hidden = !s.ver;
     $("ver").textContent = s.ver || "";
     $("aVer").textContent = s.ver || "—";
+    $("aDir").textContent = D;
     if (s.nodir) {
-      $("status").innerHTML = '<span class="chip msg">No settings found yet.</span>';
-      banner("bad", "The game folder is missing. Open CODM once so the module can create its settings, then reopen this page.");
+      $("status").innerHTML = '<span class="chip msg">Game folder not found.</span>';
+      $("aDir").textContent = "not found";
+      banner("bad", "Couldn't find the game's settings folder. Open CODM once, then check again. If it keeps happening, run diagnostics and send the result to the developer.", [
+        { label: "Check again", fn: function () { refresh().then(function () { toast("Checked again."); }); } },
+        { label: "Run diagnostics", fn: runDiag }
+      ]);
       return;
     }
     if (s.err) banner("bad", "Could not read settings: " + s.err);
@@ -1485,7 +1497,60 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     }
   });
 
-  function refresh() { return readState().then(render); }
+  /* Finds the game's files folder. Handles other Android users (dual apps / clone),
+     the mirror path, and shells that need nsenter or su to see /data/data. */
+  var PROBE = "P=" + PKG + "; for d in /data/data/$P/files /data/user/*/$P/files /data_mirror/data_ce/null/*/$P/files; do " +
+    "[ -d \"$d\" ] && echo \"C|$d|$(stat -c %Y \"$d/codm_tex.log\" 2>/dev/null || echo 0)\"; done";
+  function pickDir(out) {
+    var best = null;
+    out.split("\n").forEach(function (l) {
+      var a = l.split("|");
+      if (a[0] !== "C" || !a[1]) return;
+      var t = parseInt(a[2], 10) || 0;
+      if (!best || t > best.t) best = { p: a[1], t: t };
+    });
+    return best;
+  }
+  function findDir() {
+    if (demo) return Promise.resolve(true);
+    var tries = [0, 1, 2], i = 0;
+    function next() {
+      if (i >= tries.length) { WR = 0; return Promise.resolve(false); }
+      WR = tries[i++];
+      return sh(PROBE).then(function (r) {
+        var b = pickDir(r.stdout);
+        if (b) { D = b.p; return true; }
+        return next();
+      });
+    }
+    return next();
+  }
+  function refresh() { return findDir().then(readState).then(render); }
+
+  function runDiag() {
+    $("logw").querySelector("h3").textContent = "Diagnostics";
+    $("logt").textContent = "Collecting…";
+    $("logw").classList.add("open");
+    lockScroll();
+    if (demo) { $("logt").textContent = "Demo mode. Diagnostics run only inside the module WebUI."; return; }
+    var cmd = "P=" + PKG + "; " +
+      "echo '== who'; id; getenforce 2>&1; " +
+      "echo '== device'; getprop ro.product.model; getprop ro.build.version.release; getprop ro.build.version.sdk; getprop ro.build.display.id; " +
+      "echo '== users'; ls /data/user 2>&1; " +
+      "echo '== game dir'; ls -ldZ /data/data/$P /data/data/$P/files 2>&1; " +
+      "echo '== other users'; ls -ldZ /data/user/*/$P 2>&1; " +
+      "echo '== mirror'; ls -ld /data_mirror/data_ce/null/*/$P 2>&1; " +
+      "echo '== codm-like dirs'; ls -d /data/data/*codm* /data/data/com.garena* 2>&1; " +
+      "echo '== packages'; timeout 6 pm list packages --user all 2>&1 | grep -i codm; " +
+      "echo '== module'; ls /data/adb/modules/codm_tex_logger 2>&1; sed -n 's/^version=//p' /data/adb/modules/codm_tex_logger/module.prop 2>&1; " +
+      "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
+    sh(cmd, 25000).then(function (r) {
+      var head = "Send a screenshot of this to the developer.\nUI: v0.25 | shell mode: " + ["direct", "nsenter", "su"][WR] +
+        " | folder used: " + D + "\nexec errno: " + r.errno + (r.stderr ? " | " + r.stderr : "") + "\n\n";
+      $("logt").textContent = head + (r.stdout.trim() || "(no output)");
+      $("logt").scrollTop = 0;
+    });
+  }
 
   /* ---------- events ---------- */
   Array.prototype.forEach.call($("lookSeg").children, function (b) {
@@ -1666,7 +1731,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 
   $("logref").addEventListener("click", function () { refreshLogStat(); });
 
+  $("diag").addEventListener("click", runDiag);
   $("vlog").addEventListener("click", function () {
+    $("logw").querySelector("h3").textContent = "codm_tex.log · last 80 lines";
     $("logt").textContent = "Loading…";
     $("logw").classList.add("open");
     lockScroll();
