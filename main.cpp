@@ -1054,16 +1054,20 @@ static void load_cfg() {
      3 = full hooks, installed by polling
      4 = hook libunity as soon as it loads (no polling thread) */
 static int read_mode() {
-    int v = 4;                                   /* no mode.txt yet: default to active mode (4) */
+    /* v26: the module always runs in mode 4. mode.txt is no longer a switch; it is only kept
+       (and repaired here) so the WebUI shows the right value. A missing, empty or wrong file
+       can no longer turn the module off. */
+    int v = -1;
     FILE *f = fopen(MODEF, "r");
     if (f) {
-        if (fscanf(f, "%d", &v) != 1) v = 0;
+        if (fscanf(f, "%d", &v) != 1) v = -1;
         fclose(f);
-    } else {
+    }
+    if (v != 4) {
         f = fopen(MODEF, "w");
         if (f) { fprintf(f, "4\n"); fclose(f); }
     }
-    return std::max(0, std::min(v, 4));
+    return 4;
 }
 
 /* Register every hook on a single libunity mapping */
@@ -1142,7 +1146,7 @@ static void run(int mode) {
     load_cfg();
     std::set<std::pair<dev_t, ino_t>> done;
     std::map<std::pair<dev_t, ino_t>, int64_t> first;   /* when libunity was first seen */
-    L("=== start v24 mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n", mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+    L("=== start v26 mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n", mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
     int total = (mode == 1) ? 60 : 1200;
     for (int i = 0; i < total; i++) {
         if (mode >= 2) {
@@ -1185,7 +1189,7 @@ public:
         int mode = read_mode();
         if (mode == 4) {
             load_cfg();
-            L("=== start v24 mode=4 bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n", g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+            L("=== start v26 mode=4 bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n", g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
             hook_nativeloader();
             return;
         }
