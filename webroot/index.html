@@ -221,6 +221,14 @@ input[type=range]:focus-visible { outline: 2px solid var(--primary); outline-off
 }
 .btn:hover { background: var(--fill-hover); }
 .btn.warn { color: var(--warn); }
+.btn.primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; border-color: transparent; box-shadow: 0 4px 16px var(--primary-glow); }
+.btn:disabled { opacity: 0.6; cursor: wait; }
+input[type=text] {
+  display: block; width: 100%; height: 46px; margin-top: 6px; padding: 0 14px;
+  border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,0.3); color: var(--text);
+  font: 15px system-ui, sans-serif; transition: border-color 0.2s;
+}
+input[type=text]:focus { outline: none; border-color: var(--primary); }
 .btn.armed { background: rgba(248, 113, 113, 0.15); border-color: var(--bad); color: var(--bad); }
 .btn:active, .mode:active, .step:active, .ib:active { transform: scale(0.97); }
 .ib {
@@ -551,6 +559,17 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     </section>
 
     <section class="card">
+      <h2>Compatibility</h2>
+      <p class="cap">Use this if CODM crashes or goes back to the lobby when another loader or mod runs together with this module.</p>
+      <div class="row">
+        <div class="rh"><span class="lb" id="hookL">Hook timing</span><span class="val" id="hookV">Early</span></div>
+        <p class="desc" id="hookD"></p>
+        <div class="steps" id="hookBox" role="radiogroup" aria-labelledby="hookL" style="--n:4"></div>
+      </div>
+      <p class="pnote">A later timing can miss the first textures and the startup render scale. Keep it on Early unless you have a crash.</p>
+    </section>
+
+    <section class="card">
       <div class="ch"><h2>Texture groups</h2><span class="tag n" id="gcount" hidden></span></div>
       <p class="cap">Turn a group off to leave those textures original. Play one match first so the list can fill in.</p>
       <div id="groups"></div>
@@ -606,17 +625,22 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       <p class="cap">View, export or clear the frame log (codm_tex.log).</p>
       <div id="logStat" class="logstat">Checking log…</div>
       <div class="stack" style="margin-top:12px">
+        <div>
+          <label class="lb" for="rptName" style="display:block;font-size:13.5px">Your name (optional)</label>
+          <input id="rptName" type="text" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. Juan">
+          <p class="pnote" style="margin-top:6px">Added to the file name so the developer knows whose report it is. Letters, numbers, - and _ only.</p>
+        </div>
+        <button class="btn primary" id="exp" type="button">Export report for support</button>
         <div class="grid2" style="margin-top:0">
           <button class="btn" id="vlog" type="button">View log</button>
-          <button class="btn" id="exp" type="button">Export log</button>
+          <button class="btn" id="diag" type="button">View diagnostics</button>
         </div>
         <div class="grid2" style="margin-top:0">
           <button class="btn warn" id="clr" type="button">Clear log</button>
           <button class="btn" id="logref" type="button">Refresh status</button>
         </div>
-        <button class="btn" id="diag" type="button">Run diagnostics</button>
       </div>
-      <p class="pnote">Export saves to <b>CODM Log/codm_tex.log</b> in internal storage and replaces the previous file.</p>
+      <p class="pnote">Export report makes <b>one file</b> in <b>CODM Log</b> in internal storage, named <b>CODM_report_brand_model_name_time</b>. Inside are the log, device info, settings, settings folder, other modules and crash info. It is a .zip when the phone can make one, otherwise .tar.gz or .txt. Send that single file to the developer.</p>
     </section>
 
     <section class="card">
@@ -697,14 +721,14 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   /* Flat target size per strength (mirrors FTGT in the module) */
   var FTGT = [0, 8, 4, 2, 1];
 
-  var FPS = [0, 30, 40, 45, 60, 72, 90, 120];
+  var FPS = [0, 30, 40, 45, 60, 75, 90, 120];
   var MINS = [64, 128, 256, 512, 1024, 2048];
 
   /* values written by "Reset defaults" */
   var REC = {
     blk: 0, bias: 0, near: 1, scale: 0, fps: 0,
     fz: 1, th: 1, core: 1, mode: 4,
-    minsz: 64, delay: 20, style: 0, sedge: 1, flat: 0, testtex: 1, ttsize: 0, ttsm: 0
+    minsz: 64, delay: 20, style: 0, sedge: 1, flat: 0, testtex: 1, ttsize: 0, ttsm: 0, hookdelay: 0
   };
   /* "Back to normal CODM": every effect off (logging, mode and skip lists are left alone) */
   var NORMAL = {
@@ -714,7 +738,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   /* what a missing settings file counts as (mirrors how the page reads it) */
   var FALLBACK = {
     blk: 0, bias: 0, near: 1, scale: 0, fps: 0, fz: 1, th: 1, core: 1, mode: 4,
-    minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 0, ttsize: 0, ttsm: 0
+    minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 0, ttsize: 0, ttsm: 0, hookdelay: 0
   };
   var modeFixTried = false;
 
@@ -723,7 +747,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
-    skip: "", bloff: "", bldel: "", ver: "v0.26",
+    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.28",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
     ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
   };
@@ -742,6 +766,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   var lookMode = 0;   /* 0=Off  1=Pixel Blocks  2=Detail Cut  3=Flat  4=True Pixelated */
   var strVal = 3;     /* 1-5 for blocks, 1-4 for detail cut / flat */
   var fpsVal = 0, minVal = 64;
+  var HOOKS = [0, 3, 5, 10], hookVal = 0;
   
   /* skip manager state */
   var groups = [], skipSet = {};
@@ -752,7 +777,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
      cur  = what the settings files hold right now
      base = what they held when the page opened or at the last Apply */
   var KEYS = ["bias", "scale", "fps", "fz", "th", "core", "near", "blk", "minsz", "delay",
-              "style", "sedge", "flat", "testtex", "ttsize", "ttsm", "mode"];
+              "style", "sedge", "flat", "testtex", "ttsize", "ttsm", "mode", "hookdelay"];
   var cur = {}, base = null, baseSkipLines = [], baseBlOff = {}, baseBlDel = {};
   function nl(lines) { return lines.slice().sort().join("\n"); }
   function nk(o) { return Object.keys(o).sort().join("|"); }
@@ -847,7 +872,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     var cmd =
       "D=" + D + "; " +
       "[ -d $D ] || { echo NODIR; exit 0; }; " +
-      "for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode; do " +
+      "for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay; do " +
       "  if [ -f $D/$f.txt ]; then printf '%s=' $f; cat $D/$f.txt; else printf '%s=\\n' $f; fi; " +
       "done; " +
       "echo -n 'skip='; [ -f $D/skip.txt ] && cat $D/skip.txt | tr '\\n' '|' || true; echo; " +
@@ -855,6 +880,10 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       "echo -n 'bldel='; [ -f $D/bltdel.txt ] && cat $D/bltdel.txt | tr '\\n' '|' || true; echo; " +
       "echo -n 'texg='; [ -f $D/codm_tex.log ] && grep -E '^TEXG ' $D/codm_tex.log | tail -n 200 | tr '\\n' '|' || true; echo; " +
       "echo -n 'ft='; [ -f $D/codm_tex.log ] && grep -E '^FT ' $D/codm_tex.log | tail -n 1 || true; echo; " +
+      "L=$D/codm_tex.log; if [ -f $L ]; then S=$(grep -n '^=== start' $L | tail -n 1 | cut -d: -f1); [ -n \"$S\" ] || S=1; " +
+      "echo gl=$(tail -n +$S $L | grep -c -E '^(TEXN|FT |GLINFO|GFX api=gles)'); " +
+      "echo vk=$(tail -n +$S $L | grep -c '^GFX vk-symbol'); " +
+      "echo sbg=$(tail -n +$S $L | grep -c '^SBG'); fi; " +
       "echo -n 'ver='; sed -n 's/^version=//p' " + PROP + " 2>/dev/null | head -n 1; echo";
     return sh(cmd).then(function (r) {
       var s = { nodir: false };
@@ -1089,6 +1118,13 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     $("minBox").innerHTML = chipsHtml(MINS, minVal, function (v) { return v; });
     $("minszV").textContent = minVal + " px";
   }
+  function renderHook() {
+    $("hookBox").innerHTML = chipsHtml(HOOKS, hookVal, function (v) { return v ? v + " s" : "Early"; });
+    $("hookV").textContent = hookVal ? hookVal + " s" : "Early";
+    $("hookD").textContent = hookVal
+      ? "Hooks are installed " + hookVal + " seconds after the game engine appears."
+      : "Hooks are installed the moment the game engine loads. This is the default.";
+  }
   function updateLogDeps() {
     var f = getSw("fz"), t = getSw("th");
     $("th").classList.toggle("dim", !f);
@@ -1165,6 +1201,14 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     $("aMode").textContent = demo ? "4 · demo" : (modeOk ? "4 · ready" : (s.mode || "empty") + " · needs 4");
     $("aMode").className = modeOk ? "ok" : "warn";
 
+    /* Texture looks only work with OpenGL ES. If the last session logged no GL activity, say so. */
+    var glN = parseInt(s.gl, 10), vkN = parseInt(s.vk, 10) || 0, sbgN = parseInt(s.sbg, 10) || 0;
+    if (!demo && glN === 0 && (vkN > 0 || sbgN >= 2)) {
+      banner("warn", vkN > 0
+        ? "Vulkan detected. This phone runs CODM with Vulkan, and texture looks only work with OpenGL ES, so they will not change anything here. Render scale may still apply. Use Tools → Export report to send details to the developer."
+        : "No OpenGL activity was logged in the last session. If you played a full match, this phone is probably running CODM with Vulkan and texture looks will not apply. Use Tools → Export report to send details to the developer.");
+    }
+
     /* determine look mode from files */
     var sty = parseInt(s.style, 10) || 0;
     var blk = parseInt(s.blk, 10) || 0;
@@ -1210,6 +1254,11 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     });
     minVal = MINS[mi];
     renderMin();
+
+    var hk = parseInt(s.hookdelay, 10) || 0, hi = 0;
+    HOOKS.forEach(function (v, i) { if (Math.abs(v - hk) < Math.abs(HOOKS[hi] - hk)) hi = i; });
+    hookVal = HOOKS[hi];
+    renderHook();
 
     var di = Math.max(0, Math.min(12, Math.round((parseInt(s.delay, 10) || 0) / 5)));
     $("delay").value = di;
@@ -1538,27 +1587,36 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   }
   function refresh() { return findDir().then(readState).then(render); }
 
+  /* One shell script is used both for the on-screen view and for the exported codm_diag.txt */
+  function diagScript() {
+    return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
+      "echo '== report'; echo 'UI: v0.28'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== who'; id; getenforce 2>&1; " +
+      "echo '== device'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.version.release ro.build.version.sdk ro.build.display.id ro.board.platform ro.hardware ro.hardware.egl ro.hardware.vulkan; do echo \"$k=$(getprop $k)\"; done; " +
+      "echo '== gpu'; timeout 6 dumpsys SurfaceFlinger 2>/dev/null | grep -m3 -i -E 'GLES|EGL'; " +
+      "echo '== game'; timeout 6 dumpsys package $P 2>/dev/null | grep -m4 -E 'versionName|versionCode|lastUpdateTime'; " +
+      "echo '== users'; ls /data/user 2>&1; " +
+      "echo '== game dir'; ls -ldZ /data/data/$P /data/data/$P/files 2>&1; ls -ldZ /data/user/*/$P 2>&1; " +
+      "echo '== settings folder'; echo \"$D\"; ls -la $D 2>&1 | head -n 60; " +
+      "echo '== settings'; for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay; do echo \"$f=$(cat $D/$f.txt 2>/dev/null)\"; done; " +
+      "for f in skip bltoff bltdel; do echo \"-- $f.txt\"; cat $D/$f.txt 2>/dev/null; done; " +
+      "echo '== modules'; for m in /data/adb/modules/*; do [ -d \"$m\" ] || continue; if [ -f \"$m/disable\" ]; then s=disabled; else s=on; fi; echo \"${m##*/} ($s) $(sed -n 's/^version=//p' $m/module.prop 2>/dev/null | head -n 1)\"; done; " +
+      "echo '== log'; if [ -f $L ]; then echo \"size=$(wc -c < $L) lines=$(wc -l < $L)\"; grep '^=== start' $L | tail -n 3; grep -E '^(GFX|HOOK|GLINFO)' $L | tail -n 8; echo '-- last 40 lines'; tail -n 40 $L; else echo 'no log'; fi; " +
+      "echo '== crash log'; timeout 8 logcat -b crash -d -t 150 2>&1 | tail -n 150; " +
+      "echo '== logcat'; timeout 10 logcat -d -t 600 2>/dev/null | grep -i -E 'garena|codm|libunity|zygisk|lsplt|FATAL|SIGSEGV|SIGABRT|tombstone|anogs|tersafe' | tail -n 80; " +
+      "echo '== tombstone'; T=$(grep -l -s $P /data/tombstones/tombstone_* 2>/dev/null | tail -n 1); if [ -n \"$T\" ]; then echo \"$T\"; head -n 70 \"$T\"; else echo none; fi; " +
+      "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
+  }
+
   function runDiag() {
     $("logw").querySelector("h3").textContent = "Diagnostics";
-    $("logt").textContent = "Collecting…";
+    $("logt").textContent = "Collecting… this can take up to 30 seconds.";
     $("logw").classList.add("open");
     lockScroll();
     if (demo) { $("logt").textContent = "Demo mode. Diagnostics run only inside the module WebUI."; return; }
-    var cmd = "P=" + PKG + "; " +
-      "echo '== who'; id; getenforce 2>&1; " +
-      "echo '== device'; getprop ro.product.model; getprop ro.build.version.release; getprop ro.build.version.sdk; getprop ro.build.display.id; " +
-      "echo '== users'; ls /data/user 2>&1; " +
-      "echo '== game dir'; ls -ldZ /data/data/$P /data/data/$P/files 2>&1; " +
-      "echo '== other users'; ls -ldZ /data/user/*/$P 2>&1; " +
-      "echo '== mirror'; ls -ld /data_mirror/data_ce/null/*/$P 2>&1; " +
-      "echo '== codm-like dirs'; ls -d /data/data/*codm* /data/data/com.garena* 2>&1; " +
-      "echo '== packages'; timeout 6 pm list packages --user all 2>&1 | grep -i codm; " +
-      "echo '== module'; ls /data/adb/modules/codm_tex_logger 2>&1; sed -n 's/^version=//p' /data/adb/modules/codm_tex_logger/module.prop 2>&1; " +
-      "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
-    sh(cmd, 25000).then(function (r) {
-      var head = "Send a screenshot of this to the developer.\nUI: v0.26 | shell mode: " + ["direct", "nsenter", "su"][WR] +
-        " | folder used: " + D + "\nexec errno: " + r.errno + (r.stderr ? " | " + r.stderr : "") + "\n\n";
-      $("logt").textContent = head + (r.stdout.trim() || "(no output)");
+    sh(diagScript(), 60000).then(function (r) {
+      $("logt").textContent = "Tip: Tools → Export report saves this and the log as files you can send.\nexec errno: " + r.errno +
+        (r.stderr ? " | " + r.stderr : "") + "\n\n" + (r.stdout.trim() || "(no output)");
       $("logt").scrollTop = 0;
     });
   }
@@ -1603,6 +1661,11 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   onPick("ttsmBox", function (v) {
     ttSm = v; renderTT();
     save({ ttsm: v }, "Edge blend");
+  });
+  onPick("hookBox", function (v) {
+    hookVal = v;
+    renderHook();
+    save({ hookdelay: v }, "Hook timing");
   });
   onPick("minBox", function (v) {
     minVal = v;
@@ -1683,7 +1746,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     el.textContent = "Checking…";
     var cmd =
       "L=" + D + "/codm_tex.log; " +
-      "E='/sdcard/CODM Log/codm_tex.log'; " +
+      "if [ -d /sdcard ]; then O='/sdcard/CODM Log'; else O='/storage/emulated/0/CODM Log'; fi; " +
       "echo '---LIVE---'; " +
       "if [ -f \"$L\" ]; then " +
       "  echo PRESENT; " +
@@ -1692,11 +1755,10 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       "  date -r \"$L\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c '%y' \"$L\" 2>/dev/null | cut -c1-19; " +
       "  grep -E '^=== start' \"$L\" 2>/dev/null | tail -n 1; " +
       "else echo MISSING; fi; " +
-      "echo '---EXPORT---'; " +
-      "if [ -f \"$E\" ]; then " +
-      "  echo PRESENT; " +
-      "  wc -c < \"$E\"; " +
-      "  date -r \"$E\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c '%y' \"$E\" 2>/dev/null | cut -c1-19; " +
+      "echo '---REPORT---'; " +
+      "R=$(ls -t \"$O\"/CODM_report_* 2>/dev/null | head -n 1); " +
+      "if [ -n \"$R\" ]; then echo PRESENT; echo \"${R##*/}\"; wc -c < \"$R\"; " +
+      "date -r \"$R\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c '%y' \"$R\" 2>/dev/null | cut -c1-19; " +
       "else echo MISSING; fi";
     sh(cmd).then(function (r) {
       var out = (r.stdout || "").trim();
@@ -1704,11 +1766,10 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
         el.innerHTML = '<span class="bad">Could not read log status.</span>';
         return;
       }
-      var parts = out.split("---EXPORT---");
+      var parts = out.split("---REPORT---");
       var livePart = (parts[0] || "").replace("---LIVE---", "").trim();
-      var expPart = (parts[1] || "").trim();
       var ll = livePart.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
-      var exp = expPart.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      var rp = (parts[1] || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
       var html = "";
       if (ll[0] === "MISSING" || !ll.length) {
         html += '<div><span class="warn">Live log:</span> <b>cleared / none</b></div>';
@@ -1718,16 +1779,11 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
         html += "<div>Updated: " + esc(ll[3] || "?") + "</div>";
         if (startLine) html += '<div class="startline">' + esc(startLine) + "</div>";
       }
-      if (exp[0] === "MISSING" || !exp[0]) {
-        html += '<div class="expgap"><span class="warn">Exported:</span> <b>not yet</b></div>';
+      if (rp[0] === "PRESENT") {
+        html += '<div class="expgap"><span class="ok">Last report:</span> <b>' + esc(rp[1] || "?") + "</b></div>";
+        html += "<div>" + fmtBytes(rp[2] || 0) + (rp[3] ? " · " + esc(rp[3]) : "") + "</div>";
       } else {
-        html += '<div class="expgap"><span class="ok">Exported:</span> <b>' + fmtBytes(exp[1] || 0) + "</b></div>";
-        if (exp[2]) html += "<div>Export time: " + esc(exp[2]) + "</div>";
-        if (ll[0] !== "MISSING" && ll[1] && exp[1] && +exp[1] > 0) {
-          var diff = Math.abs(+ll[1] - +exp[1]);
-          if (diff < 64) html += '<div class="ok">Export matches live size.</div>';
-          else if (+exp[1] < +ll[1]) html += '<div class="warn">Live log is newer / larger than last export.</div>';
-        }
+        html += '<div class="expgap"><span class="warn">Last report:</span> <b>not yet</b></div>';
       }
       el.innerHTML = html;
     });
@@ -1820,17 +1876,35 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       toast("Demo mode — nothing exported.");
       return;
     }
+    var btn = $("exp"), label = btn.textContent;
+    var nm = ($("rptName").value || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 24);
+    $("rptName").value = nm;
+    try { localStorage.setItem("ct_name", nm); } catch (e) {}
+    btn.disabled = true;
+    btn.textContent = "Exporting… please wait";
     var cmd =
-      "D=" + D + "; [ -f $D/codm_tex.log ] || { echo NOLOG; exit 1; }; " +
-      "if [ -d /sdcard ]; then O=\"/sdcard/CODM Log\"; else O=\"/storage/emulated/0/CODM Log\"; fi; " +
-      "mkdir -p \"$O\" && cp -f $D/codm_tex.log \"$O/codm_tex.log\" && chmod 666 \"$O/codm_tex.log\" 2>/dev/null; " +
-      "[ -f \"$O/codm_tex.log\" ] && echo OK $(wc -c < \"$O/codm_tex.log\")";
-    sh(cmd).then(function (r) {
-      if (r.stdout.indexOf("NOLOG") >= 0) toast("No log yet. Play a match first.");
-      else if (r.stdout.indexOf("OK") >= 0) {
-        var n = parseInt(r.stdout.split("OK")[1], 10) || 0;
-        toast("Exported " + Math.max(1, Math.round(n / 1024)) + " KB to CODM Log/codm_tex.log");
-      } else toast("Could not export the log.");
+      "D=" + D + "; NM='" + nm + "'; if [ -d /sdcard ]; then O=\"/sdcard/CODM Log\"; else O=\"/storage/emulated/0/CODM Log\"; fi; " +
+      "mkdir -p \"$O\" || { echo FAILDIR; exit 1; }; " +
+      "B=$(getprop ro.product.brand | tr -cd 'A-Za-z0-9._-'); M=$(getprop ro.product.model | tr ' ' '_' | tr -cd 'A-Za-z0-9._-'); " +
+      "N=\"CODM_report_${B}_${M}\"; [ -n \"$NM\" ] && N=\"${N}_${NM}\"; N=\"${N}_$(date +%Y%m%d-%H%M%S)\"; " +
+      "T=\"$O/$N\"; mkdir -p \"$T\" || { echo FAILDIR; exit 1; }; " +
+      "if [ -f $D/codm_tex.log ]; then cp -f $D/codm_tex.log \"$T/codm_tex.log\"; else echo NOLOG; fi; " +
+      "( echo \"name: $NM\"; " + diagScript() + " ) > \"$T/codm_diag.txt\" 2>&1; " +
+      "cd \"$O\" || exit 1; OUT=\"\"; " +
+      "if command -v zip >/dev/null 2>&1 && zip -q -r \"$N.zip\" \"$N\" 2>/dev/null; then OUT=\"$N.zip\"; " +
+      "elif tar czf \"$N.tar.gz\" \"$N\" 2>/dev/null && tar tzf \"$N.tar.gz\" >/dev/null 2>&1; then OUT=\"$N.tar.gz\"; " +
+      "else rm -f \"$N.tar.gz\"; { cat \"$T/codm_diag.txt\"; echo; echo '== codm_tex.log =='; cat \"$T/codm_tex.log\" 2>/dev/null; } > \"$N.txt\"; OUT=\"$N.txt\"; fi; " +
+      "rm -rf \"$T\"; chmod 666 \"$O/$OUT\" 2>/dev/null; " +
+      "echo OUT=$OUT; echo SIZE=$(wc -c < \"$O/$OUT\" 2>/dev/null || echo 0); echo DONE";
+    sh(cmd, 60000).then(function (r) {
+      btn.disabled = false;
+      btn.textContent = label;
+      var out = r.stdout || "";
+      var fn = /OUT=(\S+)/.exec(out), sz = /SIZE=(\d+)/.exec(out);
+      var kb = Math.max(1, Math.round((sz ? +sz[1] : 0) / 1024)) + " KB";
+      if (out.indexOf("FAILDIR") >= 0) toast("Could not create the CODM Log folder. Check that storage access is allowed.");
+      else if (out.indexOf("DONE") < 0 || !fn) toast("Export did not finish. Try again.");
+      else toast("Saved " + fn[1] + " (" + kb + ") in CODM Log. Send this one file." + (out.indexOf("NOLOG") >= 0 ? " There was no log yet, so play a match and export again." : ""));
       refreshLogStat();
     });
   });
@@ -1838,7 +1912,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   /* paint once with defaults, then load the real settings */
   updateLookUI();
   renderFps();
+  try { $("rptName").value = localStorage.getItem("ct_name") || ""; } catch (e) {}
   renderMin();
+  renderHook();
   refresh();
   refreshLogStat();
 })();
