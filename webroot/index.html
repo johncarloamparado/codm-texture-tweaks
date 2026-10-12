@@ -521,7 +521,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       <p class="cap">Gives the game time to finish loading menus and UI before textures are changed.</p>
       <div class="row">
         <div class="rh"><label for="delay">Start delay</label><span class="val" id="delayV">Off</span></div>
-        <p class="desc">Textures created in the first seconds stay original.</p>
+        <p class="desc">Textures created in the first seconds stay original and are never changed later, so a long delay can make the effect look like it does nothing. Keep it <b>Off</b> unless you need it.</p>
         <input type="range" id="delay" min="0" max="12" step="1" value="0">
       </div>
     </section>
@@ -649,7 +649,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       <div class="stack">
         <div>
           <button class="btn warn" id="reset" type="button">Reset defaults</button>
-          <p class="pnote">Recommended setup: <b>True Pixelated</b> (Normal size, Sharp edges) with a <b>20 s</b> start delay. Skip rules go back to the built-ins.</p>
+          <p class="pnote">Recommended setup: <b>True Pixelated</b> (Normal size, Sharp edges) with no start delay. Skip rules go back to the built-ins.</p>
         </div>
         <div>
           <button class="btn warn" id="normal" type="button">Back to normal CODM</button>
@@ -728,7 +728,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   var REC = {
     blk: 0, bias: 0, near: 1, scale: 0, fps: 0,
     fz: 1, th: 1, core: 1, mode: 4,
-    minsz: 64, delay: 20, style: 0, sedge: 1, flat: 0, testtex: 1, ttsize: 0, ttsm: 0, hookdelay: 0
+    minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 1, ttsize: 0, ttsm: 0, hookdelay: 0
   };
   /* "Back to normal CODM": every effect off (logging, mode and skip lists are left alone) */
   var NORMAL = {
@@ -747,7 +747,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
-    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.28",
+    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.29",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
     ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
   };
@@ -1590,7 +1590,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   /* One shell script is used both for the on-screen view and for the exported codm_diag.txt */
   function diagScript() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.28'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.29'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== device'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.version.release ro.build.version.sdk ro.build.display.id ro.board.platform ro.hardware ro.hardware.egl ro.hardware.vulkan; do echo \"$k=$(getprop $k)\"; done; " +
       "echo '== gpu'; timeout 6 dumpsys SurfaceFlinger 2>/dev/null | grep -m3 -i -E 'GLES|EGL'; " +
