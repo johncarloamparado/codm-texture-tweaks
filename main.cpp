@@ -36,6 +36,8 @@
 #include <EGL/egl.h>
 #include <android/native_window.h>
 #include <android/dlext.h>
+#include <android/log.h>
+#include <sys/stat.h>
 #include <GLES3/gl3.h>
 #include "zygisk.hpp"
 #include "lsplt.hpp"
@@ -44,6 +46,8 @@
 #define RUSAGE_THREAD 1
 #endif
 
+/* One place for the version. Keep in sync with module.prop (bump +1 every update). */
+#define VERSION "v0.29"
 #define PKG "com.garena.game.codm"
 #define DIR "/data/data/" PKG "/files/"
 #define LOGF DIR "codm_tex.log"
@@ -67,21 +71,34 @@
 #define TTSZF DIR "ttsize.txt"
 #define TTSMF DIR "ttsm.txt"
 #define HDLYF DIR "hookdelay.txt"
+#define SCRASHF DIR "scale_crash.txt"   /* marker: written before render scale is applied, cleared after 120 good frames */
 
 static std::mutex mu;
 static FILE *lf = nullptr;
+static long lf_bytes = 0;
+#define LOG_CAP_BYTES (2L * 1024 * 1024)
 static void L(const char *fmt, ...) {
     std::lock_guard<std::mutex> g(mu);
-    if (!lf) lf = fopen(LOGF, "a");
-    if (!lf) return;
+    if (lf && lf_bytes > LOG_CAP_BYTES) {          /* keep shared reports small: start the log over */
+        fclose(lf); lf = fopen(LOGF, "w"); lf_bytes = 0;
+        if (lf) fputs("=== log truncated (2 MB cap) ===\n", lf);
+    }
+    if (!lf) { lf = fopen(LOGF, "a"); if (lf) { fseek(lf, 0, SEEK_END); lf_bytes = ftell(lf); } }
     va_list a; va_start(a, fmt);
-    vfprintf(lf, fmt, a);
+    if (!lf) {                                     /* log file unavailable: make it visible in logcat instead */
+        __android_log_vprint(ANDROID_LOG_INFO, "codm_tex", fmt, a);
+        va_end(a);
+        return;
+    }
+    int n = vfprintf(lf, fmt, a);
     va_end(a);
+    if (n > 0) lf_bytes += n;
     fflush(lf);
 }
 
 /* ---------- Render scale and mip bias ---------- */
 static std::atomic<int> g_scale{0};        /* 0 = off, 20-99 = percent of native resolution */
+static std::atomic<int> g_scale_marked{0}; /* 1 once scale_crash.txt has been written this session */
 static std::atomic<int> g_bias{0};
 static std::atomic<int> g_applied{0};
 static void (*real_tp)(GLenum, GLenum, GLint) = nullptr;
@@ -211,6 +228,7 @@ static Grp g_grp[MAXG];
 static int g_ng = 0;
 static std::mutex g_gm;
 static std::atomic<int> g_gdirty{0};
+static std::atomic<int> g_sk_delay{0}, g_sk_minsz{0}, g_sk_rule{0}, g_cand{0}, g_nobound{0};   /* why candidates were left untouched */
 
 static void grp_note(int fmt, int sz, bool applied) {
     std::lock_guard<std::mutex> lk(g_gm);
@@ -266,9 +284,15 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
     bool cand = (t == GL_TEXTURE_2D && lv >= 3 && mx >= 64 && is_cmp(fmt));
     if (t == GL_TEXTURE_2D && mx >= 16) texn_log((int)w, (int)h, (int)lv, (int)fmt, cand);
     if (!cand) return;
-    bool skip = in_skip((int)fmt, (int)w, (int)h) || mx < g_minsz.load();
+    g_cand++;
+    bool skip = false;
+    if (in_skip((int)fmt, (int)w, (int)h)) { skip = true; g_sk_rule++; }
+    else if (mx < g_minsz.load()) { skip = true; g_sk_minsz++; }
     int dl = g_delay.load();
-    if (!skip && dl > 0 && now_ns() - g_tstart.load() < (int64_t)dl * 1000000000LL) skip = true;
+    /* NOTE: textures created during the start delay are NOT revisited afterwards, so a delay
+       leaves most game textures untouched. Default is 0; the WebUI explains this. */
+    if (!skip && dl > 0 && now_ns() - g_tstart.load() < (int64_t)dl * 1000000000LL) { skip = true; g_sk_delay++; }
+    if (!skip && tl_bound[tl_unit] == 0) g_nobound++;
 
     /* Test Tex: force NEAREST sampling only — full texture data, sharp pixel look. */
     int tt = g_testtex.load();
@@ -376,6 +400,7 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
 }
 
 static void grp_dump(double t_s) {
+    L("TEXSKIP cand=%d skip_rule=%d skip_minsz=%d skip_delay=%d unbound=%d\n", g_cand.load(), g_sk_rule.load(), g_sk_minsz.load(), g_sk_delay.load(), g_nobound.load());
     Grp tmp[MAXG]; int n;
     { std::lock_guard<std::mutex> lk(g_gm); n = g_ng; for (int i = 0; i < n; i++) tmp[i] = g_grp[i]; g_gdirty = 0; }
     for (int i = 0; i < n; i++)
@@ -713,6 +738,7 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     if (g_t0.load() == 0) g_t0 = t;
     frame_no++;
     if (frame_no == 1) L("GFX api=gles (eglSwapBuffers seen)\n");
+    if (frame_no == 120 && g_scale_marked.load()) { unlink(SCRASHF); L("scale ok: crash marker cleared after 120 frames\n"); }
     if (frame_no == 30) log_gl_info();
 
     /* FPS cap: sleep the remaining time so frame intervals stay even */
@@ -803,9 +829,30 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     return r;
 }
 
-/* ---------- Render scale (shrinks the window buffer) ---------- */
-static std::atomic<int> g_fullw{1600}, g_fullh{720};   /* initial guess of the native size; only ever grows */
+/* ---------- Render scale (shrinks the window buffer) ----------
+   v0.29: the native size is learned from the real window (ANativeWindow_getWidth/Height), never guessed.
+   Calls with a 0 width/height ("keep native size") and portrait probes are passed through untouched.
+   A marker file (scale_crash.txt) is written before scaling and removed after 120 rendered frames;
+   if it is still there at the next launch, render scale is switched off so it can never boot-loop. */
+static std::atomic<int> g_fullw{0}, g_fullh{0};   /* native landscape size, 0 = not learned yet */
 static std::atomic<int> g_sbgn{0};
+static inline int scaled_dim(int full, int s) {
+    int v = (int)((int64_t)full * s / 100);
+    v &= ~1;                                       /* keep it even */
+    return v < 2 ? 2 : v;
+}
+
+static void learn_full(ANativeWindow *nwin) {
+    if (!nwin) return;
+    int w = ANativeWindow_getWidth(nwin), h = ANativeWindow_getHeight(nwin);
+    if (w > 0 && h > 0 && w >= h && w > g_fullw.load()) { g_fullw = w; g_fullh = h; }
+}
+
+static void mark_scale_in_use() {
+    if (g_scale_marked.exchange(1)) return;
+    FILE *f = fopen(SCRASHF, "w");
+    if (f) { fprintf(f, "1\n"); fclose(f); }
+}
 
 static EGLSurface (*o_cws)(EGLDisplay, EGLConfig, EGLNativeWindowType, const EGLint *) = nullptr;
 static EGLSurface h_cws(EGLDisplay d, EGLConfig c, EGLNativeWindowType win, const EGLint *at) {
@@ -817,11 +864,16 @@ static EGLSurface h_cws(EGLDisplay d, EGLConfig c, EGLNativeWindowType win, cons
             if (w < h) {
                 L("SURFACE portrait %dx%d: skip\n", w, h);
             } else {
+                learn_full(nwin);
                 int fw = g_fullw.load(), fh = g_fullh.load();
-                if (w > fw) { g_fullw = fw = w; g_fullh = fh = h; }
-                int nw = fw * s / 100, nh = fh * s / 100;
-                int r = ANativeWindow_setBuffersGeometry(nwin, nw, nh, 0);
-                L("SURFACE cur=%dx%d full=%dx%d -> %dx%d r=%d\n", w, h, fw, fh, nw, nh, r);
+                if (fw > 0 && fh > 0) {
+                    int nw = scaled_dim(fw, s), nh = scaled_dim(fh, s);
+                    int fmt = ANativeWindow_getFormat(nwin);
+                    if (fmt < 0) fmt = 0;           /* keep the window's current format */
+                    mark_scale_in_use();
+                    int r = ANativeWindow_setBuffersGeometry(nwin, nw, nh, fmt);
+                    L("SURFACE cur=%dx%d full=%dx%d -> %dx%d fmt=%d r=%d\n", w, h, fw, fh, nw, nh, fmt, r);
+                }
             }
         }
     }
@@ -830,12 +882,20 @@ static EGLSurface h_cws(EGLDisplay d, EGLConfig c, EGLNativeWindowType win, cons
 
 static int32_t (*o_sbg)(ANativeWindow *, int32_t, int32_t, int32_t) = nullptr;
 static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
-    int s = g_scale.load(), fw = g_fullw.load(), fh = g_fullh.load();
+    int s = g_scale.load();
     int n = ++g_sbgn;
     if (n <= 20) L("SBG call %dx%d fmt=%d\n", ww, hh, f);
-    if (s > 0 && fw > 0 && (ww == 0 || hh == 0 || (ww >= fw && hh >= fh))) {
-        ww = fw * s / 100; hh = fh * s / 100;
-        if (n <= 20) L("SBG overridden -> %dx%d\n", ww, hh);
+    if (s > 0 && w) {
+        if (ww == 0 || hh == 0) {
+            learn_full(w);                          /* "keep native size": never override, just learn it */
+        } else if (ww >= hh) {
+            int fw = g_fullw.load(), fh = g_fullh.load();
+            if (fw > 0 && fh > 0 && ww >= fw && hh >= fh) {   /* Unity asks for the full native size */
+                ww = scaled_dim(fw, s); hh = scaled_dim(fh, s);
+                mark_scale_in_use();
+                if (n <= 20) L("SBG overridden -> %dx%d\n", ww, hh);
+            }
+        }
     }
     return o_sbg ? o_sbg(w, ww, hh, f) : ANativeWindow_setBuffersGeometry(w, ww, hh, f);
 }
@@ -844,7 +904,10 @@ static void *wrap(const char *n, void *r) {
     if (!n || !r) return r;
     if (n[0] == 'v' && n[1] == 'k') {          /* Vulkan entry point requested by libunity */
         static std::atomic<int> vk_once{0};
-        if (!vk_once.exchange(1)) L("GFX vk-symbol %s requested\n", n);
+        if (!vk_once.exchange(1)) {
+            L("GFX vk-symbol %s requested\n", n);
+            L("GFX api=vulkan (detected) - texture effects, fps cap and render scale are NOT supported on Vulkan in %s; use GLES (disable modules that force Vulkan, e.g. core-vulkan)\n", VERSION);
+        }
         return r;
     }
     if (!strcmp(n, "glTexParameteri")) { if (!real_tp) real_tp = (decltype(real_tp))r; return (g_near.load() || g_style.load() || g_flat.load() || g_testtex.load()) ? (void *)h_tp : r; }
@@ -964,7 +1027,7 @@ static void load_cfg() {
         fclose(f);
     } else {
         f = fopen(DLYF, "w");
-        if (f) { fprintf(f, "20\n"); fclose(f); }
+        if (f) { fprintf(f, "0\n"); fclose(f); }
     }
     g_skip.clear();
     f = fopen(SKIPF, "r");
@@ -1041,6 +1104,15 @@ static void load_cfg() {
     } else {
         f = fopen(TTSMF, "w");
         if (f) { fprintf(f, "0\n"); fclose(f); }
+    }
+    if (access(SCRASHF, F_OK) == 0) {           /* previous launch died with render scale active */
+        unlink(SCRASHF);
+        if (g_scale.load() > 0) {
+            g_scale = 0;
+            FILE *sf = fopen(SCLF, "w");
+            if (sf) { fprintf(sf, "0\n"); fclose(sf); }
+            L("SAFETY: last launch did not finish 120 frames with render scale on -> render scale forced OFF (scale.txt=0)\n");
+        }
     }
     g_tstart = now_ns();
     f = fopen(COREF, "r");
@@ -1162,11 +1234,24 @@ static void hook_nativeloader() {
     L("libnativeloader not found\n");
 }
 
+static void log_start(int mode) {
+#if defined(__aarch64__)
+    const char *abi = "arm64-v8a";
+#elif defined(__arm__)
+    const char *abi = "armeabi-v7a";
+#else
+    const char *abi = "other";
+#endif
+    L("=== start %s build=%s %s abi=%s mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n",
+      VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+    if (g_delay.load() > 0) L("NOTE delay=%d: textures created in the first %d s are NOT modified (they are not revisited)\n", g_delay.load(), g_delay.load());
+}
+
 static void run(int mode) {
     load_cfg();
     std::set<std::pair<dev_t, ino_t>> done;
     std::map<std::pair<dev_t, ino_t>, int64_t> first;   /* when libunity was first seen */
-    L("=== start v27 mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n", mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+    log_start(mode);
     int hd = read_hookdelay();
     int64_t settle_ns = (int64_t)std::max(3, hd) * 1000000000LL;   /* wait this long after libunity appears */
     if (mode >= 3) L("HOOK late: %d s after libunity appears\n", std::max(3, hd));
@@ -1204,7 +1289,16 @@ public:
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override {
         const char *n = env->GetStringUTFChars(args->nice_name, nullptr);
         target = n && strcmp(n, PKG) == 0;
-        env->ReleaseStringUTFChars(args->nice_name, n);
+        if (!target && args->app_data_dir) {          /* clones / secondary users may use another process name */
+            const char *d = env->GetStringUTFChars(args->app_data_dir, nullptr);
+            if (d && strstr(d, PKG)) target = true;
+            if (d) env->ReleaseStringUTFChars(args->app_data_dir, d);
+        }
+        /* Breadcrumb in logcat (tag codm_tex) for the game and anything that looks like it, so a
+           "module never loaded" report can be told apart from "process name did not match". */
+        if (n && (target || strstr(n, "garena") || strstr(n, "codm")))
+            __android_log_print(ANDROID_LOG_INFO, "codm_tex", "%s preAppSpecialize nice_name=%s uid=%d target=%d", VERSION, n, (int)args->uid, (int)target);
+        if (n) env->ReleaseStringUTFChars(args->nice_name, n);
         if (!target) api->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
     }
     void postAppSpecialize(const zygisk::AppSpecializeArgs *) override {
@@ -1213,7 +1307,7 @@ public:
         if (mode == 4) {
             if (read_hookdelay() > 0) { std::thread(run, 3).detach(); return; }   /* late hooking: run() logs its own start line */
             load_cfg();
-            L("=== start v27 mode=4 bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n", g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+            log_start(4);
             L("HOOK early (at libunity load)\n");
             hook_nativeloader();
             return;
