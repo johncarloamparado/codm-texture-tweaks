@@ -621,6 +621,14 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   <!-- ========== TOOLS ========== -->
   <div class="view" id="v-tools">
     <section class="card">
+      <h2>Apply</h2>
+      <label class="lb" style="display:flex;gap:10px;align-items:center;font-size:14px">
+        <input type="checkbox" id="reopen"> Reopen CODM after Apply
+      </label>
+      <p class="pnote">Off by default. Settings are read only when CODM starts. Apply closes the game; with this on, it opens it again after the settings were saved. Texture effects need OpenGL ES (they do nothing on Vulkan).</p>
+    </section>
+
+    <section class="card">
       <h2>Log</h2>
       <p class="cap">View, export or clear the frame log (codm_tex.log).</p>
       <div id="logStat" class="logstat">Checking log…</div>
@@ -747,7 +755,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
-    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.29",
+    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.31",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
     ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
   };
@@ -883,7 +891,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       "L=$D/codm_tex.log; if [ -f $L ]; then S=$(grep -n '^=== start' $L | tail -n 1 | cut -d: -f1); [ -n \"$S\" ] || S=1; " +
       "echo gl=$(tail -n +$S $L | grep -c -E '^(TEXN|FT |GLINFO|GFX api=gles)'); " +
       "echo vk=$(tail -n +$S $L | grep -c '^GFX vk-symbol'); " +
-      "echo sbg=$(tail -n +$S $L | grep -c '^SBG'); fi; " +
+      "echo sbg=$(tail -n +$S $L | grep -c '^SBG'); " +
+      "echo ap=$(tail -n +$S $L | grep '^TEXSKIP applied=' | tail -n 1 | sed -n 's/^TEXSKIP applied=\\([0-9]*\\).*/\\1/p'); " +
+      "echo nv=$(grep '^=== start' $L | tail -n 1 | sed -n 's/^=== start \\(v[0-9.]*\\).*/\\1/p'); fi; " +
       "echo -n 'ver='; sed -n 's/^version=//p' " + PROP + " 2>/dev/null | head -n 1; echo";
     return sh(cmd).then(function (r) {
       var s = { nodir: false };
@@ -902,21 +912,30 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     });
   }
 
+  var writeFail = "";   /* name of the last setting that failed to save, "" = last write was fine */
   function writeFiles(map) {
     Object.keys(map).forEach(function (k) { cur[k] = String(map[k]); });
     if (demo) {
       Object.keys(map).forEach(function (k) { fake[k] = String(map[k]); });
       return Promise.resolve({ ok: true });
     }
-    var parts = [];
+    var parts = [], bad = false;
     Object.keys(map).forEach(function (k) {
-      parts.push("printf '%s\\n' '" + map[k] + "' > $D/" + k + ".txt");
-      parts.push("chmod 666 $D/" + k + ".txt 2>/dev/null");
+      var v = String(map[k]);
+      /* values are plain numbers / short words; anything else could break the shell line */
+      if (!/^[A-Za-z0-9._-]*$/.test(k) || !/^[A-Za-z0-9._-]*$/.test(v)) { bad = true; return; }
+      var f = "$D/" + k + ".txt";
+      parts.push("printf '%s\\n' '" + v + "' > " + f + " || { echo FAILW:" + k + "; exit 1; }");
+      parts.push("chmod 666 " + f + " 2>/dev/null");
+      parts.push("chcon --reference=$D " + f + " 2>/dev/null");
+      parts.push("[ \"$(cat " + f + " 2>/dev/null)\" = '" + v + "' ] || { echo FAILV:" + k + "; exit 1; }");
     });
+    if (bad) { writeFail = "bad value"; return Promise.resolve({ ok: false, stdout: "", stderr: "rejected" }); }
     var cmd = "D=" + D + "; [ -d $D ] || { echo NODIR; exit 1; }; " + parts.join("; ") + "; echo OK";
     return queued(function () {
       return sh(cmd).then(function (r) {
-        r.ok = r.stdout.indexOf("OK") >= 0;
+        r.ok = r.stdout.indexOf("OK") >= 0 && r.stdout.indexOf("FAIL") < 0;
+        writeFail = r.ok ? "" : (/FAIL[WV]:(\w+)/.exec(r.stdout) || [0, "write"])[1];
         return r;
       });
     });
@@ -928,7 +947,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
         toast(updatePend()
           ? (label || "Settings") + " saved. Tap Apply for CODM."
           : "Back to original. Nothing to apply.");
-      } else toast("Could not save. Is the game folder present?");
+      } else toast("Could not save" + (writeFail ? " (" + writeFail + ")" : "") + ". Is the game folder present and root allowed?");
       return r;
     });
   }
@@ -1083,6 +1102,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     updateStatus();
   }
 
+  function lookModeFromFiles(s) {
+    return (parseInt(s.testtex, 10) > 0 || parseInt(s.flat, 10) > 0 || parseInt(s.style, 10) > 0 || parseInt(s.blk, 10) > 0) ? 1 : 0;
+  }
   function updateStatus() {
     var sc = parseInt($("scale").value, 10);
     var look = "Look off";
@@ -1207,6 +1229,16 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       banner("warn", vkN > 0
         ? "Vulkan detected. This phone runs CODM with Vulkan, and texture looks only work with OpenGL ES, so they will not change anything here. Render scale may still apply. Use Tools → Export report to send details to the developer."
         : "No OpenGL activity was logged in the last session. If you played a full match, this phone is probably running CODM with Vulkan and texture looks will not apply. Use Tools → Export report to send details to the developer.");
+    }
+
+    /* Diagnostics/logging running does not prove the look is visible. Say what the last session really did. */
+    var apN = parseInt(s.ap, 10);
+    if (!demo && glN > 0 && lookModeFromFiles(s) > 0) {
+      if (apN === 0) banner("warn", "OpenGL was hooked, but 0 textures were changed in the last session. Logging works; the look did not apply. Check Start delay (should be Off), try Pixel Blocks, then Export report.");
+      else if (apN > 0) toast(apN + " textures were changed in the last session.");
+    }
+    if (!demo && s.nv && s.ver && s.nv !== s.ver) {
+      banner("warn", "Installed module is " + s.ver + " but the game last loaded " + s.nv + ". Reboot the phone after updating.");
     }
 
     /* determine look mode from files */
@@ -1588,16 +1620,21 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   function refresh() { return findDir().then(readState).then(render); }
 
   /* One shell script is used both for the on-screen view and for the exported codm_diag.txt */
-  function diagScript() {
+  /* Everything in the report passes through this filter so tokens / login data never leave the phone. */
+  var REDACT = "sed -E -e 's/eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_.-]+/[JWT]/g' " +
+    "-e 's/((token|Token|TOKEN|ticket|Ticket|openid|passwd|password|secret|session|sessionid|authorization|login)[=: ]+)[A-Za-z0-9._%+\\/=-]{8,}/\\1[redacted]/g'";
+  function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
+  function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.29'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.31'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
+      "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.version.release ro.build.version.sdk ro.build.display.id ro.board.platform ro.hardware ro.hardware.egl ro.hardware.vulkan; do echo \"$k=$(getprop $k)\"; done; " +
       "echo '== gpu'; timeout 6 dumpsys SurfaceFlinger 2>/dev/null | grep -m3 -i -E 'GLES|EGL'; " +
       "echo '== game'; timeout 6 dumpsys package $P 2>/dev/null | grep -m4 -E 'versionName|versionCode|lastUpdateTime'; " +
       "echo '== users'; ls /data/user 2>&1; " +
       "echo '== game dir'; ls -ldZ /data/data/$P /data/data/$P/files 2>&1; ls -ldZ /data/user/*/$P 2>&1; " +
-      "echo '== settings folder'; echo \"$D\"; ls -la $D 2>&1 | head -n 60; " +
+      "echo '== settings folder'; echo \"$D\"; ls -la $D 2>&1 | grep -v -i -E 'login|token|jwt|ticket|passwd|account' | head -n 60; " +
       "echo '== settings'; for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay; do echo \"$f=$(cat $D/$f.txt 2>/dev/null)\"; done; " +
       "for f in skip bltoff bltdel; do echo \"-- $f.txt\"; cat $D/$f.txt 2>/dev/null; done; " +
       "echo '== modules'; for m in /data/adb/modules/*; do [ -d \"$m\" ] || continue; if [ -f \"$m/disable\" ]; then s=disabled; else s=on; fi; echo \"${m##*/} ($s) $(sed -n 's/^version=//p' $m/module.prop 2>/dev/null | head -n 1)\"; done; " +
@@ -1720,12 +1757,37 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   }
   $("cancelChg").addEventListener("click", function () { if (base) cancelChanges(); });
 
+  /* "Reopen CODM after Apply": opt-in, default OFF, remembered on this device */
+  var reopen = false;
+  try { reopen = localStorage.getItem("ct_reopen") === "1"; } catch (e) {}
+  var reopenEl = $("reopen");
+  if (reopenEl) {
+    reopenEl.checked = reopen;
+    reopenEl.addEventListener("change", function () {
+      reopen = reopenEl.checked;
+      try { localStorage.setItem("ct_reopen", reopen ? "1" : "0"); } catch (e) {}
+    });
+  }
   $("stop").addEventListener("click", function () {
-    sh("am force-stop " + PKG).then(function (r) {
-      if (demo || r.errno === 0) { setBaseline(); updatePend(); }
-      toast(demo
-        ? "Demo mode — nothing was stopped."
-        : (r.errno === 0 ? "CODM stopped. Open it again to apply." : "Could not stop CODM."));
+    if (demo) { toast("Demo mode — nothing was applied or stopped."); return; }
+    /* wait for every queued setting write, and refuse to continue if the last one failed */
+    wq.then(function () {
+      if (writeFail) { toast("Not applied: setting \"" + writeFail + "\" did not save. Nothing was stopped."); return; }
+      return sh("am force-stop " + PKG).then(function (r) {
+        if (r.errno !== 0) { toast("Could not stop CODM. Nothing was applied."); return; }
+        setBaseline(); updatePend();
+        if (!reopen) { toast("CODM stopped. Open it again to apply. Settings are read at game start."); return; }
+        /* stop finished (am force-stop is synchronous); check the package, give the system a moment, then launch */
+        sh("pm path " + PKG + " >/dev/null 2>&1 && echo HAVE || echo NOPKG").then(function (c) {
+          if (c.stdout.indexOf("HAVE") < 0) { toast("CODM stopped, but package " + PKG + " was not found. Open it yourself."); return; }
+          setTimeout(function () {
+            sh("monkey -p " + PKG + " -c android.intent.category.LAUNCHER 1 2>&1", 12000).then(function (l) {
+              var ok = l.errno === 0 && l.stdout.indexOf("No activities found") < 0 && l.stdout.indexOf("Error") < 0;
+              toast(ok ? "Applied. Reopening CODM…" : "CODM stopped, but it could not be launched (" + (l.stderr || l.stdout || "errno " + l.errno).trim().slice(0, 80) + "). Open it yourself.");
+            });
+          }, 1200);
+        });
+      });
     });
   });
 
