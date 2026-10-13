@@ -45,9 +45,17 @@ jobs:
       - name: Assemble module package
         run: |
           mkdir -p out/zygisk
-          cp module.prop out/
-          cp -r webroot out/
+          cp module.prop customize.sh out/
+          cp -r webroot META-INF out/
           cp build/libs/libcodm_tex.so "out/zygisk/$ANDROID_ABI.so"
+
+      - name: Verify package layout
+        run: |
+          for f in module.prop customize.sh META-INF/com/google/android/update-binary META-INF/com/google/android/updater-script webroot/index.html "zygisk/$ANDROID_ABI.so"; do
+            test -f "out/$f" || { echo "MISSING out/$f"; exit 1; }
+          done
+          grep -q '^id=' out/module.prop && grep -q '^versionCode=' out/module.prop
+          grep -q "VERSION \"$(sed -n 's/^version=//p' module.prop | tr -d '\r')\"" main.cpp || { echo "VERSION in main.cpp != module.prop"; exit 1; }
 
       - name: Upload module package
         uses: actions/upload-artifact@v6
