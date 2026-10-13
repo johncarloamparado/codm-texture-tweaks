@@ -38,7 +38,7 @@
 #define RUSAGE_THREAD 1
 #endif
 
-#define VERSION "v0.35-stable"
+#define VERSION "v0.35"
 #define PKG "com.garena.game.codm"
 #define DIR "/data/data/" PKG "/files/"
 #define LOGF DIR "codm_tex.log"
