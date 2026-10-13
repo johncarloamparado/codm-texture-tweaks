@@ -1,0 +1,478 @@
+<!doctype html>
+<!-- CODM Blocky Textures: Compact WebUI with Reminders & Diagnostics -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#09090b">
+<title>CODM Blocky Textures</title>
+<style>
+:root {
+  --bg: #09090b;
+  --card: rgba(24, 24, 27, 0.7);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --fill: rgba(255, 255, 255, 0.04);
+  --fill-hover: rgba(255, 255, 255, 0.08);
+  --line: rgba(255, 255, 255, 0.1);
+  --text: #f4f4f5;
+  --mute: #a1a1aa;
+  --primary: #818cf8;
+  --primary-glow: rgba(129, 140, 248, 0.25);
+  --accent: #c084fc;
+  --ink: #09090b;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --ok: #34d399;
+  --track: rgba(255, 255, 255, 0.12);
+  --dock-h: 56px;
+  box-sizing: border-box;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  color: var(--text);
+  background: transparent;
+  font: 14px/1.45 system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  padding-bottom: calc(var(--dock-h) + 24px + env(safe-area-inset-bottom, 0px));
+}
+
+#bg-glow {
+  position: fixed; top: -20%; left: -10%; width: 120%; height: 120%; z-index: -2;
+  background: radial-gradient(circle at 50% 0%, rgba(129, 140, 248, 0.12), transparent 60%);
+  pointer-events: none;
+}
+main { max-width: 520px; margin: 0 auto; padding: 0 12px 6px; }
+
+/* Compact header */
+.hd { padding: calc(14px + env(safe-area-inset-top, 0px)) 2px 8px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo { flex: none; width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 4px 16px var(--primary-glow); }
+.bt { flex: 1; min-width: 0; }
+.eyebrow { margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.15em; color: var(--primary); text-transform: uppercase; }
+h1 { margin: 1px 0 0; font-size: 21px; line-height: 1.1; font-weight: 800; }
+.by { margin: 2px 0 0; color: var(--mute); font-size: 12px; }
+.ver {
+  flex: none; align-self: flex-start;
+  padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--fill);
+  color: var(--text); font-size: 11px; font-weight: 700;
+}
+.status { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  background: var(--fill); border: 1px solid var(--line);
+  color: var(--text); font-size: 11.5px; font-weight: 600;
+}
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--mute); }
+.chip.on i { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.chip.msg { color: var(--mute); }
+
+/* User Guide / Reminder Note with [X] button */
+.guide-box {
+  position: relative; margin-top: 10px; padding: 12px 34px 12px 14px;
+  border-radius: 16px; border: 1px solid rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.08); color: #fef08a; font-size: 12.5px; line-height: 1.45;
+  backdrop-filter: blur(10px);
+}
+.guide-box b.title { display: block; font-size: 13px; color: #fff; margin-bottom: 4px; font-weight: 800; }
+.guide-box ul { margin: 0; padding-left: 16px; }
+.guide-box li { margin-bottom: 3px; }
+.guide-box li:last-child { margin-bottom: 0; }
+.guide-box li b { color: #fff; }
+.close-guide {
+  position: absolute; top: 8px; right: 8px; width: 24px; height: 24px;
+  border: 0; border-radius: 50%; background: rgba(255,255,255,0.1);
+  color: var(--text); font-size: 13px; font-weight: 800; cursor: pointer;
+  display: grid; place-items: center; transition: background 0.2s;
+}
+.close-guide:active { background: rgba(255,255,255,0.25); }
+
+/* System note / diagnostics */
+.sys-note {
+  margin-top: 8px; padding: 10px 12px; border-radius: 14px;
+  border: 1px solid var(--line); font-size: 12px; line-height: 1.4;
+}
+.sys-note.bad { border-color: rgba(248, 113, 113, 0.4); color: #fca5a5; background: rgba(248, 113, 113, 0.08); }
+.sys-note.warn { border-color: rgba(251, 191, 36, 0.4); color: #fde047; background: rgba(251, 191, 36, 0.08); }
+.sys-note b { color: #fff; font-weight: 700; display: block; }
+
+.view { display: none; }
+.view.active { display: block; }
+
+/* Compact Cards */
+.card {
+  margin-top: 10px; padding: 14px 16px;
+  border-radius: 18px; border: 1px solid var(--card-border);
+  background: var(--card); backdrop-filter: blur(16px);
+}
+.ch { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+h2 { margin: 0; font-size: 15px; font-weight: 700; }
+.cap { margin: 3px 0 10px; color: var(--mute); font-size: 12px; line-height: 1.4; }
+.row { margin-top: 12px; }
+.rh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.rh label, .rh .lb { font-weight: 700; font-size: 13.5px; }
+.val {
+  flex: none; min-width: 56px; padding: 2px 10px; border-radius: 999px;
+  background: rgba(129, 140, 248, 0.15); color: var(--primary);
+  font-size: 12px; font-weight: 700; text-align: center;
+}
+.desc { margin: 2px 0 8px; color: var(--mute); font-size: 12px; }
+.pnote { margin: 8px 0 0; color: var(--mute); font-size: 11.5px; line-height: 1.4; }
+
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.mode {
+  display: grid; grid-template-columns: 1fr auto;
+  grid-template-areas: "ti dot" "de de";
+  row-gap: 1px; align-items: center; text-align: left;
+  padding: 8px 10px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--fill); color: var(--text); font: inherit; cursor: pointer;
+}
+.mode[data-m="4"] { grid-column: 1 / -1; }
+.mode b { grid-area: ti; font-size: 13px; font-weight: 700; }
+.mode small { grid-area: de; color: var(--mute); font-size: 11px; }
+.mode[aria-checked="true"] { border-color: var(--primary); background: rgba(129, 140, 248, 0.12); }
+.mode[aria-checked="true"]::after {
+  content: ""; grid-area: dot; justify-self: end;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--primary); box-shadow: 0 0 6px var(--primary);
+}
+
+.steps { display: grid; grid-template-columns: repeat(var(--n, 5), 1fr); gap: 6px; }
+.step {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 40px; padding: 6px 2px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--fill);
+  color: var(--text); font: inherit; cursor: pointer;
+}
+.step b { font-size: 12px; font-weight: 700; }
+.step[aria-checked="true"] { background: linear-gradient(135deg, var(--primary), var(--accent)); border-color: transparent; color: var(--ink); }
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 32px; margin: 0; background: transparent; --p: 50%;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 99px;
+  background: linear-gradient(90deg, var(--primary) 0, var(--accent) var(--p), var(--track) var(--p));
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px;
+  border-radius: 50%; background: #fff; border: 0;
+  box-shadow: 0 0 10px rgba(129, 140, 248, 0.5);
+}
+
+.btn {
+  display: block; width: 100%; min-height: 42px; padding: 8px 12px;
+  font: inherit; font-weight: 700; font-size: 13.5px; color: var(--text);
+  background: var(--fill); border: 1px solid var(--line); border-radius: 14px; cursor: pointer;
+}
+.btn.primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; border-color: transparent; }
+.btn.warn { color: var(--warn); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+#dock {
+  position: fixed; left: 12px; right: 12px; z-index: 40;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  max-width: 520px; margin: 0 auto; height: var(--dock-h);
+  display: flex; align-items: center; gap: 8px; padding: 6px;
+  border-radius: 22px; border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(9, 9, 11, 0.9); backdrop-filter: blur(20px);
+}
+#dock .tabs { flex: 1; display: flex; gap: 4px; height: 100%; }
+#dock .tabs button {
+  flex: 1; border: 0; border-radius: 16px; background: transparent;
+  color: var(--mute); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+#dock .tabs button.on { color: var(--primary); background: rgba(129, 140, 248, 0.15); }
+.apply {
+  height: 100%; padding: 0 20px; border: 0; border-radius: 16px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer;
+}
+
+#toast {
+  position: fixed; left: 12px; right: 12px; z-index: 50;
+  bottom: calc(var(--dock-h) + 18px + env(safe-area-inset-bottom, 0px));
+  max-width: 520px; margin: 0 auto; padding: 12px 14px;
+  border-radius: 16px; background: var(--text); color: var(--ink);
+  font-weight: 700; font-size: 13px; text-align: center;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3); opacity: 0; pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+}
+#toast.show { opacity: 1; transform: translateY(-4px); }
+</style>
+</head>
+<body>
+<div id="bg-glow"></div>
+
+<main>
+  <header class="hd">
+    <div class="brand">
+      <div class="bt">
+        <p class="eyebrow">CODM</p>
+        <h1>Blocky Textures</h1>
+        <p class="by">by <b>Q9 Papyrus</b></p>
+      </div>
+      <span class="ver">v0.35</span>
+    </div>
+
+    <!-- REMINDER BOX WITH CLOSE [X] BUTTON -->
+    <div class="guide-box" id="guideBox">
+      <button class="close-guide" id="closeGuide" type="button" title="Close note">✕</button>
+      <b class="title">⚠️ MAHALAGANG PAALALA:</b>
+      <ul>
+        <li><b>Pindutin palagi ang "APPLY":</b> Pagkatapos magbago ng anumang settings, pindutin ang <u>Apply</u> button sa ibaba para mag-load sa laro.</li>
+        <li><b>Ang "Export Report" ay HINDI pang-save:</b> Pindutin lang ang Export Report kung may <u>BUG o ERROR</u> na ipapasa sa akin para makita ang log.</li>
+      </ul>
+    </div>
+
+    <!-- AUTO SYSTEM WARNINGS (Zygisk / Vulkan) -->
+    <div id="topBanners"></div>
+
+    <div class="status" id="status"><span class="chip msg">Checking...</span></div>
+  </header>
+
+  <!-- HOME VIEW -->
+  <div class="view active" id="v-home">
+    <section class="card">
+      <div class="ch"><h2>Quick Test (Recommended)</h2></div>
+      <p class="cap">Pindutin ito para i-set sa Pixel Blocks (Chunky) na may safe render scale.</p>
+      <button class="btn primary" id="recTest" type="button">Set Recommended Settings</button>
+    </section>
+
+    <section class="card">
+      <div class="ch"><h2>Texture Look</h2></div>
+      <p class="cap">Pumili ng isa. (Active lamang sa OpenGL ES mode).</p>
+      <div class="modes" id="lookSeg">
+        <button type="button" class="mode" data-m="0" aria-checked="true"><b>Off</b><small>Original textures</small></button>
+        <button type="button" class="mode" data-m="1"><b>Pixel Blocks</b><small>Chunky mosaic look</small></button>
+        <button type="button" class="mode" data-m="2"><b>Detail Cut</b><small>Less fine detail</small></button>
+        <button type="button" class="mode" data-m="3"><b>Flat</b><small>Near-solid colors</small></button>
+        <button type="button" class="mode" data-m="4"><b>True Pixelated</b><small>Classic sharp pixels</small></button>
+      </div>
+
+      <div class="row" id="strRow">
+        <div class="rh"><span class="lb">Strength</span><span class="val" id="strV">—</span></div>
+        <p class="desc" id="strD">Select a look above first.</p>
+        <div class="steps" id="steps"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Display</h2>
+      <div class="row">
+        <div class="rh"><label for="scale">Render scale</label><span class="val" id="scaleV">100%</span></div>
+        <p class="desc">Binababaan ang resolution. (Mag-a-auto reopen ang game pag-Apply).</p>
+        <input type="range" id="scale" min="40" max="100" step="5" value="100">
+      </div>
+    </section>
+  </div>
+
+  <!-- TOOLS VIEW -->
+  <div class="view" id="v-tools">
+    <section class="card">
+      <h2>Launch Settings</h2>
+      <label style="display:flex;gap:10px;align-items:center;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="reopen" checked> Reopen CODM after Apply
+      </label>
+      <p class="pnote">Pinapatay at binubuksan ulit ang laro para maiwasan ang render scale crash.</p>
+    </section>
+
+    <section class="card">
+      <h2>Export Report & Logs</h2>
+      <p class="cap">Para lamang sa may problema na gustong ipasa ang log sa dev.</p>
+      <button class="btn primary" id="expReport" type="button">Export Report (For Support/Bugs Only)</button>
+      <div class="grid2">
+        <button class="btn" id="clrLog" type="button">Clear Log</button>
+        <button class="btn warn" id="resetDef" type="button">Reset Defaults</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<nav id="dock">
+  <div class="tabs">
+    <button type="button" data-v="home" class="on">Home</button>
+    <button type="button" data-v="tools">Tools</button>
+  </div>
+  <button class="apply" id="applyBtn" type="button">Apply</button>
+</nav>
+
+<div id="toast"></div>
+
+<script>
+(function() {
+  var PKG = "com.garena.game.codm";
+  var D = "/data/data/" + PKG + "/files";
+  var demo = (typeof ksu === "undefined");
+  var lookMode = 0, strVal = 3;
+  var BLK = [0, 64, 32, 16, 8, 4];
+  var BLKN = ["Off", "Soft", "Fine", "Medium", "Chunky", "Extreme"];
+
+  function $(id) { return document.getElementById(id); }
+  function toast(m) {
+    var t = $("toast"); t.textContent = m; t.classList.add("show");
+    setTimeout(function() { t.classList.remove("show"); }, 2600);
+  }
+
+  // Handle Guide Dismissal
+  if (localStorage.getItem("ct_hide_notice") === "1") {
+    $("guideBox").style.display = "none";
+  }
+  $("closeGuide").addEventListener("click", function() {
+    $("guideBox").style.display = "none";
+    localStorage.setItem("ct_hide_notice", "1");
+  });
+
+  function sh(cmd) {
+    return new Promise(function(resolve) {
+      if (demo) { resolve({ stdout: "", errno: 0 }); return; }
+      var cb = "cb_" + Date.now();
+      window[cb] = function(errno, stdout, stderr) {
+        delete window[cb];
+        resolve({ errno: errno, stdout: String(stdout || ""), stderr: String(stderr || "") });
+      };
+      try { ksu.exec(cmd, "{}", cb); } catch(e) { resolve({ errno: -1, stdout: "" }); }
+    });
+  }
+
+  function writeTxt(file, val) {
+    return sh("printf '%s\\n' '" + val + "' > " + D + "/" + file + " && chmod 666 " + D + "/" + file);
+  }
+
+  function checkSystem() {
+    var ban = $("topBanners");
+    ban.innerHTML = "";
+
+    sh("ls /data/adb/modules 2>/dev/null").then(function(r) {
+      var out = r.stdout || "";
+      var hasZygisk = out.indexOf("zygisksu") >= 0 || out.indexOf("zygisk_next") >= 0 || out.indexOf("ZygiskNext") >= 0;
+      if (!demo && !hasZygisk) {
+        var d = document.createElement("div");
+        d.className = "sys-note bad";
+        d.innerHTML = "<b>Walang Zygisk Module Natagpuan!</b>Naka-KernelSU ka ngunit walang ZygiskNext. Hindi gagana ang module na ito kung walang Zygisk active.";
+        ban.appendChild(d);
+      }
+    });
+
+    sh("cat " + D + "/codm_tex.log 2>/dev/null | grep 'GFX api=vulkan' | tail -n 1").then(function(r) {
+      if (r.stdout.indexOf("vulkan") >= 0) {
+        var d = document.createElement("div");
+        d.className = "sys-note warn";
+        d.innerHTML = "<b>Vulkan API Detected!</b>Ang CODM mo ay tumatakbo sa Vulkan. Ang texture effects ay para sa OpenGL ES lamang.";
+        ban.appendChild(d);
+      }
+    });
+  }
+
+  function renderSteps() {
+    var h = "";
+    for (var i = 1; i <= 5; i++) {
+      h += '<button type="button" class="step" data-v="' + i + '" aria-checked="' + (strVal === i ? "true" : "false") + '"><b>' + BLKN[i] + '</b></button>';
+    }
+    $("steps").innerHTML = h;
+    $("strV").textContent = BLKN[strVal];
+    $("strD").textContent = "Texture size: ~" + BLK[strVal] + " px";
+  }
+
+  Array.prototype.forEach.call($("lookSeg").children, function(b) {
+    b.addEventListener("click", function() {
+      lookMode = +b.getAttribute("data-m");
+      Array.prototype.forEach.call($("lookSeg").children, function(x) {
+        x.setAttribute("aria-checked", +x.getAttribute("data-m") === lookMode ? "true" : "false");
+      });
+      if (lookMode === 1) renderSteps();
+      else {
+        $("steps").innerHTML = "";
+        $("strV").textContent = lookMode === 4 ? "Active" : (lookMode === 0 ? "Off" : "Enabled");
+      }
+    });
+  });
+
+  $("steps").addEventListener("click", function(e) {
+    var b = e.target.closest(".step");
+    if (!b) return;
+    strVal = +b.getAttribute("data-v");
+    renderSteps();
+  });
+
+  $("scale").addEventListener("input", function() {
+    $("scaleV").textContent = $("scale").value + "%";
+  });
+
+  $("applyBtn").addEventListener("click", function() {
+    var sVal = parseInt($("scale").value, 10);
+    var scaleOut = sVal >= 100 ? 0 : sVal;
+
+    writeTxt("mode.txt", "4");
+    writeTxt("scale.txt", scaleOut);
+    writeTxt("blk.txt", lookMode === 1 ? BLK[strVal] : 0);
+    writeTxt("testtex.txt", lookMode === 4 ? 1 : 0);
+    writeTxt("flat.txt", lookMode === 3 ? 2 : 0);
+    writeTxt("style.txt", lookMode === 2 ? 2 : 0);
+
+    toast("Applying settings...");
+    sh("am force-stop " + PKG).then(function() {
+      if ($("reopen").checked) {
+        toast("Applied! Reopening CODM...");
+        setTimeout(function() {
+          sh("monkey -p " + PKG + " -c android.intent.category.LAUNCHER 1");
+        }, 1200);
+      } else {
+        toast("Applied! Buksan muli ang laro.");
+      }
+    });
+  });
+
+  $("recTest").addEventListener("click", function() {
+    lookMode = 1; strVal = 4;
+    $("scale").value = 100; $("scaleV").textContent = "100%";
+    renderSteps();
+    toast("Recommended settings ready. Tap Apply.");
+  });
+
+  $("resetDef").addEventListener("click", function() {
+    writeTxt("scale.txt", "0");
+    writeTxt("blk.txt", "0");
+    writeTxt("testtex.txt", "1");
+    toast("Reset complete. Tap Apply.");
+  });
+
+  $("clrLog").addEventListener("click", function() {
+    sh("rm -f " + D + "/codm_tex.log");
+    toast("Log cleared.");
+  });
+
+  $("expReport").addEventListener("click", function() {
+    toast("Creating report file in internal storage...");
+    sh("mkdir -p /sdcard/'CODM Log' && cp " + D + "/codm_tex.log /sdcard/'CODM Log'/ 2>/dev/null").then(function() {
+      toast("Report saved sa 'CODM Log' folder!");
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll("#dock .tabs button"), function(btn) {
+    btn.addEventListener("click", function() {
+      var v = btn.getAttribute("data-v");
+      $("v-home").classList.toggle("active", v === "home");
+      $("v-tools").classList.toggle("active", v === "tools");
+      Array.prototype.forEach.call(document.querySelectorAll("#dock .tabs button"), function(b) {
+        b.classList.toggle("on", b === btn);
+      });
+    });
+  });
+
+  renderSteps();
+  checkSystem();
+})();
+</script>
+</body>
+</html>
