@@ -761,7 +761,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
-    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.33",
+    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.34",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
     ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
   };
@@ -1257,7 +1257,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       else if (apN > 0) toast(apN + " textures were changed in the last session.");
     }
     if (!demo && s.nv && s.ver && s.nv !== s.ver) {
-      banner("warn", "Installed module is " + s.ver + " but the game last loaded " + s.nv + ". Reboot the phone after updating.");
+      banner("warn", "Installed module is " + s.ver + " but the log still shows " + s.nv + " from before the update. Open CODM once, then check again. If this stays, reboot the phone.");
     }
 
     /* determine look mode from files */
@@ -1645,7 +1645,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.33'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.34'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.version.release ro.build.version.sdk ro.build.display.id ro.board.platform ro.hardware ro.hardware.egl ro.hardware.vulkan; do echo \"$k=$(getprop $k)\"; done; " +
@@ -1801,9 +1801,11 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
         sh("pm path " + PKG + " >/dev/null 2>&1 && echo HAVE || echo NOPKG").then(function (c) {
           if (c.stdout.indexOf("HAVE") < 0) { toast("CODM stopped, but package " + PKG + " was not found. Open it yourself."); return; }
           setTimeout(function () {
-            sh("monkey -p " + PKG + " -c android.intent.category.LAUNCHER 1 2>&1", 12000).then(function (l) {
-              var ok = l.errno === 0 && l.stdout.indexOf("No activities found") < 0 && l.stdout.indexOf("Error") < 0;
-              toast(ok ? "Applied. Reopening CODM…" : "CODM stopped, but it could not be launched (" + (l.stderr || l.stdout || "errno " + l.errno).trim().slice(0, 80) + "). Open it yourself.");
+            var launch = "C=$(cmd package resolve-activity --brief -c android.intent.category.LAUNCHER " + PKG + " 2>/dev/null | tail -n 1); " +
+              "case \"$C\" in */*) am start -n \"$C\" >/dev/null 2>&1 && echo LAUNCHED || echo FAILSTART;; *) echo NOACT;; esac";
+            sh(launch, 10000).then(function (l) {
+              var ok = l.stdout.indexOf("LAUNCHED") >= 0;
+              toast(ok ? "Applied. Reopening CODM…" : "CODM stopped, but it could not be launched (" + (l.stdout.indexOf("NOACT") >= 0 ? "launcher activity not found" : (l.stderr || "start failed")).trim().slice(0, 80) + "). Open it yourself.");
             });
           }, 1200);
         });
