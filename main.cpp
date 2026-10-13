@@ -1,14 +1,6 @@
 /*
  * codm_tex - Zygisk module for Call of Duty: Mobile
- *
- * Installs PLT hooks (LSPlt) on the Unity renderer (libunity.so) to:
- *   - change texture sampling (Pixel Blocks, Detail Cut, Flat, True Pixelated)
- *   - lower the render resolution (render scale) and cap the frame rate
- *   - record frame-time, freeze, thread and CPU-core diagnostics
- *
- * Settings are plain text files in the game's data directory (see the *F
- * macros below). They are read once at launch and are edited through the
- * WebUI in webroot/ (SukiSU Ultra / KernelSU).
+ * Enhanced stability, fallback hooking, and crash prevention.
  */
 #include <cstdarg>
 #include <cerrno>
@@ -46,8 +38,7 @@
 #define RUSAGE_THREAD 1
 #endif
 
-/* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.34"
+#define VERSION "v0.35-stable"
 #define PKG "com.garena.game.codm"
 #define DIR "/data/data/" PKG "/files/"
 #define LOGF DIR "codm_tex.log"
@@ -71,21 +62,22 @@
 #define TTSZF DIR "ttsize.txt"
 #define TTSMF DIR "ttsm.txt"
 #define HDLYF DIR "hookdelay.txt"
-#define SCRASHF DIR "scale_crash.txt"   /* marker: written before render scale is applied, cleared after 120 good frames */
+#define SCRASHF DIR "scale_crash.txt"
 
 static std::mutex mu;
 static FILE *lf = nullptr;
 static long lf_bytes = 0;
 #define LOG_CAP_BYTES (2L * 1024 * 1024)
+
 static void L(const char *fmt, ...) {
     std::lock_guard<std::mutex> g(mu);
-    if (lf && lf_bytes > LOG_CAP_BYTES) {          /* keep shared reports small: start the log over */
+    if (lf && lf_bytes > LOG_CAP_BYTES) {
         fclose(lf); lf = fopen(LOGF, "w"); lf_bytes = 0;
         if (lf) fputs("=== log truncated (2 MB cap) ===\n", lf);
     }
     if (!lf) { lf = fopen(LOGF, "a"); if (lf) { fseek(lf, 0, SEEK_END); lf_bytes = ftell(lf); } }
     va_list a; va_start(a, fmt);
-    if (!lf) {                                     /* log file unavailable: make it visible in logcat instead */
+    if (!lf) {
         __android_log_vprint(ANDROID_LOG_INFO, "codm_tex", fmt, a);
         va_end(a);
         return;
@@ -97,8 +89,8 @@ static void L(const char *fmt, ...) {
 }
 
 /* ---------- Render scale and mip bias ---------- */
-static std::atomic<int> g_scale{0};        /* 0 = off, 20-99 = percent of native resolution */
-static std::atomic<int> g_scale_marked{0}; /* 1 once scale_crash.txt has been written this session */
+static std::atomic<int> g_scale{0};
+static std::atomic<int> g_scale_marked{0};
 static std::atomic<int> g_bias{0};
 static std::atomic<int> g_applied{0};
 static void (*real_tp)(GLenum, GLenum, GLint) = nullptr;
@@ -107,15 +99,11 @@ static bool is_cmp(GLenum f) {
     return (f >= 0x9270 && f <= 0x9279) || (f >= 0x93b0 && f <= 0x93dd);
 }
 
-/* ---------- Pixel Blocks (near.txt, blk.txt) ---------- */
-/* near.txt: 0 = off, 1 = on (default). Only used by the Pixel Blocks path.
-   Textures that get a raised base level are also switched to NEAREST
-   filtering, which is what produces the mosaic look. */
 static std::atomic<int> g_near{1};
-static std::atomic<int> g_blk{0};       /* blk.txt: target edge length in px per texture; 0 = fall back to bias.txt */
+static std::atomic<int> g_blk{0};
 static std::atomic<int> g_flagged{0}, g_forced{0}, g_smp{0};
 static const GLuint MAXTEX = 1u << 18;
-static std::atomic<uint8_t> g_tf[1u << 18];        /* 1 = NEAREST filtering is forced on this texture */
+static std::atomic<uint8_t> g_tf[1u << 18];
 static thread_local GLuint tl_bound[32];
 static thread_local int tl_unit = 0;
 
@@ -128,49 +116,48 @@ static void h_act(GLenum u) {
 
 static void (*o_bind)(GLenum, GLuint) = nullptr;
 static void h_bind(GLenum t, GLuint id) {
-    if (t == GL_TEXTURE_2D) tl_bound[tl_unit] = id;
+    if (t == GL_TEXTURE_2D && tl_unit >= 0 && tl_unit < 32) {
+        tl_bound[tl_unit] = id;
+    }
     if (o_bind) o_bind(t, id);
 }
 
 static void (*o_del)(GLsizei, const GLuint *) = nullptr;
 static void h_del(GLsizei n, const GLuint *ids) {
-    if (ids) {
+    if (ids && n > 0) {
         for (GLsizei i = 0; i < n; i++) {
             if (ids[i] < MAXTEX) g_tf[ids[i]] = 0;
-            for (int u = 0; u < 32; u++) if (tl_bound[u] == ids[i]) tl_bound[u] = 0;
+            for (int u = 0; u < 32; u++) {
+                if (tl_bound[u] == ids[i]) tl_bound[u] = 0;
+            }
         }
     }
     if (o_del) o_del(n, ids);
 }
 
-/* ---------- Detail Cut (style.txt: 0 = off, 1-4 = minimum LOD; sedge.txt: 1 = NEAREST magnification) ---------- */
-/* ---------- Flat (flat.txt: 0 = off, 1-4 = strength) ----------
-   Locks a texture to its smallest mip levels so it renders as a near-solid color. */
 static std::atomic<int> g_style{0};
 static std::atomic<int> g_sedge{1};
 static std::atomic<int> g_flat{0};
-static std::atomic<int> g_ttsize{0};   /* ttsize.txt: -2 = base level only (shimmers) | -1 = mips capped at level 3 | 0 = normal | 1-3 = coarser pixels (2x, 4x, 8x) */
-static std::atomic<int> g_ttsm{0};     /* ttsm.txt: 0 = sharp | 1 = soft blend between mip levels */
-static std::atomic<int> g_testtex{1};  /* testtex.txt: 0 = off | 1 = True Pixelated (NEAREST sampling, full mip chain) */
+static std::atomic<int> g_ttsize{0};
+static std::atomic<int> g_ttsm{0};
+static std::atomic<int> g_testtex{1};
+
 #define TEX_MIN_LOD 0x813A
 #define TEX_MAX_LEVEL 0x813D
 #define TEX_ANISO 0x84FE
+
 #ifndef GL_NEAREST_MIPMAP_NEAREST
 #define GL_NEAREST_MIPMAP_NEAREST 0x2700
 #endif
-
 #ifndef GL_NEAREST_MIPMAP_LINEAR
 #define GL_NEAREST_MIPMAP_LINEAR 0x2702
 #endif
-#ifndef GL_LINEAR_MIPMAP_NEAREST
-#define GL_LINEAR_MIPMAP_NEAREST 0x2701
-#endif
-/* Min/mag filters for True Pixelated, derived from ttsize and ttsm */
+
 static void tt_filters(GLint &mn, GLint &mg) {
     int sz = g_ttsize.load(), sm = g_ttsm.load();
     bool nomip = sz <= -2;
     if (sm >= 1) { mn = nomip ? GL_NEAREST : GL_NEAREST_MIPMAP_LINEAR; mg = GL_NEAREST; }
-    else              { mn = nomip ? GL_NEAREST : GL_NEAREST_MIPMAP_NEAREST; mg = GL_NEAREST; }
+    else         { mn = nomip ? GL_NEAREST : GL_NEAREST_MIPMAP_NEAREST; mg = GL_NEAREST; }
 }
 
 static void h_tp(GLenum t, GLenum p, GLint v) {
@@ -179,23 +166,22 @@ static void h_tp(GLenum t, GLenum p, GLint v) {
     int tt = g_testtex.load();
     if ((st > 0 || fl > 0 || tt > 0) && p == TEX_ANISO && v > 1) v = 1;
     if (t == GL_TEXTURE_2D && (p == GL_TEXTURE_MIN_FILTER || p == GL_TEXTURE_MAG_FILTER)) {
-        GLuint id = tl_bound[tl_unit];
-        if (id > 0 && id < MAXTEX && g_tf[id].load()) {
-            if (tt > 0) {
-                /* True Pixelated: sharp texels, keep the full-resolution mip chain */
-                GLint mn, mg; tt_filters(mn, mg);
-                v = (p == GL_TEXTURE_MAG_FILTER) ? mg : mn;
-                g_forced++;
-            } else if (fl > 0) {
-                /* Flat: NEAREST for both filters so the small mip stays a solid color */
-                v = GL_NEAREST;
-                g_forced++;
-            } else if (st > 0) {
-                /* Detail Cut: only the magnification filter is changed */
-                if (p == GL_TEXTURE_MAG_FILTER) { v = GL_NEAREST; g_forced++; }
-            } else {
-                v = GL_NEAREST;
-                g_forced++;
+        if (tl_unit >= 0 && tl_unit < 32) {
+            GLuint id = tl_bound[tl_unit];
+            if (id > 0 && id < MAXTEX && g_tf[id].load()) {
+                if (tt > 0) {
+                    GLint mn, mg; tt_filters(mn, mg);
+                    v = (p == GL_TEXTURE_MAG_FILTER) ? mg : mn;
+                    g_forced++;
+                } else if (fl > 0) {
+                    v = GL_NEAREST;
+                    g_forced++;
+                } else if (st > 0) {
+                    if (p == GL_TEXTURE_MAG_FILTER) { v = GL_NEAREST; g_forced++; }
+                } else {
+                    v = GL_NEAREST;
+                    g_forced++;
+                }
             }
         }
     }
@@ -214,21 +200,20 @@ static void h_smp(GLuint s, GLenum p, GLint v) {
     if (o_smp) o_smp(s, p, v);
 }
 
-/* ---------- Texture groups, skip rules, minimum size, start delay ---------- */
 static inline int64_t now_ns();
-static std::atomic<int> g_minsz{64};                 /* minsz.txt: textures smaller than this are left untouched */
-static std::atomic<int> g_delay{20};                  /* delay.txt: seconds after launch during which no textures are modified */
+static std::atomic<int> g_minsz{64};
+static std::atomic<int> g_delay{0};
 static std::atomic<int64_t> g_tstart{0};
 struct Sk { int fmt, a, b; };
-static std::vector<Sk> g_bloff;                      /* bltoff.txt: built-in skip rules disabled from the WebUI; read once at startup */
-static std::vector<Sk> g_skip;                       /* skip.txt: "fmt size" (size 0 = any) or "fmt w h"; read once at startup */
+static std::vector<Sk> g_bloff;
+static std::vector<Sk> g_skip;
 struct Grp { int fmt; int sz; int n; int ap; };
 static const int MAXG = 96;
 static Grp g_grp[MAXG];
 static int g_ng = 0;
 static std::mutex g_gm;
 static std::atomic<int> g_gdirty{0};
-static std::atomic<int> g_sk_delay{0}, g_sk_minsz{0}, g_sk_rule{0}, g_cand{0}, g_nobound{0};   /* why candidates were left untouched */
+static std::atomic<int> g_sk_delay{0}, g_sk_minsz{0}, g_sk_rule{0}, g_cand{0}, g_nobound{0};
 
 static void grp_note(int fmt, int sz, bool applied) {
     std::lock_guard<std::mutex> lk(g_gm);
@@ -237,10 +222,6 @@ static void grp_note(int fmt, int sz, bool applied) {
     if (g_ng < MAXG) { g_grp[g_ng].fmt = fmt; g_grp[g_ng].sz = sz; g_grp[g_ng].n = 1; g_grp[g_ng].ap = applied ? 1 : 0; g_ng++; g_gdirty = 1; }
 }
 
-/* Built-in skip rules, compiled in. Each one can be switched off through
-   bltoff.txt, which the WebUI manages.
-   37497 256x512                  scope / reticle atlas (Lava Remix)
-   37493, 37492, 37497 128x128    small character-detail textures */
 static const Sk g_builtin[] = {
     {37497, 256, 512},
     {37493, 128, 128},
@@ -265,8 +246,6 @@ static bool in_skip(int fmt, int w, int h) {
     return false;
 }
 
-/* TEXN: one log line per created texture, stamped with the wall-clock time.
-   Comparing two logs makes it easy to pick out scopes and red-dot sights. */
 static std::atomic<int> g_texn{0};
 static void texn_log(int w, int h, int lv, int fmt, bool cand) {
     int n = ++g_texn;
@@ -289,36 +268,30 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
     if (in_skip((int)fmt, (int)w, (int)h)) { skip = true; g_sk_rule++; }
     else if (mx < g_minsz.load()) { skip = true; g_sk_minsz++; }
     int dl = g_delay.load();
-    /* NOTE: textures created during the start delay are NOT revisited afterwards, so a delay
-       leaves most game textures untouched. Default is 0; the WebUI explains this. */
     if (!skip && dl > 0 && now_ns() - g_tstart.load() < (int64_t)dl * 1000000000LL) { skip = true; g_sk_delay++; }
-    if (!skip && tl_bound[tl_unit] == 0) g_nobound++;
+    
+    GLuint id = (tl_unit >= 0 && tl_unit < 32) ? tl_bound[tl_unit] : 0;
+    if (!skip && id == 0) g_nobound++;
 
-    /* Test Tex: force NEAREST sampling only — full texture data, sharp pixel look. */
     int tt = g_testtex.load();
     if (tt > 0) {
         grp_note((int)fmt, mx, !skip);
-        if (!skip && real_tp) {
-            GLuint id = tl_bound[tl_unit];
-            if (id > 0 && id < MAXTEX) {
-                g_tf[id] = 1; g_flagged++;
-                GLint mn, mg; tt_filters(mn, mg);
-                real_tp(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mn);
-                real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mg);
-                int sz = g_ttsize.load();
-                if (sz == -1) {
-                    /* Fine: never sample coarser than mip 3, so distant surfaces stay finer than Normal with less shimmer than Finer */
-                    int cap = (int)lv - 1;
-                    if (cap > 3) cap = 3;
-                    if (cap < 0) cap = 0;
-                    real_tp(GL_TEXTURE_2D, TEX_MAX_LEVEL, cap);
-                } else if (sz > 0) {
-                    /* bigger pixels: start from a coarser mip, keep at least 8 px */
-                    int base = sz;
-                    while (base > 0 && (mx >> base) < 8) base--;
-                    if (base > (int)lv - 1) base = (int)lv - 1;
-                    if (base > 0) real_tp(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, base);
-                }
+        if (!skip && real_tp && id > 0 && id < MAXTEX) {
+            g_tf[id] = 1; g_flagged++;
+            GLint mn, mg; tt_filters(mn, mg);
+            real_tp(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mn);
+            real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mg);
+            int sz = g_ttsize.load();
+            if (sz == -1) {
+                int cap = (int)lv - 1;
+                if (cap > 3) cap = 3;
+                if (cap < 0) cap = 0;
+                real_tp(GL_TEXTURE_2D, TEX_MAX_LEVEL, cap);
+            } else if (sz > 0) {
+                int base = sz;
+                while (base > 0 && (mx >> base) < 8) base--;
+                if (base > (int)lv - 1) base = (int)lv - 1;
+                if (base > 0) real_tp(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, base);
             }
             int n = ++g_applied;
             if (n <= 100 || n % 500 == 0)
@@ -327,25 +300,20 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
         return;
     }
 
-    /* v19 Flat Color: lock to tiny mips so the surface is near-solid color (lighting still applies). */
     int fl = g_flat.load();
     if (fl > 0) {
-        /* strength 1..4 → target remaining size ~8, 4, 2, 1 px */
         static const int FTGT[] = {0, 8, 4, 2, 1};
         int tgt = FTGT[fl < 4 ? fl : 4];
         int base = 0;
         if (!skip && mx > tgt)
             while ((mx >> (base + 1)) >= tgt && base < (int)lv - 1) base++;
         grp_note((int)fmt, mx, base > 0);
-        if (base > 0 && real_tp) {
+        if (base > 0 && real_tp && id > 0 && id < MAXTEX) {
             real_tp(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, base);
-            real_tp(GL_TEXTURE_2D, TEX_MAX_LEVEL, base);   /* lock: no higher mips */
-            GLuint id = tl_bound[tl_unit];
-            if (id > 0 && id < MAXTEX) {
-                g_tf[id] = 1; g_flagged++;
-                real_tp(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            }
+            real_tp(GL_TEXTURE_2D, TEX_MAX_LEVEL, base);
+            g_tf[id] = 1; g_flagged++;
+            real_tp(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             int n = ++g_applied;
             if (n <= 100 || n % 500 == 0)
                 L("FLAT #%d %dx%d lv=%d fmt=0x%x base=%d tgt=%d\n", n, w, h, lv, fmt, base, tgt);
@@ -355,17 +323,13 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
 
     int sty = g_style.load();
     if (sty > 0) {
-        /* Detail Cut: raise min LOD only; original filters kept except optional sharp MAG */
         int lod = skip ? 0 : std::min(sty, (int)lv - 2);
         grp_note((int)fmt, mx, lod > 0);
         if (lod > 0 && real_tp) {
             real_tp(GL_TEXTURE_2D, TEX_MIN_LOD, lod);
-            if (g_sedge.load()) {
-                GLuint id = tl_bound[tl_unit];
-                if (id > 0 && id < MAXTEX) {
-                    g_tf[id] = 1; g_flagged++;
-                    real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                }
+            if (g_sedge.load() && id > 0 && id < MAXTEX) {
+                g_tf[id] = 1; g_flagged++;
+                real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             }
             int n = ++g_applied;
             if (n <= 100 || n % 500 == 0)
@@ -373,11 +337,11 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
         }
         return;
     }
+
     int base = 0;
     if (!skip) {
         if (k > 0) {
-            if (mx > k)
-                while ((mx >> (base + 1)) >= k && base < (int)lv - 2) base++;
+            if (mx > k) while ((mx >> (base + 1)) >= k && base < (int)lv - 2) base++;
         } else if (b > 0 && lv >= 4 && mx >= 512) {
             base = std::min(b, (int)lv - 2);
         }
@@ -385,13 +349,10 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
     grp_note((int)fmt, mx, base > 0);
     if (base > 0 && real_tp) {
         real_tp(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, base);
-        if (g_near.load()) {
-            GLuint id = tl_bound[tl_unit];
-            if (id > 0 && id < MAXTEX) {
-                g_tf[id] = 1; g_flagged++;
-                real_tp(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            }
+        if (g_near.load() && id > 0 && id < MAXTEX) {
+            g_tf[id] = 1; g_flagged++;
+            real_tp(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
         int n = ++g_applied;
         if (n <= 100 || n % 500 == 0)
@@ -400,29 +361,27 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
 }
 
 static void grp_dump(double t_s) {
-    L("TEXSKIP applied=%d cand=%d skip_rule=%d skip_minsz=%d skip_delay=%d unbound=%d\n", g_applied.load(), g_cand.load(), g_sk_rule.load(), g_sk_minsz.load(), g_sk_delay.load(), g_nobound.load());
+    L("TEXSKIP applied=%d cand=%d skip_rule=%d skip_minsz=%d skip_delay=%d unbound=%d\n", 
+      g_applied.load(), g_cand.load(), g_sk_rule.load(), g_sk_minsz.load(), g_sk_delay.load(), g_nobound.load());
     Grp tmp[MAXG]; int n;
     { std::lock_guard<std::mutex> lk(g_gm); n = g_ng; for (int i = 0; i < n; i++) tmp[i] = g_grp[i]; g_gdirty = 0; }
     for (int i = 0; i < n; i++)
         L("TEXG t=%.0f fmt=%d hex=0x%x sz=%d n=%d ap=%d\n", t_s, tmp[i].fmt, tmp[i].fmt, tmp[i].sz, tmp[i].n, tmp[i].ap);
 }
 
-/* ---------- Frame-time logger and FPS cap ---------- */
-static std::atomic<int> g_fps{0};          /* 0 = no cap (logging only) */
-static std::atomic<pid_t> g_rt{0};         /* render thread (first thread to call eglSwapBuffers) */
+static std::atomic<int> g_fps{0};
+static std::atomic<pid_t> g_rt{0};
 
 static inline int64_t now_ns() {
     timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
     return (int64_t)ts.tv_sec * 1000000000LL + ts.tv_nsec;
 }
 
-/* ---------- Freeze logger (diagnostics only, no effect on gameplay) ---------- */
-/* fz.txt: 0 = off (no extra hooks installed), 1 = on (default) */
 static std::atomic<int> g_fz{1};
-static std::atomic<int64_t> g_t0{0};       /* time of the first rendered frame; log timestamps are relative to it */
+static std::atomic<int64_t> g_t0{0};
 
 enum { K_COMP, K_LINK, K_PBIN, K_BUF, K_TEX, K_N };
-static std::atomic<int> c_cnt[2][K_N];     /* [0] = render thread, [1] = all other threads */
+static std::atomic<int> c_cnt[2][K_N];
 static std::atomic<int64_t> c_ns[2][K_N];
 
 static thread_local pid_t tl_tid = 0;
@@ -476,20 +435,16 @@ static void h_ts3(GLenum t, GLsizei lv, GLenum f, GLsizei w, GLsizei h, GLsizei 
     if (!o_ts3) return; TIMED(K_TEX, o_ts3(t, lv, f, w, h, d));
 }
 
-/* ---------- Per-thread CPU usage (shows which threads were busy during a freeze) ---------- */
-/* th.txt: 0 = off, 1 = on (default). Runs on the render thread; no extra thread is created. */
 static std::atomic<int> g_th{1};
-static int g_sched_mode = -1;              /* 1 = /proc schedstat (ns), 0 = /proc stat (ticks) */
+static int g_sched_mode = -1;
 struct Thr { pid_t tid; int fd; int64_t prev, cur, wprev, wcur; char name[20]; };
-static std::vector<Thr> g_thr;             /* only accessed from the render thread */
+static std::vector<Thr> g_thr;
 static int g_nthr = 0;
 static const size_t MAXT = 48;
 
-/* ---------- CPU core logger (diagnostics only) ---------- */
-/* core.txt: 0 = off, 1 = on (default). Requires fz.txt = 1 and th.txt = 1. */
 static std::atomic<int> g_core{1};
 static const int NC = 8;
-static std::vector<std::pair<pid_t, int>> g_um;    /* UnityMain threads: tid and an open fd on /proc/self/task/<tid>/stat */
+static std::vector<std::pair<pid_t, int>> g_um;
 static int g_um_now = -1, g_um_prev = -1;
 static int g_h_um[NC], g_h_rt[NC], g_h_fz[NC];
 static int g_h_n = 0;
@@ -511,7 +466,6 @@ static int cpu_khz(int c) {
     return read_int_file(p);
 }
 
-/* Field 39 ("processor") of /proc/.../stat is the CPU the thread last ran on. */
 static int core_of(int fd) {
     char b[640];
     ssize_t n = pread(fd, b, sizeof(b) - 1, 0);
@@ -721,15 +675,15 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     pid_t tid = (pid_t)syscall(SYS_gettid);
     pid_t exp = 0;
     g_rt.compare_exchange_strong(exp, tid);
-    if (g_rt.load() != tid) return r;       /* not the render thread: nothing to do */
+    if (g_rt.load() != tid) return r;
 
-    static int64_t last = 0;                /* time of previous frame (after cap) */
-    static int64_t deadline = 0;            /* when the current frame should finish */
+    static int64_t last = 0;
+    static int64_t deadline = 0;
     static int64_t win_start = 0;
-    static std::vector<float> ft;           /* frame times (ms) in a 5-second window */
+    static std::vector<float> ft;
     static int64_t frame_no = 0;
-    static int win_fz = 0;                  /* freeze count in the stats window */
-    static int fz_logged = 0;               /* cap on FREEZE log lines per session */
+    static int win_fz = 0;
+    static int fz_logged = 0;
     static rusage ru_last;
     static bool ru_ok = false;
     static int64_t next_scan = 0;
@@ -741,13 +695,12 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     if (frame_no == 120 && g_scale_marked.load()) { unlink(SCRASHF); L("scale ok: crash marker cleared after 120 frames\n"); }
     if (frame_no == 30) log_gl_info();
 
-    /* FPS cap: sleep the remaining time so frame intervals stay even */
     int cap = g_fps.load();
     if (cap > 0) {
         int64_t iv = 1000000000LL / cap;
         if (deadline == 0) deadline = t;
         deadline += iv;
-        if (t > deadline + iv) deadline = t;          /* fell far behind: reset deadline */
+        if (t > deadline + iv) deadline = t;
         else if (t < deadline) {
             timespec ts;
             ts.tv_sec = deadline / 1000000000LL;
@@ -760,12 +713,11 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     float ms = 0.f;
     if (last != 0) {
         ms = (float)((t - last) / 1e6);
-        if (ms < 1000.f) ft.push_back(ms);           /* ignore loading pauses in the statistics */
+        if (ms < 1000.f) ft.push_back(ms);
     }
     last = t;
     if (win_start == 0) win_start = t;
 
-    /* Freeze logger: read and reset counters each frame */
     if (g_fz.load()) {
         rusage ru; bool ok = (getrusage(RUSAGE_THREAD, &ru) == 0);
         bool th_on = g_th.load() != 0;
@@ -829,17 +781,15 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     return r;
 }
 
-/* ---------- Render scale (shrinks the window buffer) ----------
-   v0.29: the native size is learned from the real window (ANativeWindow_getWidth/Height), never guessed.
-   Calls with a 0 width/height ("keep native size") and portrait probes are passed through untouched.
-   A marker file (scale_crash.txt) is written before scaling and removed after 120 rendered frames;
-   if it is still there at the next launch, render scale is switched off so it can never boot-loop. */
-static std::atomic<int> g_fullw{0}, g_fullh{0};   /* native landscape size, 0 = not learned yet */
+/* ---------- Render scale (Safe Window Scaling) ---------- */
+static std::atomic<int> g_fullw{0}, g_fullh{0};
 static std::atomic<int> g_sbgn{0};
+
 static inline int scaled_dim(int full, int s) {
+    if (s <= 0 || s >= 100) return full;
     int v = (int)((int64_t)full * s / 100);
-    v &= ~1;                                       /* keep it even */
-    return v < 2 ? 2 : v;
+    v &= ~1;
+    return v < 360 ? 360 : v;
 }
 
 static void learn_full(ANativeWindow *nwin) {
@@ -869,7 +819,7 @@ static EGLSurface h_cws(EGLDisplay d, EGLConfig c, EGLNativeWindowType win, cons
                 if (fw > 0 && fh > 0) {
                     int nw = scaled_dim(fw, s), nh = scaled_dim(fh, s);
                     int fmt = ANativeWindow_getFormat(nwin);
-                    if (fmt < 0) fmt = 0;           /* keep the window's current format */
+                    if (fmt < 0) fmt = 0;
                     mark_scale_in_use();
                     int r = ANativeWindow_setBuffersGeometry(nwin, nw, nh, fmt);
                     L("SURFACE cur=%dx%d full=%dx%d -> %dx%d fmt=%d r=%d\n", w, h, fw, fh, nw, nh, fmt, r);
@@ -887,10 +837,8 @@ static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
     if (n <= 20) L("SBG call %dx%d fmt=%d\n", ww, hh, f);
     if (s > 0 && w) {
         if (ww == 0 || hh == 0) {
-            learn_full(w);                          /* "keep native size": never override, just learn it */
+            learn_full(w);
         } else if (ww >= hh && ww >= 640 && hh >= 360) {
-            /* Scale whatever landscape size Unity asks for (1600x720, 1280x720, ...). Scaling the request keeps
-               its aspect ratio and cannot compound, because the request comes from Unity, not from us. */
             ww = scaled_dim(ww, s); hh = scaled_dim(hh, s);
             mark_scale_in_use();
             if (n <= 20) L("SBG overridden -> %dx%d\n", ww, hh);
@@ -901,11 +849,11 @@ static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
 
 static void *wrap(const char *n, void *r) {
     if (!n || !r) return r;
-    if (n[0] == 'v' && n[1] == 'k') {          /* Vulkan entry point requested by libunity */
+    if (n[0] == 'v' && n[1] == 'k') {
         static std::atomic<int> vk_once{0};
         if (!vk_once.exchange(1)) {
             L("GFX vk-symbol %s requested\n", n);
-            L("GFX api=vulkan (detected) - texture effects, fps cap and render scale are NOT supported on Vulkan in %s; use GLES (disable modules that force Vulkan, e.g. core-vulkan)\n", VERSION);
+            L("GFX api=vulkan (detected) - Texture effects and hooks are inactive on Vulkan!\n");
         }
         return r;
     }
@@ -946,8 +894,6 @@ static void *h_egl(const char *n) {
     return wrap(n, r);
 }
 
-/* New module version -> start a fresh log, so the top of codm_tex.log is always the installed version
-   and nobody has to press "Clear log" after an update. Runs once per game launch, before the first L(). */
 static void log_rotate_if_new_version() {
     FILE *f = fopen(LOGF, "r");
     if (!f) return;
@@ -957,103 +903,52 @@ static void log_rotate_if_new_version() {
     size_t pl = strlen(pre), vl = strlen(VERSION);
     while (fgets(line, sizeof line, f)) {
         if (strncmp(line, pre, pl) != 0) continue;
-        /* version token ends at the next space: "=== start v0.33 build=..." */
         if (strncmp(line + pl, VERSION, vl) != 0 || line[pl + vl] != ' ') { old = true; break; }
     }
     fclose(f);
     if (!old) return;
     std::lock_guard<std::mutex> g(mu);
     if (lf) { fclose(lf); lf = nullptr; }
-    FILE *w = fopen(LOGF, "w");                    /* truncate */
+    FILE *w = fopen(LOGF, "w");
     if (w) fclose(w);
     lf_bytes = 0;
 }
 
+/* Safe Integer File Reader */
+static int safe_read_int(const char *path, int def_val, int min_v, int max_v) {
+    FILE *f = fopen(path, "r");
+    int val = def_val;
+    if (f) {
+        if (fscanf(f, "%d", &val) != 1) val = def_val;
+        fclose(f);
+    } else {
+        f = fopen(path, "w");
+        if (f) { fprintf(f, "%d\n", def_val); fclose(f); }
+    }
+    return std::max(min_v, std::min(val, max_v));
+}
+
 static void load_cfg() {
     log_rotate_if_new_version();
-    FILE *f = fopen(CFGF, "r");
-    if (f) {
-        int v = 2;
-        if (fscanf(f, "%d", &v) == 1) g_bias = std::max(0, std::min(v, 6));
-        fclose(f);
-    } else {
-        f = fopen(CFGF, "w");
-        if (f) { fprintf(f, "0\n"); fclose(f); }
-    }
-    f = fopen(FPSF, "r");
-    if (f) {
-        int v = 0;
-        if (fscanf(f, "%d", &v) == 1) g_fps = (v >= 20 && v <= 120) ? v : 0;
-        fclose(f);
-    } else {
-        f = fopen(FPSF, "w");
-        if (f) { fprintf(f, "0\n"); fclose(f); }
-    }
-    f = fopen(SCLF, "r");
-    if (f) {
-        int v = 65;
-        if (fscanf(f, "%d", &v) == 1) g_scale = (v >= 20 && v <= 99) ? v : 0;
-        fclose(f);
-    } else {
-        f = fopen(SCLF, "w");
-        if (f) { fprintf(f, "0\n"); fclose(f); }
-    }
-    f = fopen(FZF, "r");
-    if (f) {
-        int v = 1;
-        if (fscanf(f, "%d", &v) == 1) g_fz = v ? 1 : 0;
-        fclose(f);
-    } else {
-        f = fopen(FZF, "w");
-        if (f) { fprintf(f, "1\n"); fclose(f); }
-    }
-    f = fopen(THF, "r");
-    if (f) {
-        int v = 1;
-        if (fscanf(f, "%d", &v) == 1) g_th = v ? 1 : 0;
-        fclose(f);
-    } else {
-        f = fopen(THF, "w");
-        if (f) { fprintf(f, "1\n"); fclose(f); }
-    }
-    f = fopen(NEARF, "r");
-    if (f) {
-        int v = 1;
-        if (fscanf(f, "%d", &v) == 1) g_near = v ? 1 : 0;
-        fclose(f);
-    } else {
-        f = fopen(NEARF, "w");
-        if (f) { fprintf(f, "1\n"); fclose(f); }
-    }
-    f = fopen(BLKF, "r");
-    if (f) {
-        int v = 16;
-        if (fscanf(f, "%d", &v) == 1) g_blk = (v >= 4 && v <= 256) ? v : 0;
-        fclose(f);
-    } else {
-        f = fopen(BLKF, "w");
-        if (f) { fprintf(f, "0\n"); fclose(f); }
-    }
-    f = fopen(MINF, "r");
-    if (f) {
-        int v = 64;
-        if (fscanf(f, "%d", &v) == 1) g_minsz = std::max(64, std::min(v, 2048));
-        fclose(f);
-    } else {
-        f = fopen(MINF, "w");
-        if (f) { fprintf(f, "64\n"); fclose(f); }
-    }
-    f = fopen(DLYF, "r");
-    if (f) {
-        int v = 0;
-        if (fscanf(f, "%d", &v) == 1) g_delay = std::max(0, std::min(v, 120));
-        fclose(f);
-    } else {
-        f = fopen(DLYF, "w");
-        if (f) { fprintf(f, "0\n"); fclose(f); }
-    }
+    g_bias = safe_read_int(CFGF, 0, 0, 6);
+    g_fps = safe_read_int(FPSF, 0, 0, 120);
+    g_scale = safe_read_int(SCLF, 0, 0, 99);
+    g_fz = safe_read_int(FZF, 1, 0, 1);
+    g_th = safe_read_int(THF, 1, 0, 1);
+    g_core = safe_read_int(COREF, 1, 0, 1);
+    g_near = safe_read_int(NEARF, 1, 0, 1);
+    g_blk = safe_read_int(BLKF, 0, 0, 256);
+    g_minsz = safe_read_int(MINF, 64, 64, 2048);
+    g_delay = safe_read_int(DLYF, 0, 0, 120);
+    g_style = safe_read_int(STYF, 0, 0, 4);
+    g_sedge = safe_read_int(SEDF, 1, 0, 1);
+    g_flat = safe_read_int(FLATF, 0, 0, 4);
+    g_testtex = safe_read_int(TTEXF, 1, 0, 1);
+    g_ttsize = safe_read_int(TTSZF, 0, -2, 3);
+    g_ttsm = safe_read_int(TTSMF, 0, 0, 1);
+
     g_skip.clear();
-    f = fopen(SKIPF, "r");
+    FILE *f = fopen(SKIPF, "r");
     if (f) {
         char ln[96];
         while (g_skip.size() < 128 && fgets(ln, sizeof ln, f)) {
@@ -1074,118 +969,19 @@ static void load_cfg() {
         }
         fclose(f);
     }
-    f = fopen(STYF, "r");
-    if (f) {
-        int v = 0;
-        if (fscanf(f, "%d", &v) == 1) g_style = std::max(0, std::min(v, 4));
-        fclose(f);
-    } else {
-        f = fopen(STYF, "w");
-        if (f) { fprintf(f, "0\n"); fclose(f); }
-    }
-    f = fopen(SEDF, "r");
-    if (f) {
-        int v = 1;
-        if (fscanf(f, "%d", &v) == 1) g_sedge = v ? 1 : 0;
-        fclose(f);
-    } else {
-        f = fopen(SEDF, "w");
-        if (f) { fprintf(f, "1\n"); fclose(f); }
-    }
-    f = fopen(FLATF, "r");
-    if (f) {
-        int v = 0;
-        if (fscanf(f, "%d", &v) == 1) g_flat = std::max(0, std::min(v, 4));
-        fclose(f);
-    } else {
-        f = fopen(FLATF, "w");
-        if (f) { fprintf(f, "0\n"); fclose(f); }
-    }
-    f = fopen(TTEXF, "r");
-    if (f) {
-        int v = 0;
-        if (fscanf(f, "%d", &v) == 1) g_testtex = v ? 1 : 0;
-        fclose(f);
-    } else {
-        f = fopen(TTEXF, "w");
-        if (f) { fprintf(f, "1\n"); fclose(f); }
-    }
-    f = fopen(TTSZF, "r");
-    if (f) {
-        int v = 0;
-        if (fscanf(f, "%d", &v) == 1) g_ttsize = std::max(-2, std::min(v, 3));
-        fclose(f);
-    } else {
-        f = fopen(TTSZF, "w");
-        if (f) { fprintf(f, "0\n"); fclose(f); }
-    }
-    f = fopen(TTSMF, "r");
-    if (f) {
-        int v = 0;
-        if (fscanf(f, "%d", &v) == 1) g_ttsm = std::max(0, std::min(v, 1));
-        fclose(f);
-    } else {
-        f = fopen(TTSMF, "w");
-        if (f) { fprintf(f, "0\n"); fclose(f); }
-    }
-    if (access(SCRASHF, F_OK) == 0) {           /* previous launch died with render scale active */
+
+    if (access(SCRASHF, F_OK) == 0) {
         unlink(SCRASHF);
         if (g_scale.load() > 0) {
             g_scale = 0;
             FILE *sf = fopen(SCLF, "w");
             if (sf) { fprintf(sf, "0\n"); fclose(sf); }
-            L("SAFETY: last launch did not finish 120 frames with render scale on -> render scale forced OFF (scale.txt=0)\n");
+            L("SAFETY: Last launch crashed with render scale on -> Render scale set to 0!\n");
         }
     }
     g_tstart = now_ns();
-    f = fopen(COREF, "r");
-    if (f) {
-        int v = 1;
-        if (fscanf(f, "%d", &v) == 1) g_core = v ? 1 : 0;
-        fclose(f);
-    } else {
-        f = fopen(COREF, "w");
-        if (f) { fprintf(f, "1\n"); fclose(f); }
-    }
 }
 
-/* mode.txt:
-     0 = idle
-     1 = background thread only
-     2 = thread + locate libunity (no hooks)
-     3 = full hooks, installed by polling
-     4 = hook libunity as soon as it loads (no polling thread) */
-static int read_mode() {
-    /* v26: the module always runs in mode 4. mode.txt is no longer a switch; it is only kept
-       (and repaired here) so the WebUI shows the right value. A missing, empty or wrong file
-       can no longer turn the module off. */
-    int v = -1;
-    FILE *f = fopen(MODEF, "r");
-    if (f) {
-        if (fscanf(f, "%d", &v) != 1) v = -1;
-        fclose(f);
-    }
-    if (v != 4) {
-        f = fopen(MODEF, "w");
-        if (f) { fprintf(f, "4\n"); fclose(f); }
-    }
-    return 4;
-}
-
-/* hookdelay.txt: 0 = hook the moment libunity loads (default).
-   N > 0 = wait N seconds after libunity appears, then hook. Slower, but can avoid
-   clashes with other loaders / injectors that touch the same library at startup. */
-static int read_hookdelay() {
-    int v = 0;
-    FILE *f = fopen(HDLYF, "r");
-    if (f) {
-        if (fscanf(f, "%d", &v) != 1) v = 0;
-        fclose(f);
-    }
-    return std::max(0, std::min(v, 30));
-}
-
-/* Register every hook on a single libunity mapping */
 static void reg_hooks(dev_t dv, ino_t in) {
     lsplt::RegisterHook(dv, in, "dlsym", (void *)h_dlsym, (void **)&o_dlsym);
     lsplt::RegisterHook(dv, in, "eglGetProcAddress", (void *)h_egl, (void **)&o_egl);
@@ -1214,23 +1010,22 @@ static void reg_hooks(dev_t dv, ino_t in) {
     }
 }
 
-/* ---------- Mode 4: hook libunity right after it is loaded ---------- */
 static std::atomic<bool> g_hooked{false};
 static void *(*o_adle)(const char *, int, const android_dlextinfo *) = nullptr;
 
-static void install_unity_hooks() {
-    if (g_hooked.exchange(true)) return;
+static bool try_hook_unity_from_maps() {
+    if (g_hooked.load()) return true;
     for (auto &m : lsplt::MapInfo::Scan()) {
         const std::string &p = m.path;
         if (p.size() < 12 || p.compare(p.size() - 12, 12, "/libunity.so") != 0) continue;
         reg_hooks(m.dev, m.inode);
-        L("pre-commit (unity)\n");
+        L("Hooking libunity found in maps...\n");
         bool ok = lsplt::CommitHook();
-        L("commit=%d (unity)\n", (int)ok);
-        return;
+        L("Commit result: %d\n", (int)ok);
+        if (ok) g_hooked = true;
+        return ok;
     }
-    L("libunity not found in maps\n");
-    g_hooked = false;
+    return false;
 }
 
 static void *h_adle(const char *path, int flags, const android_dlextinfo *info) {
@@ -1238,8 +1033,8 @@ static void *h_adle(const char *path, int flags, const android_dlextinfo *info) 
     if (r && path) {
         size_t n = strlen(path);
         if (n >= 11 && !strcmp(path + n - 11, "libunity.so")) {
-            L("dlopen libunity done: %s\n", path);
-            install_unity_hooks();
+            L("dlopen libunity detected via nativeloader: %s\n", path);
+            try_hook_unity_from_maps();
         }
     }
     return r;
@@ -1251,13 +1046,26 @@ static void hook_nativeloader() {
         if (p.size() < 19 || p.compare(p.size() - 19, 19, "/libnativeloader.so") != 0) continue;
         lsplt::RegisterHook(m.dev, m.inode, "android_dlopen_ext", (void *)h_adle, (void **)&o_adle);
         bool ok = lsplt::CommitHook();
-        L("nativeloader hook commit=%d\n", (int)ok);
+        L("libnativeloader hook commit=%d\n", (int)ok);
         return;
     }
-    L("libnativeloader not found\n");
+    L("libnativeloader.so not found\n");
 }
 
-static void log_start(int mode) {
+/* Fallback Watcher Thread: Ensures devices like Infinix, Samsung, and Tecno get hooked */
+static void unity_fallback_watcher() {
+    for (int i = 0; i < 40; i++) {
+        if (g_hooked.load()) return;
+        if (try_hook_unity_from_maps()) {
+            L("Unity hooked successfully via Fallback Polling (iteration %d)\n", i);
+            return;
+        }
+        usleep(500000); // Check every 500ms
+    }
+    L("Fallback Polling timed out. libunity.so was not captured.\n");
+}
+
+static void log_start() {
 #if defined(__aarch64__)
     const char *abi = "arm64-v8a";
 #elif defined(__arm__)
@@ -1265,44 +1073,8 @@ static void log_start(int mode) {
 #else
     const char *abi = "other";
 #endif
-    L("=== start %s build=%s %s abi=%s mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n",
-      VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
-    if (g_delay.load() > 0) L("NOTE delay=%d: textures created in the first %d s are NOT modified (they are not revisited)\n", g_delay.load(), g_delay.load());
-}
-
-static void run(int mode) {
-    load_cfg();
-    std::set<std::pair<dev_t, ino_t>> done;
-    std::map<std::pair<dev_t, ino_t>, int64_t> first;   /* when libunity was first seen */
-    log_start(mode);
-    int hd = read_hookdelay();
-    int64_t settle_ns = (int64_t)std::max(3, hd) * 1000000000LL;   /* wait this long after libunity appears */
-    if (mode >= 3) L("HOOK late: %d s after libunity appears\n", std::max(3, hd));
-    int total = (mode == 1) ? 60 : 1200;
-    for (int i = 0; i < total; i++) {
-        if (mode >= 2) {
-            bool added = false;
-            for (auto &m : lsplt::MapInfo::Scan()) {
-                const std::string &p = m.path;
-                if (p.size() < 12 || p.compare(p.size() - 12, 12, "/libunity.so") != 0) continue;
-                std::pair<dev_t, ino_t> key{m.dev, m.inode};
-                if (done.count(key)) continue;
-                auto it = first.find(key);
-                if (it == first.end()) { first[key] = now_ns(); L("SEEN libunity i=%d\n", i); continue; }
-                if (now_ns() - it->second < settle_ns) continue;   /* give libunity time to finish loading */
-                done.insert(key);
-                if (mode == 2) { L("mode2: stable, no hooks\n"); continue; }
-                reg_hooks(m.dev, m.inode);
-                added = true;
-            }
-            if (added) {
-                L("pre-commit\n");
-                bool ok = lsplt::CommitHook();
-                L("commit=%d\n", (int)ok);
-            }
-        }
-        sleep(1);
-    }
+    L("=== start %s build=%s %s abi=%s bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d ===\n",
+      VERSION, __DATE__, __TIME__, abi, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load());
 }
 
 class M : public zygisk::ModuleBase {
@@ -1312,30 +1084,24 @@ public:
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override {
         const char *n = env->GetStringUTFChars(args->nice_name, nullptr);
         target = n && strcmp(n, PKG) == 0;
-        if (!target && args->app_data_dir) {          /* clones / secondary users may use another process name */
+        if (!target && args->app_data_dir) {
             const char *d = env->GetStringUTFChars(args->app_data_dir, nullptr);
             if (d && strstr(d, PKG)) target = true;
             if (d) env->ReleaseStringUTFChars(args->app_data_dir, d);
         }
-        /* Breadcrumb in logcat (tag codm_tex) for the game and anything that looks like it, so a
-           "module never loaded" report can be told apart from "process name did not match". */
-        if (n && (target || strstr(n, "garena") || strstr(n, "codm")))
-            __android_log_print(ANDROID_LOG_INFO, "codm_tex", "%s preAppSpecialize nice_name=%s uid=%d target=%d", VERSION, n, (int)args->uid, (int)target);
+        if (n && (target || strstr(n, "garena") || strstr(n, "codm"))) {
+            __android_log_print(ANDROID_LOG_INFO, "codm_tex", "%s nice_name=%s target=%d", VERSION, n, (int)target);
+        }
         if (n) env->ReleaseStringUTFChars(args->nice_name, n);
         if (!target) api->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
     }
     void postAppSpecialize(const zygisk::AppSpecializeArgs *) override {
         if (!target) return;
-        int mode = read_mode();
-        if (mode == 4) {
-            if (read_hookdelay() > 0) { std::thread(run, 3).detach(); return; }   /* late hooking: run() logs its own start line */
-            load_cfg();
-            log_start(4);
-            L("HOOK early (at libunity load)\n");
-            hook_nativeloader();
-            return;
-        }
-        if (mode >= 1) std::thread(run, mode).detach();
+        load_cfg();
+        log_start();
+        L("Initializing hooks (Early + Fallback Hybrid Mode)\n");
+        hook_nativeloader();
+        std::thread(unity_fallback_watcher).detach();
     }
 };
 REGISTER_ZYGISK_MODULE(M)
