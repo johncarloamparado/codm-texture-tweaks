@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.29"
+#define VERSION "v0.31"
 #define PKG "com.garena.game.codm"
 #define DIR "/data/data/" PKG "/files/"
 #define LOGF DIR "codm_tex.log"
@@ -400,7 +400,7 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
 }
 
 static void grp_dump(double t_s) {
-    L("TEXSKIP cand=%d skip_rule=%d skip_minsz=%d skip_delay=%d unbound=%d\n", g_cand.load(), g_sk_rule.load(), g_sk_minsz.load(), g_sk_delay.load(), g_nobound.load());
+    L("TEXSKIP applied=%d cand=%d skip_rule=%d skip_minsz=%d skip_delay=%d unbound=%d\n", g_applied.load(), g_cand.load(), g_sk_rule.load(), g_sk_minsz.load(), g_sk_delay.load(), g_nobound.load());
     Grp tmp[MAXG]; int n;
     { std::lock_guard<std::mutex> lk(g_gm); n = g_ng; for (int i = 0; i < n; i++) tmp[i] = g_grp[i]; g_gdirty = 0; }
     for (int i = 0; i < n; i++)
@@ -888,13 +888,12 @@ static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
     if (s > 0 && w) {
         if (ww == 0 || hh == 0) {
             learn_full(w);                          /* "keep native size": never override, just learn it */
-        } else if (ww >= hh) {
-            int fw = g_fullw.load(), fh = g_fullh.load();
-            if (fw > 0 && fh > 0 && ww >= fw && hh >= fh) {   /* Unity asks for the full native size */
-                ww = scaled_dim(fw, s); hh = scaled_dim(fh, s);
-                mark_scale_in_use();
-                if (n <= 20) L("SBG overridden -> %dx%d\n", ww, hh);
-            }
+        } else if (ww >= hh && ww >= 640 && hh >= 360) {
+            /* Scale whatever landscape size Unity asks for (1600x720, 1280x720, ...). Scaling the request keeps
+               its aspect ratio and cannot compound, because the request comes from Unity, not from us. */
+            ww = scaled_dim(ww, s); hh = scaled_dim(hh, s);
+            mark_scale_in_use();
+            if (n <= 20) L("SBG overridden -> %dx%d\n", ww, hh);
         }
     }
     return o_sbg ? o_sbg(w, ww, hh, f) : ANativeWindow_setBuffersGeometry(w, ww, hh, f);
