@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.33"
+#define VERSION "v0.34"
 #define PKG "com.garena.game.codm"
 #define DIR "/data/data/" PKG "/files/"
 #define LOGF DIR "codm_tex.log"
@@ -946,7 +946,31 @@ static void *h_egl(const char *n) {
     return wrap(n, r);
 }
 
+/* New module version -> start a fresh log, so the top of codm_tex.log is always the installed version
+   and nobody has to press "Clear log" after an update. Runs once per game launch, before the first L(). */
+static void log_rotate_if_new_version() {
+    FILE *f = fopen(LOGF, "r");
+    if (!f) return;
+    char line[512];
+    bool old = false;
+    const char *pre = "=== start ";
+    size_t pl = strlen(pre), vl = strlen(VERSION);
+    while (fgets(line, sizeof line, f)) {
+        if (strncmp(line, pre, pl) != 0) continue;
+        /* version token ends at the next space: "=== start v0.33 build=..." */
+        if (strncmp(line + pl, VERSION, vl) != 0 || line[pl + vl] != ' ') { old = true; break; }
+    }
+    fclose(f);
+    if (!old) return;
+    std::lock_guard<std::mutex> g(mu);
+    if (lf) { fclose(lf); lf = nullptr; }
+    FILE *w = fopen(LOGF, "w");                    /* truncate */
+    if (w) fclose(w);
+    lf_bytes = 0;
+}
+
 static void load_cfg() {
+    log_rotate_if_new_version();
     FILE *f = fopen(CFGF, "r");
     if (f) {
         int v = 2;
