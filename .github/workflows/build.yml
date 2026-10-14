@@ -57,8 +57,10 @@ jobs:
           grep -q '^id=' out/module.prop && grep -q '^versionCode=' out/module.prop
           MV="$(sed -n 's/^version=//p' module.prop | tr -d '\r')"
           CV="$(sed -n 's/^#define VERSION "\(.*\)".*/\1/p' main.cpp | head -n 1)"
-          echo "module.prop=$MV main.cpp=$CV"
-          [ "$MV" = "$CV" ] || echo "::warning::VERSION in main.cpp ($CV) differs from module.prop ($MV)"
+          UV="$(sed -n 's/.*echo .UI: \(v[0-9.]*\).;.*/\1/p' webroot/index.html | head -n 1)"
+          echo "module.prop=$MV main.cpp=$CV webui=$UV"
+          [ "$MV" = "$CV" ] || { echo "::error::VERSION in main.cpp ($CV) differs from module.prop ($MV)"; exit 1; }
+          [ "$MV" = "$UV" ] || { echo "::error::UI version in webroot/index.html ($UV) differs from module.prop ($MV)"; exit 1; }
 
       - name: Upload module package
         uses: actions/upload-artifact@v6
