@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- CODM Blocky Textures: Compact WebUI with Reminders & Diagnostics -->
+<!-- CODM Blocky Textures: WebUI for SukiSU Ultra / KernelSU. Reads and writes the module's settings files via ksu.exec. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -10,7 +10,7 @@
 <style>
 :root {
   --bg: #09090b;
-  --card: rgba(24, 24, 27, 0.7);
+  --card: rgba(24, 24, 27, 0.65);
   --card-border: rgba(255, 255, 255, 0.08);
   --fill: rgba(255, 255, 255, 0.04);
   --fill-hover: rgba(255, 255, 255, 0.08);
@@ -25,8 +25,9 @@
   --bad: #f87171;
   --ok: #34d399;
   --track: rgba(255, 255, 255, 0.12);
-  --dock-h: 56px;
+  --dock-h: 68px;
   box-sizing: border-box;
+  color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -34,181 +35,389 @@ html {
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scroll-padding-bottom: calc(var(--dock-h) + 30px + env(safe-area-inset-bottom, 0px));
 }
 body {
   margin: 0;
   color: var(--text);
   background: transparent;
-  font: 14px/1.45 system-ui, -apple-system, sans-serif;
+  font: 15px/1.5 system-ui, -apple-system, "Inter", "Segoe UI", Roboto, sans-serif;
   -webkit-tap-highlight-color: transparent;
-  padding-bottom: calc(var(--dock-h) + 24px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--dock-h) + 38px + env(safe-area-inset-bottom, 0px));
 }
+body.lock { overflow: hidden; position: fixed; left: 0; right: 0; width: 100%; }
 
+/* Background gradient */
 #bg-glow {
   position: fixed; top: -20%; left: -10%; width: 120%; height: 120%; z-index: -2;
-  background: radial-gradient(circle at 50% 0%, rgba(129, 140, 248, 0.12), transparent 60%);
+  background: radial-gradient(circle at 50% 0%, rgba(129, 140, 248, 0.15), transparent 60%),
+              radial-gradient(circle at 80% 80%, rgba(192, 132, 252, 0.1), transparent 50%);
   pointer-events: none;
 }
-main { max-width: 520px; margin: 0 auto; padding: 0 12px 6px; }
 
-/* Compact header */
-.hd { padding: calc(14px + env(safe-area-inset-top, 0px)) 2px 8px; }
-.brand { display: flex; align-items: center; gap: 12px; }
-.logo { flex: none; width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 4px 16px var(--primary-glow); }
+main { max-width: 560px; margin: 0 auto; padding: 4px 16px 8px; position: relative; }
+
+/* ---------- header ---------- */
+.hd { padding: calc(24px + env(safe-area-inset-top, 0px)) 4px 12px; }
+.brand { display: flex; align-items: center; gap: 16px; }
+.logo { flex: none; width: 52px; height: 52px; border-radius: 14px; box-shadow: 0 8px 24px var(--primary-glow); }
 .bt { flex: 1; min-width: 0; }
-.eyebrow { margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.15em; color: var(--primary); text-transform: uppercase; }
-h1 { margin: 1px 0 0; font-size: 21px; line-height: 1.1; font-weight: 800; }
-.by { margin: 2px 0 0; color: var(--mute); font-size: 12px; }
+.eyebrow { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; color: var(--primary); text-transform: uppercase; }
+h1 { margin: 2px 0 0; font-size: 26px; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; }
+.by { margin: 4px 0 0; color: var(--mute); font-size: 13px; }
+.by b { color: var(--text); font-weight: 600; }
 .ver {
   flex: none; align-self: flex-start;
-  padding: 3px 8px; border-radius: 999px;
-  border: 1px solid var(--line); background: var(--fill);
-  color: var(--text); font-size: 11px; font-weight: 700;
-}
-.status { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
-.chip {
-  display: inline-flex; align-items: center; gap: 6px;
   padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--fill);
+  color: var(--text); font-size: 12px; font-weight: 600;
+}
+.status { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
   background: var(--fill); border: 1px solid var(--line);
-  color: var(--text); font-size: 11.5px; font-weight: 600;
+  color: var(--text); font-size: 12.5px; font-weight: 600; line-height: 1.3;
+  backdrop-filter: blur(8px);
 }
-.chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--mute); }
-.chip.on i { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-.chip.msg { color: var(--mute); }
+.chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--mute); }
+.chip.on i { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.chip.msg { color: var(--mute); font-weight: 500; }
 
-/* User Guide / Reminder Note with [X] button */
-.guide-box {
-  position: relative; margin-top: 10px; padding: 12px 34px 12px 14px;
-  border-radius: 16px; border: 1px solid rgba(251, 191, 36, 0.4);
-  background: rgba(251, 191, 36, 0.08); color: #fef08a; font-size: 12.5px; line-height: 1.45;
-  backdrop-filter: blur(10px);
-}
-.guide-box b.title { display: block; font-size: 13px; color: #fff; margin-bottom: 4px; font-weight: 800; }
-.guide-box ul { margin: 0; padding-left: 16px; }
-.guide-box li { margin-bottom: 3px; }
-.guide-box li:last-child { margin-bottom: 0; }
-.guide-box li b { color: #fff; }
-.close-guide {
-  position: absolute; top: 8px; right: 8px; width: 24px; height: 24px;
-  border: 0; border-radius: 50%; background: rgba(255,255,255,0.1);
-  color: var(--text); font-size: 13px; font-weight: 800; cursor: pointer;
-  display: grid; place-items: center; transition: background 0.2s;
-}
-.close-guide:active { background: rgba(255,255,255,0.25); }
-
-/* System note / diagnostics */
-.sys-note {
-  margin-top: 8px; padding: 10px 12px; border-radius: 14px;
-  border: 1px solid var(--line); font-size: 12px; line-height: 1.4;
-}
-.sys-note.bad { border-color: rgba(248, 113, 113, 0.4); color: #fca5a5; background: rgba(248, 113, 113, 0.08); }
-.sys-note.warn { border-color: rgba(251, 191, 36, 0.4); color: #fde047; background: rgba(251, 191, 36, 0.08); }
-.sys-note b { color: #fff; font-weight: 700; display: block; }
-
+/* ---------- views & cards ---------- */
 .view { display: none; }
-.view.active { display: block; }
+.view.active { display: block; animation: vin 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes vin { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
 
-/* Compact Cards */
 .card {
-  margin-top: 10px; padding: 14px 16px;
-  border-radius: 18px; border: 1px solid var(--card-border);
-  background: var(--card); backdrop-filter: blur(16px);
+  margin-top: 16px; padding: 20px;
+  border-radius: 24px; border: 1px solid var(--card-border);
+  background: var(--card); backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
-.ch { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-h2 { margin: 0; font-size: 15px; font-weight: 700; }
-.cap { margin: 3px 0 10px; color: var(--mute); font-size: 12px; line-height: 1.4; }
-.row { margin-top: 12px; }
-.rh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.rh label, .rh .lb { font-weight: 700; font-size: 13.5px; }
-.val {
-  flex: none; min-width: 56px; padding: 2px 10px; border-radius: 999px;
-  background: rgba(129, 140, 248, 0.15); color: var(--primary);
-  font-size: 12px; font-weight: 700; text-align: center;
+.ch { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+h2 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.tag {
+  flex: none; padding: 3px 10px; border-radius: 999px;
+  background: rgba(251, 191, 36, 0.15); color: var(--warn);
+  font-size: 11.5px; font-weight: 700;
 }
-.desc { margin: 2px 0 8px; color: var(--mute); font-size: 12px; }
-.pnote { margin: 8px 0 0; color: var(--mute); font-size: 11.5px; line-height: 1.4; }
+.tag.n { background: rgba(129, 140, 248, 0.15); color: var(--primary); }
+.cap { margin: 4px 0 16px; color: var(--mute); font-size: 13px; line-height: 1.5; }
+.cap b { color: var(--text); font-weight: 600; }
 
-.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.row { margin-top: 20px; }
+.cap + .row { margin-top: 4px; }
+.rh { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.rh label, .rh .lb { font-weight: 700; font-size: 14.5px; }
+.val {
+  flex: none; min-width: 64px; padding: 3px 12px; border-radius: 999px;
+  background: rgba(129, 140, 248, 0.15); color: var(--primary);
+  font-size: 13px; font-weight: 700; text-align: center;
+}
+.desc { margin: 4px 0 10px; color: var(--mute); font-size: 13px; line-height: 1.4; }
+.pnote { margin: 12px 2px 0; color: var(--mute); font-size: 12px; line-height: 1.5; }
+.pnote b { color: var(--text); font-weight: 600; }
+
+/* ---------- look tiles ---------- */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .mode {
   display: grid; grid-template-columns: 1fr auto;
-  grid-template-areas: "ti dot" "de de";
-  row-gap: 1px; align-items: center; text-align: left;
-  padding: 8px 10px; border-radius: 14px; border: 1px solid var(--line);
-  background: var(--fill); color: var(--text); font: inherit; cursor: pointer;
+  grid-template-areas: "ic dot" "ti ti" "de de";
+  row-gap: 2px; align-items: center; text-align: left;
+  min-height: 0; padding: 10px 12px;
+  border-radius: 16px; border: 1px solid var(--line); background: var(--fill);
+  color: var(--text); font: inherit; cursor: pointer;
+  transition: all 0.2s ease;
 }
 .mode[data-m="4"] { grid-column: 1 / -1; }
-.mode b { grid-area: ti; font-size: 13px; font-weight: 700; }
-.mode small { grid-area: de; color: var(--mute); font-size: 11px; }
-.mode[aria-checked="true"] { border-color: var(--primary); background: rgba(129, 140, 248, 0.12); }
+.mode .mt { display: contents; }
+.mode svg { grid-area: ic; width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--mute); transition: color 0.2s; }
+.mode b { grid-area: ti; font-size: 14px; font-weight: 700; line-height: 1.2; }
+.mode small { grid-area: de; color: var(--mute); font-size: 11.5px; line-height: 1.25; transition: color 0.2s; }
+.mode:hover { background: var(--fill-hover); }
+.mode[aria-checked="true"] { border-color: var(--primary); background: rgba(129, 140, 248, 0.1); box-shadow: 0 4px 20px var(--primary-glow); }
+.mode[aria-checked="true"] svg { color: var(--primary); }
+.mode[aria-checked="true"] small { color: rgba(244, 244, 245, 0.8); }
 .mode[aria-checked="true"]::after {
   content: ""; grid-area: dot; justify-self: end;
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--primary); box-shadow: 0 0 6px var(--primary);
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--primary); box-shadow: 0 0 8px var(--primary);
 }
+.mode:focus-visible, .step:focus-visible, .btn:focus-visible, .ib:focus-visible, .sw:focus-visible,
+#dock button:focus-visible, summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-.steps { display: grid; grid-template-columns: repeat(var(--n, 5), 1fr); gap: 6px; }
+/* ---------- step chips ---------- */
+.steps { display: grid; grid-template-columns: repeat(var(--n, 5), 1fr); gap: 8px; }
 .step {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 40px; padding: 6px 2px;
-  border-radius: 12px; border: 1px solid var(--line); background: var(--fill);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-height: 48px; padding: 8px 4px;
+  border-radius: 14px; border: 1px solid var(--line); background: var(--fill);
   color: var(--text); font: inherit; cursor: pointer;
+  transition: all 0.2s ease;
 }
-.step b { font-size: 12px; font-weight: 700; }
-.step[aria-checked="true"] { background: linear-gradient(135deg, var(--primary), var(--accent)); border-color: transparent; color: var(--ink); }
+.step b { font-size: 13px; font-weight: 700; }
+.step small { color: var(--mute); font-size: 11px; }
+.step:hover { background: var(--fill-hover); }
+.step[aria-checked="true"] { background: linear-gradient(135deg, var(--primary), var(--accent)); border-color: transparent; color: var(--ink); box-shadow: 0 4px 16px var(--primary-glow); }
+.step[aria-checked="true"] small { color: rgba(9, 9, 11, 0.75); }
+.steps[aria-disabled="true"] { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
 
+/* ---------- sliders ---------- */
+.sl { position: relative; --f: 0; margin-top: 8px; }
+.grab {
+  position: absolute; top: 50%; left: calc(14px + (100% - 28px) * var(--f));
+  width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
+  touch-action: none; cursor: grab; z-index: 1;
+}
+.grab:active { cursor: grabbing; }
 input[type=range] {
   -webkit-appearance: none; appearance: none;
-  width: 100%; height: 32px; margin: 0; background: transparent; --p: 50%;
+  width: 100%; height: 36px; margin: 0;
+  background: transparent; pointer-events: none; --p: 50%;
 }
 input[type=range]::-webkit-slider-runnable-track {
-  height: 6px; border-radius: 99px;
+  height: 8px; border-radius: 99px;
   background: linear-gradient(90deg, var(--primary) 0, var(--accent) var(--p), var(--track) var(--p));
 }
 input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px;
+  -webkit-appearance: none; width: 28px; height: 28px; margin-top: -10px;
   border-radius: 50%; background: #fff; border: 0;
-  box-shadow: 0 0 10px rgba(129, 140, 248, 0.5);
+  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2), 0 0 16px rgba(129, 140, 248, 0.6);
+  transition: transform 0.1s;
 }
+.grab:active + input[type=range]::-webkit-slider-thumb { transform: scale(1.1); }
+input[type=range]:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 14px; }
 
+/* ---------- switches ---------- */
+.sw {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  width: 100%; min-height: 56px; padding: 8px 0;
+  background: none; border: 0; color: var(--text);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.sw + .sw { border-top: 1px solid var(--line); }
+.sw .t { font-weight: 700; font-size: 14.5px; display: block; }
+.sw .d { display: block; color: var(--mute); font-size: 13px; font-weight: 400; margin-top: 2px; }
+.sw.dim { opacity: 0.5; }
+.knob { flex: none; position: relative; width: 50px; height: 30px; border-radius: 99px; background: var(--track); transition: background 0.2s ease; }
+.knob::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 24px; height: 24px; border-radius: 50%; background: #fff;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.sw[aria-checked="true"] .knob { background: var(--ok); }
+.sw[aria-checked="true"] .knob::after { transform: translateX(20px); }
+.sw:disabled { cursor: not-allowed; opacity: 0.6; }
+#groups .sw { content-visibility: auto; contain-intrinsic-size: auto 56px; }
+
+/* ---------- buttons ---------- */
 .btn {
-  display: block; width: 100%; min-height: 42px; padding: 8px 12px;
-  font: inherit; font-weight: 700; font-size: 13.5px; color: var(--text);
-  background: var(--fill); border: 1px solid var(--line); border-radius: 14px; cursor: pointer;
+  display: block; width: 100%; min-height: 48px; padding: 10px 16px;
+  font: inherit; font-weight: 700; font-size: 14.5px; color: var(--text);
+  background: var(--fill); border: 1px solid var(--line); border-radius: 16px; cursor: pointer;
+  transition: all 0.2s ease;
 }
-.btn.primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; border-color: transparent; }
+.btn:hover { background: var(--fill-hover); }
 .btn.warn { color: var(--warn); }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.btn.primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; border-color: transparent; box-shadow: 0 4px 16px var(--primary-glow); }
+.btn:disabled { opacity: 0.6; cursor: wait; }
+input[type=text] {
+  display: block; width: 100%; height: 46px; margin-top: 6px; padding: 0 14px;
+  border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,0.3); color: var(--text);
+  font: 15px system-ui, sans-serif; transition: border-color 0.2s;
+}
+input[type=text]:focus { outline: none; border-color: var(--primary); }
+.btn.armed { background: rgba(248, 113, 113, 0.15); border-color: var(--bad); color: var(--bad); }
+.btn:active, .mode:active, .step:active, .ib:active { transform: scale(0.97); }
+.ib {
+  flex: none; width: 38px; height: 38px; padding: 0; display: grid; place-items: center;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--fill);
+  color: var(--text); cursor: pointer; transition: all 0.2s ease;
+}
+.ib:hover { background: var(--fill-hover); }
+.ib svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.stack { display: grid; gap: 10px; }
 
+.banner {
+  margin-top: 16px; padding: 14px 16px; border-radius: 16px;
+  border: 1px solid var(--line); background: var(--card); font-size: 13.5px; line-height: 1.5;
+  backdrop-filter: blur(12px);
+}
+.banner.warn { border-color: rgba(251, 191, 36, 0.4); color: var(--warn); background: rgba(251, 191, 36, 0.05); }
+.banner.bad { border-color: rgba(248, 113, 113, 0.4); color: var(--bad); background: rgba(248, 113, 113, 0.05); }
+.banner .btn { margin-top: 12px; min-height: 42px; }
+
+textarea {
+  display: block; width: 100%; min-height: 100px; padding: 12px 14px;
+  border-radius: 16px; border: 1px solid var(--line); background: rgba(0,0,0,0.3); color: var(--text);
+  font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; resize: vertical;
+  transition: border-color 0.2s;
+}
+textarea:focus { outline: none; border-color: var(--primary); }
+
+/* ---------- skip manager ---------- */
+.skip-input-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.skip-list { display: flex; flex-direction: column; gap: 8px; }
+.skip-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--fill);
+}
+.skip-item.builtin { background: rgba(255,255,255,0.02); border-style: dashed; }
+.skip-item.off .skip-info { opacity: 0.45; }
+.skip-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.skip-info span { font-family: ui-monospace, monospace; font-size: 13.5px; font-weight: 600; word-break: break-all; }
+.skip-info small { font-size: 11.5px; color: var(--mute); }
+.skip-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+.skip-actions .sw { min-height: auto; width: auto; padding: 0; border: none; }
+.skip-del { color: var(--mute); border-color: transparent; background: transparent; }
+.skip-del:hover { color: var(--bad); background: rgba(248, 113, 113, 0.1); }
+.skip-del.confirm { color: var(--ok); background: rgba(52, 211, 153, 0.1); }
+
+/* ---------- stat tiles ---------- */
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.tile { padding: 14px 6px 12px; border-radius: 16px; background: var(--fill); border: 1px solid var(--line); text-align: center; }
+.tile b { display: block; font-size: 22px; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tile span { display: block; margin-top: 4px; color: var(--mute); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.legend { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; color: var(--mute); font-size: 12.5px; line-height: 1.5; }
+.legend b { color: var(--text); font-weight: 700; }
+.tile.ok b { color: var(--ok); }
+.tile.warn b { color: var(--warn); }
+
+/* ---------- log status, details, key/values ---------- */
+.logstat {
+  margin-top: 4px; padding: 14px 16px; border-radius: 16px;
+  border: 1px solid var(--line); background: rgba(0, 0, 0, 0.3);
+  font-size: 13px; line-height: 1.6; word-break: break-word;
+}
+.logstat b { color: var(--text); font-weight: 700; }
+.logstat .ok { color: var(--ok); }
+.logstat .warn { color: var(--warn); }
+.logstat .bad { color: var(--bad); }
+.logstat .startline { opacity: 0.8; font-size: 12px; margin-top: 4px; }
+.logstat .expgap { margin-top: 8px; }
+
+details summary { list-style: none; cursor: pointer; border-radius: 12px; }
+details summary::-webkit-details-marker { display: none; }
+summary svg { flex: none; width: 22px; height: 22px; stroke: var(--mute); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s; }
+details[open] summary svg { transform: rotate(180deg); }
+details .body { margin-top: 16px; }
+
+.kv { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.kv:first-child { border-top: 0; padding-top: 4px; }
+.kv span { color: var(--mute); }
+.kv b { font-weight: 600; text-align: right; word-break: break-all; }
+.kv b.ok { color: var(--ok); }
+.kv b.warn { color: var(--warn); }
+
+.foot { margin: 24px 4px 12px; color: var(--mute); font-size: 12.5px; text-align: center; line-height: 1.5; }
+
+/* ---------- dock ---------- */
 #dock {
-  position: fixed; left: 12px; right: 12px; z-index: 40;
-  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  max-width: 520px; margin: 0 auto; height: var(--dock-h);
-  display: flex; align-items: center; gap: 8px; padding: 6px;
-  border-radius: 22px; border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(9, 9, 11, 0.9); backdrop-filter: blur(20px);
+  position: fixed; left: 16px; right: 16px; z-index: 40;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  max-width: 528px; margin: 0 auto; height: var(--dock-h);
+  display: flex; align-items: center; gap: 8px; padding: 8px;
+  border-radius: 28px; border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(24px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
-#dock .tabs { flex: 1; display: flex; gap: 4px; height: 100%; }
+#pendbar {
+  position: fixed; left: 16px; right: 16px; z-index: 41; display: none;
+  max-width: 528px; margin: 0 auto;
+  bottom: calc(var(--dock-h) + 28px + env(safe-area-inset-bottom, 0px));
+  align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 8px 8px 16px; border-radius: 22px;
+  border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(24, 24, 27, 0.96);
+  backdrop-filter: blur(16px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+body.pend #pendbar { display: flex; animation: vin 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
+#pendbar .pt { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--warn); font-size: 13px; font-weight: 700; line-height: 1.2; }
+#pendbar .pt i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+#cancelChg {
+  flex: none; height: 42px; padding: 0 16px; display: flex; align-items: center; gap: 8px;
+  border: 0; border-radius: 16px; cursor: pointer;
+  background: linear-gradient(135deg, #f87171, #fb923c); color: #fff;
+  font: inherit; font-weight: 800; font-size: 14px;
+  box-shadow: 0 4px 16px rgba(248, 113, 113, 0.3); transition: transform 0.2s ease;
+}
+#cancelChg svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#cancelChg:active { transform: scale(0.95); }
+#cancelChg:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
+body.pend { padding-bottom: calc(var(--dock-h) + 100px + env(safe-area-inset-bottom, 0px)); }
+body.pend #toast { bottom: calc(var(--dock-h) + 92px + env(safe-area-inset-bottom, 0px)); }
+body.pend #dockcover { height: calc(var(--dock-h) + 16px + env(safe-area-inset-bottom, 0px) + 28px + 60px); }
+#dockcover {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 39; pointer-events: none;
+  height: calc(var(--dock-h) + 16px + env(safe-area-inset-bottom, 0px) + 28px);
+  background: linear-gradient(to top, var(--bg) 0, var(--bg) calc(100% - 28px), rgba(9, 9, 11, 0) 100%);
+}
+#dock .tabs { flex: 1; min-width: 0; height: 100%; display: flex; gap: 4px; }
 #dock .tabs button {
-  flex: 1; border: 0; border-radius: 16px; background: transparent;
-  color: var(--mute); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  flex: 1; height: 100%; padding: 0; border: 0; border-radius: 20px; background: transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  color: var(--mute); font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s ease;
 }
+#dock .tabs svg, .apply svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#dock .tabs button:hover { color: var(--text); background: rgba(255,255,255,0.05); }
 #dock .tabs button.on { color: var(--primary); background: rgba(129, 140, 248, 0.15); }
 .apply {
-  height: 100%; padding: 0 20px; border: 0; border-radius: 16px;
+  flex: none; position: relative; height: 100%; padding: 0 20px;
+  display: flex; align-items: center; gap: 8px;
+  border: 0; border-radius: 20px;
   background: linear-gradient(135deg, var(--primary), var(--accent));
-  color: #fff; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer;
+  color: #fff; font: inherit; font-weight: 800; font-size: 15px; cursor: pointer;
+  box-shadow: 0 4px 16px var(--primary-glow);
+  transition: transform 0.2s ease;
+}
+.apply:active { transform: scale(0.95); }
+.apply::after {
+  content: ""; display: none; position: absolute; top: 8px; right: 8px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--warn); border: 2px solid var(--primary);
+}
+body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.4); opacity: 0.7; } }
+
+/* ---------- toast & log window ---------- */
+#toast {
+  position: fixed; left: 16px; right: 16px; z-index: 50;
+  bottom: calc(var(--dock-h) + 32px + env(safe-area-inset-bottom, 0px));
+  max-width: 528px; margin: 0 auto; padding: 14px 16px;
+  border-radius: 18px; background: var(--text); color: var(--ink);
+  font-weight: 700; font-size: 14px; text-align: center;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  opacity: 0; transform: translateY(12px) scale(0.95); pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#toast.show { opacity: 1; transform: none; }
+#logw {
+  position: fixed; inset: 0; z-index: 60; display: none;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: rgba(9, 9, 11, 0.95); backdrop-filter: blur(16px);
+  overscroll-behavior: contain; touch-action: none;
+}
+#logw.open { display: flex; flex-direction: column; gap: 12px; }
+#logw h3 { margin: 0 4px; font-size: 14px; font-weight: 700; color: var(--mute); }
+#logw pre {
+  flex: 1; margin: 0; padding: 16px; overflow: auto;
+  border-radius: 20px; border: 1px solid var(--line); background: rgba(0,0,0,0.4); color: var(--text);
+  font: 12.5px/1.5 ui-monospace, Menlo, Consolas, monospace;
+  white-space: pre-wrap; word-break: break-all;
+  touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
 }
 
-#toast {
-  position: fixed; left: 12px; right: 12px; z-index: 50;
-  bottom: calc(var(--dock-h) + 18px + env(safe-area-inset-bottom, 0px));
-  max-width: 520px; margin: 0 auto; padding: 12px 14px;
-  border-radius: 16px; background: var(--text); color: var(--ink);
-  font-weight: 700; font-size: 13px; text-align: center;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3); opacity: 0; pointer-events: none;
-  transition: opacity 0.25s, transform 0.25s;
+@media (max-width: 360px) {
+  .tiles { grid-template-columns: 1fr 1fr; }
+  .mode small { display: none; }
 }
-#toast.show { opacity: 1; transform: translateY(-4px); }
+@media (prefers-reduced-motion: reduce) {
+  .view.active, body.pend .apply::after, #toast.show { animation: none; transition: none; }
+  .knob, .knob::after, .mode, .step, summary svg, .btn, .ib { transition: none; }
+}
 </style>
 </head>
 <body>
@@ -217,261 +426,1642 @@ input[type=range]::-webkit-slider-thumb {
 <main>
   <header class="hd">
     <div class="brand">
+      <svg class="logo" viewBox="0 0 44 44" aria-hidden="true">
+        <defs>
+          <linearGradient id="lg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="44" y2="44">
+            <stop offset="0" stop-color="#c084fc"/><stop offset="1" stop-color="#818cf8"/>
+          </linearGradient>
+        </defs>
+        <g fill="url(#lg)">
+          <rect x="3" y="3" width="11" height="11" rx="3"/>
+          <rect x="16.5" y="3" width="11" height="11" rx="3" opacity=".6"/>
+          <rect x="30" y="3" width="11" height="11" rx="3" opacity=".25"/>
+          <rect x="3" y="16.5" width="11" height="11" rx="3" opacity=".6"/>
+          <rect x="16.5" y="16.5" width="11" height="11" rx="3"/>
+          <rect x="30" y="16.5" width="11" height="11" rx="3" opacity=".6"/>
+          <rect x="3" y="30" width="11" height="11" rx="3" opacity=".25"/>
+          <rect x="16.5" y="30" width="11" height="11" rx="3" opacity=".6"/>
+          <rect x="30" y="30" width="11" height="11" rx="3"/>
+        </g>
+      </svg>
       <div class="bt">
         <p class="eyebrow">CODM</p>
         <h1>Blocky Textures</h1>
         <p class="by">by <b>Q9 Papyrus</b></p>
       </div>
-      <span class="ver">v0.35</span>
+      <span class="ver" id="ver" hidden></span>
     </div>
-
-    <!-- REMINDER BOX WITH CLOSE [X] BUTTON -->
-    <div class="guide-box" id="guideBox">
-      <button class="close-guide" id="closeGuide" type="button" title="Close note">✕</button>
-      <b class="title">⚠️ MAHALAGANG PAALALA:</b>
-      <ul>
-        <li><b>Pindutin palagi ang "APPLY":</b> Pagkatapos magbago ng anumang settings, pindutin ang <u>Apply</u> button sa ibaba para mag-load sa laro.</li>
-        <li><b>Ang "Export Report" ay HINDI nganii pang-save:</b> Pindutin lang ang Export Report kung may <u>BUG o ERROR</u> na ipapasa sa akin para makita ang log.Gets?? </li>
-      </ul>
-    </div>
-
-    <!-- AUTO SYSTEM WARNINGS (Zygisk / Vulkan) -->
-    <div id="topBanners"></div>
-
-    <div class="status" id="status"><span class="chip msg">Checking...</span></div>
+    <div class="status" id="status" role="status" aria-live="polite"><span class="chip msg">Reading settings…</span></div>
   </header>
+  <div class="banner" id="notice" hidden>
+    <div id="noticeText">Pindutin lang ang <b>Apply</b> pag may binago ka, getss? Hindi save button ang <b>Export report</b> ngani, pang-bug report lang iyon. Kung wala pang epekto sa laro, buksan mo muna ang CODM isang beses, tapos balik ka rito at tingnan ulit.</div>
+    <button class="btn" id="noticeX" type="button" aria-label="Close notice">Sige, gets ko na ✕</button>
+  </div>
+  <div id="banner"></div>
 
-  <!-- HOME VIEW -->
+  <!-- ========== HOME ========== -->
   <div class="view active" id="v-home">
     <section class="card">
-      <div class="ch"><h2>Quick Test (Recommended)</h2></div>
-      <p class="cap">Pindutin ito para i-set sa Pixel Blocks (Chunky) na may safe render scale.</p>
-      <button class="btn primary" id="recTest" type="button">Set Recommended Settings</button>
+      <div class="ch"><h2>Quick test</h2></div>
+      <p class="cap">Di sure kung gumagana? Pindutin mo ito para ma-set ang pang-test: Pixel Blocks (Chunky, 8), walang start delay, off ang render scale, hook agad (hookdelay 0), min texture size 64. Ino-overwrite nito ang: Look (lahat ng modes), Start delay, Min size, Render scale, Hook delay, Module mode. HINDI nito ginagalaw: FPS cap, Freeze/Thread/Core logs, at skip lists. Tapos Apply, buksan ang CODM, at maglaro ka ng mga 5 minuto.</p>
+      <button class="btn primary" id="recTest" type="button">Set recommended settings (test)</button>
     </section>
 
     <section class="card">
-      <div class="ch"><h2>Texture Look</h2></div>
-      <p class="cap">Pumili ng isa. (Active lamang sa OpenGL ES mode).</p>
-      <div class="modes" id="lookSeg">
-        <button type="button" class="mode" data-m="0" aria-checked="true"><b>Off</b><small>Original textures</small></button>
-        <button type="button" class="mode" data-m="1"><b>Pixel Blocks</b><small>Chunky mosaic look</small></button>
-        <button type="button" class="mode" data-m="2"><b>Detail Cut</b><small>Less fine detail</small></button>
-        <button type="button" class="mode" data-m="3"><b>Flat</b><small>Near-solid colors</small></button>
-        <button type="button" class="mode" data-m="4"><b>True Pixelated</b><small>Classic sharp pixels</small></button>
+      <div class="ch"><h2>Look</h2></div>
+      <p class="cap">Choose one look. Turning one on turns the others off.</p>
+
+      <div class="modes" id="lookSeg" role="radiogroup" aria-label="Look mode">
+        <button type="button" class="mode" role="radio" aria-checked="true" data-m="0">
+          <span class="mt"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/></svg><b>Off</b></span>
+          <small>Original textures</small>
+        </button>
+        <button type="button" class="mode" role="radio" aria-checked="false" data-m="1">
+          <span class="mt"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><b>Pixel Blocks</b></span>
+          <small>Chunky mosaic look</small>
+        </button>
+        <button type="button" class="mode" role="radio" aria-checked="false" data-m="2">
+          <span class="mt"><svg viewBox="0 0 24 24"><path d="M4 7h16M6.5 12h11M9 17h6"/></svg><b>Detail Cut</b></span>
+          <small>Less fine detail</small>
+        </button>
+        <button type="button" class="mode" role="radio" aria-checked="false" data-m="3">
+          <span class="mt"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.5"/></svg><b>Flat</b></span>
+          <small>Near-solid colors</small>
+        </button>
+        <button type="button" class="mode" role="radio" aria-checked="false" data-m="4">
+          <span class="mt"><svg viewBox="0 0 24 24"><path d="M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z"/></svg><b>True Pixelated</b></span>
+          <small>True pixel rendering</small>
+        </button>
       </div>
 
       <div class="row" id="strRow">
-        <div class="rh"><span class="lb">Strength</span><span class="val" id="strV">—</span></div>
-        <p class="desc" id="strD">Select a look above first.</p>
-        <div class="steps" id="steps"></div>
+        <div class="rh"><span class="lb" id="strL">Strength</span><span class="val" id="strV">—</span></div>
+        <p class="desc" id="strD">Pick a look above first.</p>
+        <div class="steps" id="steps" role="radiogroup" aria-labelledby="strL"></div>
+      </div>
+      <div class="row" id="ttSzRow" style="display:none">
+        <div class="rh"><span class="lb" id="ttszL">Pixel size</span><span class="val" id="ttszV">Normal</span></div>
+        <p class="desc" id="ttszD"></p>
+        <div class="steps" id="ttszBox" role="radiogroup" aria-labelledby="ttszL" style="--n:6"></div>
+      </div>
+      <div class="row" id="ttSmRow" style="display:none">
+        <div class="rh"><span class="lb" id="ttsmL">Edge blend</span><span class="val" id="ttsmV">Sharp</span></div>
+        <p class="desc" id="ttsmD"></p>
+        <div class="steps" id="ttsmBox" role="radiogroup" aria-labelledby="ttsmL" style="--n:2"></div>
       </div>
     </section>
 
     <section class="card">
       <h2>Display</h2>
+      <p class="cap">Lower values ease the load on the phone but make the picture less sharp.</p>
       <div class="row">
         <div class="rh"><label for="scale">Render scale</label><span class="val" id="scaleV">100%</span></div>
-        <p class="desc">Binababaan ang resolution. (Mag-a-auto reopen ang game pag-Apply).</p>
+        <p class="desc">How large the game draws the frame before it is shown on screen.</p>
         <input type="range" id="scale" min="40" max="100" step="5" value="100">
       </div>
+      <div class="row">
+        <div class="rh"><span class="lb" id="fpsL">Frame rate cap</span><span class="val" id="fpsV">Off</span></div>
+        <p class="desc">Stops the game from going above this many frames per second.</p>
+        <div class="steps" id="fpsBox" role="radiogroup" aria-labelledby="fpsL" style="--n:4"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Startup</h2>
+      <p class="cap">Gives the game time to finish loading menus and UI before textures are changed.</p>
+      <div class="row">
+        <div class="rh"><label for="delay">Start delay</label><span class="val" id="delayV">Off</span></div>
+        <p class="desc">Textures created in the first seconds stay original and are never changed later, so a long delay can make the effect look like it does nothing. Keep it <b>Off</b> unless you need it.</p>
+        <input type="range" id="delay" min="0" max="12" step="1" value="0">
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="ch"><h2>Last session</h2>
+        <button class="ib" id="sref" type="button" aria-label="Refresh stats"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+      </div>
+      <p class="cap" id="sstat">No frame data yet. Play a match to fill this in.</p>
+      <div class="tiles">
+        <div class="tile"><b id="tFps">—</b><span>FPS</span></div>
+        <div class="tile"><b id="tAvg">—</b><span>Avg ms</span></div>
+        <div class="tile"><b id="tP99">—</b><span>99th ms</span></div>
+        <div class="tile" id="tFzT"><b id="tFz">—</b><span>Freezes</span></div>
+      </div>
+      <ul class="legend">
+        <li><b>FPS</b> — frames drawn per second. Higher is smoother.</li>
+        <li><b>Avg ms</b> — average time per frame. 16.7 ms is 60 FPS and 33 ms is 30 FPS. Lower is better.</li>
+        <li><b>99th ms</b> — 99 out of 100 frames were faster than this. If it is far above Avg, the game stutters.</li>
+        <li><b>Freezes</b> — frames that took longer than 100 ms in this window. Ideally 0.</li>
+      </ul>
     </section>
   </div>
 
-  <!-- TOOLS VIEW -->
-  <div class="view" id="v-tools">
+  <!-- ========== ADVANCED ========== -->
+  <div class="view" id="v-adv">
     <section class="card">
-      <h2>Launch Settings</h2>
-      <label style="display:flex;gap:10px;align-items:center;font-size:13px;cursor:pointer">
-        <input type="checkbox" id="reopen" checked> Reopen CODM after Apply
-      </label>
-      <p class="pnote">Pinapatay at binubuksan ulit ang laro para maiwasan ang render scale crash.</p>
+      <h2>Fine tuning</h2>
+      <p class="cap">Leave very small textures alone so icons, scopes and UI stay clear.</p>
+      <div class="row">
+        <div class="rh"><span class="lb" id="minL">Smallest texture to change</span><span class="val" id="minszV">64 px</span></div>
+        <p class="desc">Anything smaller than this stays original.</p>
+        <div class="steps" id="minBox" role="radiogroup" aria-labelledby="minL" style="--n:6"></div>
+      </div>
     </section>
 
     <section class="card">
-      <h2>Export Report & Logs</h2>
-      <p class="cap">Para lamang sa may problema na gustong ipasa ang log sa dev.</p>
-      <button class="btn primary" id="expReport" type="button">Export Report (For Support/Bugs Only)</button>
+      <h2>Compatibility</h2>
+      <p class="cap">Use this if CODM crashes or goes back to the lobby when another loader or mod runs together with this module.</p>
+      <div class="row">
+        <div class="rh"><span class="lb" id="hookL">Hook timing</span><span class="val" id="hookV">Early</span></div>
+        <p class="desc" id="hookD"></p>
+        <div class="steps" id="hookBox" role="radiogroup" aria-labelledby="hookL" style="--n:4"></div>
+      </div>
+      <p class="pnote">A later timing can miss the first textures and the startup render scale. Keep it on Early unless you have a crash.</p>
+    </section>
+
+    <section class="card">
+      <div class="ch"><h2>Texture groups</h2><span class="tag n" id="gcount" hidden></span></div>
+      <p class="cap">Turn a group off to leave those textures original. Play one match first so the list can fill in.</p>
+      <div id="groups"></div>
       <div class="grid2">
-        <button class="btn" id="clrLog" type="button">Clear Log</button>
-        <button class="btn warn" id="resetDef" type="button">Reset Defaults</button>
+        <button class="btn" id="gref" type="button">Refresh list</button>
+        <button class="btn" id="gall" type="button">Turn all on</button>
+      </div>
+      <p class="pnote">A group is one format and size. Walls and floors can share a group, so switching it off affects both.</p>
+    </section>
+
+    <section class="card">
+      <details id="skipd">
+        <summary class="ch"><h2>Skip Manager</h2><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="body">
+          <p class="cap">Manage custom skip rules. Textures matching these rules stay original. Use <b>format size</b> or <b>format width height</b>.</p>
+          
+          <div class="skip-input-group">
+            <textarea id="skipt" rows="2" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Paste skip lines here (e.g. 37497 256 512)"></textarea>
+            <button class="btn" id="skipAdd" type="button">Add to List</button>
+          </div>
+          
+          <div class="skip-list" id="skipList">
+            <!-- rows are rendered by renderSkipList() -->
+          </div>
+          
+          <p class="pnote">Built-in rules protect scopes and character detail. Switch one off or delete it to let those textures be changed. Reset defaults restores them.</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Logging</h2>
+      <p class="cap">Writes codm_tex.log so freezes can be examined later.</p>
+      <button class="sw" id="fz" role="switch" aria-checked="true" type="button">
+        <span><span class="t">Freeze log</span><span class="d">Records every frame that takes longer than 100 ms</span></span>
+        <span class="knob"></span>
+      </button>
+      <button class="sw" id="th" role="switch" aria-checked="true" type="button">
+        <span><span class="t">Thread log</span><span class="d">Shows which threads were busy during a freeze</span></span>
+        <span class="knob"></span>
+      </button>
+      <button class="sw" id="core" role="switch" aria-checked="true" type="button">
+        <span><span class="t">Core log</span><span class="d">Needs both logs above</span></span>
+        <span class="knob"></span>
+      </button>
+    </section>
+  </div>
+
+  <!-- ========== TOOLS ========== -->
+  <div class="view" id="v-tools">
+    <section class="card">
+      <h2>Apply</h2>
+      <label class="lb" style="display:flex;gap:10px;align-items:center;font-size:14px">
+        <input type="checkbox" id="reopen"> Reopen CODM after Apply
+      </label>
+      <p class="pnote">Naka-off ito dati pa. Binabasa lang ang settings pag nag-start ang CODM, getss? Isinasara ng Apply ang laro. Kung naka-on ito, bubuksan ulit ang laro pagkatapos ma-save. Sa OpenGL ES lang gumagana ang texture looks, wala silang epekto sa Vulkan.</p>
+    </section>
+
+    <section class="card">
+      <h2>Log</h2>
+      <p class="cap">View, export or clear the frame log (codm_tex.log).</p>
+      <div id="logStat" class="logstat">Checking log…</div>
+      <div class="stack" style="margin-top:12px">
+        <div>
+          <label class="lb" for="rptName" style="display:block;font-size:13.5px">Your name (optional)</label>
+          <input id="rptName" type="text" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. Juan">
+          <p class="pnote" style="margin-top:6px">Added to the file name so the developer knows whose report it is. Letters, numbers, - and _ only.</p>
+        </div>
+        <button class="btn primary" id="exp" type="button">Export report for support</button>
+        <div class="grid2" style="margin-top:0">
+          <button class="btn" id="vlog" type="button">View log</button>
+          <button class="btn" id="diag" type="button">View diagnostics</button>
+        </div>
+        <div class="grid2" style="margin-top:0">
+          <button class="btn warn" id="clr" type="button">Clear log</button>
+          <button class="btn" id="logref" type="button">Refresh status</button>
+        </div>
+      </div>
+      <p class="pnote">Export report makes <b>one file</b> in <b>CODM Log</b> in internal storage, named <b>CODM_report_brand_model_name_time</b>. Inside are the log, device info, settings, settings folder, other modules and crash info. It is a .zip when the phone can make one, otherwise .tar.gz or .txt. Send that single file to the developer.</p>
+    </section>
+
+    <section class="card">
+      <h2>Reset</h2>
+      <p class="cap">Two ways to start over. Each one asks you to tap twice to confirm.</p>
+      <div class="stack">
+        <div>
+          <button class="btn warn" id="reset" type="button">Reset defaults</button>
+          <p class="pnote">Recommended setup: <b>True Pixelated</b> (Normal size, Sharp edges) with no start delay. Skip rules go back to the built-ins.</p>
+        </div>
+        <div>
+          <button class="btn warn" id="normal" type="button">Back to normal CODM</button>
+          <p class="pnote">Turns every effect off: no look, full render scale, no fps cap, no start delay. Logs and skip rules stay as they are.</p>
+        </div>
       </div>
     </section>
+
+    <section class="card">
+      <h2>About</h2>
+      <div class="kv" style="margin-top:8px"><span>Module</span><b>CODM Blocky Textures</b></div>
+      <div class="kv"><span>Version</span><b id="aVer">—</b></div>
+      <div class="kv"><span>Author</span><b>Q9 Papyrus</b></div>
+      <div class="kv"><span>Module mode</span><b id="aMode">—</b></div>
+      <div class="kv"><span>Settings folder</span><b id="aDir" style="font-size:12px;font-weight:500;word-break:break-all;text-align:right">—</b></div>
+      <p class="pnote">The module always runs in mode 4: it hooks the game's engine the moment it loads, with no background polling. If this value ever shows anything else, it is corrected automatically.</p>
+    </section>
+
+    <p class="foot">Settings are read when CODM starts. Apply closes the game so your next launch uses them.</p>
   </div>
 </main>
 
-<nav id="dock">
+<!-- dock: tabs + always-visible Apply -->
+<div id="pendbar" role="region" aria-label="Unapplied changes">
+  <span class="pt"><i></i>Changes not applied yet</span>
+  <button type="button" id="cancelChg"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Cancel changes</button>
+</div>
+<div id="dockcover" aria-hidden="true"></div>
+<nav id="dock" aria-label="Main">
   <div class="tabs">
-    <button type="button" data-v="home" class="on">Home</button>
-    <button type="button" data-v="tools">Tools</button>
+    <button type="button" data-v="home" class="on" aria-current="page">
+      <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
+      Home
+    </button>
+    <button type="button" data-v="adv">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Advanced
+    </button>
+    <button type="button" data-v="tools">
+      <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/></svg>
+      Tools
+    </button>
   </div>
-  <button class="apply" id="applyBtn" type="button">Apply</button>
+  <button class="apply" id="stop" type="button" aria-label="Apply for CODM">
+    <svg viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></svg>
+    Apply
+  </button>
 </nav>
 
-<div id="toast"></div>
+<div id="logw" role="dialog" aria-modal="true" aria-label="Log">
+  <h3>codm_tex.log · last 80 lines</h3>
+  <pre id="logt"></pre>
+  <button class="btn" id="logx" type="button">Close</button>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
-(function() {
+(function () {
   var PKG = "com.garena.game.codm";
-  var D = "/data/data/" + PKG + "/files";
-  var demo = (typeof ksu === "undefined");
-  var lookMode = 0, strVal = 3;
+  var D = "/data/data/" + PKG + "/files";   /* replaced by findDir() when the folder lives elsewhere */
+  var WR = 0;                               /* 0 = run directly, 1 = via nsenter, 2 = via su -c */
+  var PROP = "/data/adb/modules/codm_tex_logger/module.prop";
+
+  /* Pixel Blocks sizes (index 0 = Off is handled by mode) */
   var BLK = [0, 64, 32, 16, 8, 4];
   var BLKN = ["Off", "Soft", "Fine", "Medium", "Chunky", "Extreme"];
+  /* Detail Cut / Flat strength names */
+  var LVN = ["Off", "Light", "Medium", "Strong", "Extreme"];
+  /* Flat target size per strength (mirrors FTGT in the module) */
+  var FTGT = [0, 8, 4, 2, 1];
+
+  var FPS = [0, 30, 40, 45, 60, 75, 90, 120];
+  var MINS = [64, 128, 256, 512, 1024, 2048];
+
+  /* values written by "Reset defaults" */
+  var REC = {
+    blk: 0, bias: 0, near: 1, scale: 0, fps: 0,
+    fz: 1, th: 1, core: 1, mode: 4,
+    minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 1, ttsize: 0, ttsm: 0, hookdelay: 0
+  };
+  /* "Back to normal CODM": every effect off (logging, mode and skip lists are left alone) */
+  var NORMAL = {
+    blk: 0, bias: 0, near: 1, scale: 0, fps: 0,
+    minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 0, ttsize: 0, ttsm: 0
+  };
+  /* what a missing settings file counts as (mirrors how the page reads it) */
+  var FALLBACK = {
+    blk: 0, bias: 0, near: 1, scale: 0, fps: 0, fz: 1, th: 1, core: 1, mode: 4,
+    minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 0, ttsize: 0, ttsm: 0, hookdelay: 0
+  };
+  var modeFixTried = false;
+
+  var demo = (typeof ksu === "undefined");
+  var fake = {
+    blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
+    fz: "1", th: "1", core: "1", mode: "4",
+    minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
+    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.36",
+    texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
+    ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
+  };
+  var seq = 0;
+  var TTSZ = [-2, -1, 0, 1, 2, 3];
+  var TTSZN = { "-2": "Finer", "-1": "Fine", "0": "Normal", "1": "Big", "2": "Bigger", "3": "Huge" };
+  var TTSZD = { "-2": "Smallest pixels (native size, no mip). Shimmers far away.",
+    "-1": "Small pixels, far surfaces stay finer than Normal. Little shimmer.",
+    "0": "Native texture pixels, the GPU picks the mip.",
+    "1": "Pixels about 2x bigger.", "2": "Pixels about 4x bigger.",
+    "3": "Pixels about 8x bigger (small textures are capped)." };
+  var TTSM = [0, 1];
+  var TTSMN = ["Sharp", "Soft"];
+  var TTSMD = ["Hard square pixels.", "Softens the jump between mip levels. Pixels stay square."];
+  var ttSize = 0, ttSm = 0;
+  var lookMode = 0;   /* 0=Off  1=Pixel Blocks  2=Detail Cut  3=Flat  4=True Pixelated */
+  var strVal = 3;     /* 1-5 for blocks, 1-4 for detail cut / flat */
+  var fpsVal = 0, minVal = 64;
+  var HOOKS = [0, 3, 5, 10], hookVal = 0;
+  
+  /* skip manager state */
+  var groups = [], skipSet = {};
+  var customSkips = [];
+  var blOff = {}, blDel = {};
+
+  /* ---------- pending-change tracking ----------
+     cur  = what the settings files hold right now
+     base = what they held when the page opened or at the last Apply */
+  var KEYS = ["bias", "scale", "fps", "fz", "th", "core", "near", "blk", "minsz", "delay",
+              "style", "sedge", "flat", "testtex", "ttsize", "ttsm", "mode", "hookdelay"];
+  var cur = {}, base = null, baseSkipLines = [], baseBlOff = {}, baseBlDel = {};
+  function nl(lines) { return lines.slice().sort().join("\n"); }
+  function nk(o) { return Object.keys(o).sort().join("|"); }
+  function fromState(s) {
+    var o = {};
+    KEYS.forEach(function (k) {
+      var n = parseInt(s[k], 10);
+      o[k] = String(isNaN(n) ? FALLBACK[k] : n);
+    });
+    return o;
+  }
+  function isPending() {
+    if (!base) return false;
+    for (var i = 0; i < KEYS.length; i++) if (cur[KEYS[i]] !== base[KEYS[i]]) return true;
+    return cur.skip !== base.skip || cur.bloff !== base.bloff || cur.bldel !== base.bldel;
+  }
+  function updatePend() { var p = isPending(); setPend(p); return p; }
+  function setBaseline() {
+    base = Object.assign({}, cur);
+    baseSkipLines = skipLines();
+    baseBlOff = Object.assign({}, blOff);
+    baseBlDel = Object.assign({}, blDel);
+  }
+  var builtins = ["37497 256 512", "37493 128 128", "37492 128 128", "37497 128 128"];
 
   function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
   function toast(m) {
-    var t = $("toast"); t.textContent = m; t.classList.add("show");
-    setTimeout(function() { t.classList.remove("show"); }, 2600);
+    var e = $("toast");
+    e.textContent = m;
+    e.classList.add("show");
+    clearTimeout(toast.t);
+    toast.t = setTimeout(function () { e.classList.remove("show"); }, 2600);
+  }
+  function setPend(on) { document.body.classList.toggle("pend", !!on); }
+  function kv(line) {
+    var o = {}, re = /([^\s=]+)=(\S+)/g, m;
+    while ((m = re.exec(line))) o[m[1]] = m[2];
+    return o;
+  }
+  function num(v, d) {
+    var n = parseFloat(v);
+    return isNaN(n) ? "—" : (d ? n.toFixed(d) : String(Math.round(n)));
   }
 
-  // Handle Guide Dismissal
-  if (localStorage.getItem("ct_hide_notice") === "1") {
-    $("guideBox").style.display = "none";
+  /* ---------- shell ---------- */
+  function wrap(cmd) {
+    if (!WR) return cmd;
+    var e = cmd.replace(/'/g, "'\\''");
+    return WR === 1 ? "nsenter -t 1 -m -- sh -c '" + e + "'" : "su -c '" + e + "'";
   }
-  $("closeGuide").addEventListener("click", function() {
-    $("guideBox").style.display = "none";
-    localStorage.setItem("ct_hide_notice", "1");
-  });
-
-  function sh(cmd) {
-    return new Promise(function(resolve) {
-      if (demo) { resolve({ stdout: "", errno: 0 }); return; }
-      var cb = "cb_" + Date.now();
-      window[cb] = function(errno, stdout, stderr) {
-        delete window[cb];
-        resolve({ errno: errno, stdout: String(stdout || ""), stderr: String(stderr || "") });
+  function sh(cmd, ms) {
+    return new Promise(function (resolve) {
+      if (demo) {
+        resolve({ errno: 0, stdout: "", stderr: "", demo: true });
+        return;
+      }
+      var name = "cb_" + Date.now() + "_" + (seq++);
+      var done = false;
+      function fin(r) {
+        if (done) return;
+        done = true;
+        try { delete window[name]; } catch (e) { window[name] = undefined; }
+        resolve(r);
+      }
+      window[name] = function (errno, stdout, stderr) {
+        fin({ errno: errno, stdout: String(stdout || ""), stderr: String(stderr || "") });
       };
-      try { ksu.exec(cmd, "{}", cb); } catch(e) { resolve({ errno: -1, stdout: "" }); }
-    });
-  }
-
-  function writeTxt(file, val) {
-    return sh("printf '%s\\n' '" + val + "' > " + D + "/" + file + " && chmod 666 " + D + "/" + file);
-  }
-
-  function checkSystem() {
-    var ban = $("topBanners");
-    ban.innerHTML = "";
-
-    sh("ls /data/adb/modules 2>/dev/null").then(function(r) {
-      var out = r.stdout || "";
-      var hasZygisk = out.indexOf("zygisksu") >= 0 || out.indexOf("zygisk_next") >= 0 || out.indexOf("ZygiskNext") >= 0;
-      if (!demo && !hasZygisk) {
-        var d = document.createElement("div");
-        d.className = "sys-note bad";
-        d.innerHTML = "<b>Walang Zygisk Module Natagpuan!</b>Naka-KernelSU ka ngunit walang ZygiskNext. Hindi gagana ang module na ito kung walang Zygisk active.";
-        ban.appendChild(d);
-      }
-    });
-
-    sh("cat " + D + "/codm_tex.log 2>/dev/null | grep 'GFX api=vulkan' | tail -n 1").then(function(r) {
-      if (r.stdout.indexOf("vulkan") >= 0) {
-        var d = document.createElement("div");
-        d.className = "sys-note warn";
-        d.innerHTML = "<b>Vulkan API Detected!</b>Ang CODM mo ay tumatakbo sa Vulkan. Ang texture effects ay para sa OpenGL ES lamang.";
-        ban.appendChild(d);
+      setTimeout(function () { fin({ errno: -3, stdout: "", stderr: "timeout" }); }, ms || 8000);
+      try { ksu.exec(wrap(cmd), "{}", name); } catch (e) {
+        fin({ errno: -2, stdout: "", stderr: String(e) });
       }
     });
   }
 
-  function renderSteps() {
-    var h = "";
-    for (var i = 1; i <= 5; i++) {
-      h += '<button type="button" class="step" data-v="' + i + '" aria-checked="' + (strVal === i ? "true" : "false") + '"><b>' + BLKN[i] + '</b></button>';
+  /* writes run one after another so quick taps can never land out of order */
+  var wq = Promise.resolve();
+  function queued(fn) {
+    var p = wq.then(fn);
+    wq = p.then(null, function () {});
+    return p;
+  }
+
+  /* Looks for a Zygisk framework by several routes, so a normal setup is not reported as missing:
+     known module ids and names (ZygiskNext, ReZygisk, ...), and the Zygisk switch inside Magisk itself.
+     Disabled or about-to-be-removed modules do not count. */
+  var ZYG_SCRIPT =
+    "Z=''; for p in /data/adb/modules/*/module.prop; do d=${p%/module.prop}; [ -f $d/disable ] && continue; [ -f $d/remove ] && continue; " +
+    "i=$(basename $d); case \"$i\" in zygisksu|zygisk_next|zygisknext|zygisk-next|rezygisk|neozygisk|zygisk_re) Z=\"$Z$i,\"; continue;; esac; " +
+    "grep -qi -E '^name=.*(zygisk ?next|rezygisk|neozygisk|zygisksu)' $p 2>/dev/null && Z=\"$Z$i,\"; done; " +
+    "M=$(magisk --sqlite \"SELECT value FROM settings WHERE key='zygisk'\" 2>/dev/null | head -n 1); [ \"$M\" = 'value=1' ] && Z=\"${Z}magisk,\"; " +
+    "echo \"zyg=$Z\"; ";
+  function readState() {
+    if (demo) {
+      return Promise.resolve(Object.assign({ nodir: false }, fake));
     }
-    $("steps").innerHTML = h;
-    $("strV").textContent = BLKN[strVal];
-    $("strD").textContent = "Texture size: ~" + BLK[strVal] + " px";
+    var cmd =
+      "D=" + D + "; " + ZYG_SCRIPT +
+      "[ -d $D ] || { echo NODIR; exit 0; }; " +
+      "for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay; do " +
+      "  if [ -f $D/$f.txt ]; then printf '%s=' $f; cat $D/$f.txt; else printf '%s=\\n' $f; fi; " +
+      "done; " +
+      "echo -n 'skip='; [ -f $D/skip.txt ] && cat $D/skip.txt | tr '\\n' '|' || true; echo; " +
+      "echo -n 'bloff='; [ -f $D/bltoff.txt ] && cat $D/bltoff.txt | tr '\\n' '|' || true; echo; " +
+      "echo -n 'bldel='; [ -f $D/bltdel.txt ] && cat $D/bltdel.txt | tr '\\n' '|' || true; echo; " +
+      "echo -n 'texg='; [ -f $D/codm_tex.log ] && grep -E '^TEXG ' $D/codm_tex.log | tail -n 200 | tr '\\n' '|' || true; echo; " +
+      "echo -n 'ft='; [ -f $D/codm_tex.log ] && grep -E '^FT ' $D/codm_tex.log | tail -n 1 || true; echo; " +
+      "L=$D/codm_tex.log; if [ -f $L ]; then S=$(grep -n '^=== start' $L | tail -n 1 | cut -d: -f1); [ -n \"$S\" ] || S=1; " +
+      "echo gl=$(tail -n +$S $L | grep -c -E '^(TEXN|FT |GLINFO|GFX api=gles)'); " +
+      "echo vk=$(tail -n +$S $L | grep -c '^GFX vk-symbol'); " +
+      "echo sbg=$(tail -n +$S $L | grep -c '^SBG'); " +
+      "echo ap=$(tail -n +$S $L | grep '^TEXSKIP applied=' | tail -n 1 | sed -n 's/^TEXSKIP applied=\\([0-9]*\\).*/\\1/p'); " +
+      "echo nv=$(grep '^=== start' $L | tail -n 1 | sed -n 's/^=== start \\(v[0-9.]*\\).*/\\1/p'); fi; " +
+      "echo -n 'ver='; sed -n 's/^version=//p' " + PROP + " 2>/dev/null | head -n 1; echo; " +
+      /* status file written by the game process + evidence that the module really ran / is installed right */
+      "M=/data/adb/modules/codm_tex_logger; " +
+      "echo -n 'st='; [ -f $D/codm_tex.status ] && tr '\\n' '|' < $D/codm_tex.status; echo; " +
+      "echo inj=$(timeout 5 logcat -d -s codm_tex 2>/dev/null | grep -c postAppSpecialize); " +
+      "echo so=$([ -f $M/zygisk/arm64-v8a.so ] && echo 1 || echo 0); " +
+      "echo moddis=$([ -f $M/disable ] && echo 1 || echo 0); " +
+      "echo pend=$([ -d /data/adb/modules_update/codm_tex_logger ] && echo 1 || echo 0)";
+    return sh(cmd).then(function (r) {
+      var s = { nodir: false };
+      if (r.stdout.indexOf("NODIR") >= 0) {
+        s.nodir = true;
+        return s;
+      }
+      r.stdout.split("\n").forEach(function (ln) {
+        var i = ln.indexOf("=");
+        if (i < 0) return;
+        var k = ln.slice(0, i), v = ln.slice(i + 1);
+        if (k === "skip" || k === "texg" || k === "bloff" || k === "bldel") v = v.replace(/\|/g, "\n").replace(/\n$/, "");
+        s[k] = v.trim();
+      });
+      return s;
+    });
   }
 
-  Array.prototype.forEach.call($("lookSeg").children, function(b) {
-    b.addEventListener("click", function() {
-      lookMode = +b.getAttribute("data-m");
-      Array.prototype.forEach.call($("lookSeg").children, function(x) {
-        x.setAttribute("aria-checked", +x.getAttribute("data-m") === lookMode ? "true" : "false");
-      });
-      if (lookMode === 1) renderSteps();
-      else {
-        $("steps").innerHTML = "";
-        $("strV").textContent = lookMode === 4 ? "Active" : (lookMode === 0 ? "Off" : "Enabled");
-      }
+  var writeFail = "";   /* name of the last setting that failed to save, "" = last write was fine */
+  function writeFiles(map) {
+    Object.keys(map).forEach(function (k) { cur[k] = String(map[k]); });
+    if (demo) {
+      Object.keys(map).forEach(function (k) { fake[k] = String(map[k]); });
+      return Promise.resolve({ ok: true });
+    }
+    var parts = [], bad = false;
+    Object.keys(map).forEach(function (k) {
+      var v = String(map[k]);
+      /* values are plain numbers / short words; anything else could break the shell line */
+      if (!/^[A-Za-z0-9._-]*$/.test(k) || !/^[A-Za-z0-9._-]*$/.test(v)) { bad = true; return; }
+      var f = "$D/" + k + ".txt";
+      parts.push("printf '%s\\n' '" + v + "' > " + f + " || { echo FAILW:" + k + "; exit 1; }");
+      parts.push("chmod 666 " + f + " 2>/dev/null");
+      parts.push("chcon --reference=$D " + f + " 2>/dev/null");
+      parts.push("[ \"$(cat " + f + " 2>/dev/null)\" = '" + v + "' ] || { echo FAILV:" + k + "; exit 1; }");
     });
+    if (bad) { writeFail = "bad value"; return Promise.resolve({ ok: false, stdout: "", stderr: "rejected" }); }
+    var cmd = "D=" + D + "; [ -d $D ] || { echo NODIR; exit 1; }; " + parts.join("; ") + "; echo OK";
+    return queued(function () {
+      return sh(cmd).then(function (r) {
+        r.ok = r.stdout.indexOf("OK") >= 0 && r.stdout.indexOf("FAIL") < 0;
+        writeFail = r.ok ? "" : (/FAIL[WV]:(\w+)/.exec(r.stdout) || [0, "write"])[1];
+        return r;
+      });
+    });
+  }
+
+  function save(map, label) {
+    return writeFiles(map).then(function (r) {
+      if (r.ok) {
+        toast(updatePend()
+          ? (label || "Settings") + " saved. Tap Apply for CODM."
+          : "Back to original. Nothing to apply.");
+      } else toast("Could not save" + (writeFail ? " (" + writeFail + ")" : "") + ". Is the game folder present and root allowed?");
+      return r;
+    });
+  }
+
+  /* ---------- navigation ---------- */
+  function showView(name) {
+    ["home", "adv", "tools"].forEach(function (v) {
+      $("v-" + v).classList.toggle("active", v === name);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#dock .tabs button"), function (b) {
+      var on = b.getAttribute("data-v") === name;
+      b.classList.toggle("on", on);
+      if (on) b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
+    window.scrollTo(0, 0);
+    if (name === "tools") refreshLogStat();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#dock .tabs button"), function (b) {
+    b.addEventListener("click", function () { showView(b.getAttribute("data-v")); });
   });
 
-  $("steps").addEventListener("click", function(e) {
-    var b = e.target.closest(".step");
-    if (!b) return;
-    strVal = +b.getAttribute("data-v");
-    renderSteps();
-  });
+  /* lock background scroll while log overlay is open */
+  var lockY = 0;
+  function lockScroll() {
+    lockY = window.scrollY || window.pageYOffset || 0;
+    document.body.classList.add("lock");
+    document.body.style.top = "-" + lockY + "px";
+  }
+  function unlockScroll() {
+    document.body.classList.remove("lock");
+    document.body.style.top = "";
+    window.scrollTo(0, lockY);
+  }
 
-  $("scale").addEventListener("input", function() {
+  /* two-tap confirm for buttons that throw something away */
+  function arm(id, txt, fn) {
+    var b = $(id);
+    b.addEventListener("click", function () {
+      if (b.getAttribute("data-arm") === "1") {
+        clearTimeout(b._t);
+        b.removeAttribute("data-arm");
+        b.classList.remove("armed");
+        b.textContent = b.getAttribute("data-t");
+        fn();
+        return;
+      }
+      b.setAttribute("data-t", b.textContent);
+      b.setAttribute("data-arm", "1");
+      b.classList.add("armed");
+      b.textContent = txt;
+      b._t = setTimeout(function () {
+        b.removeAttribute("data-arm");
+        b.classList.remove("armed");
+        b.textContent = b.getAttribute("data-t");
+      }, 3000);
+    });
+  }
+
+  /* ---------- UI helpers ---------- */
+  function fill(el) {
+    var f = (el.value - el.min) / (el.max - el.min);
+    el.style.setProperty("--p", (f * 100) + "%");
+    if (el.parentNode) el.parentNode.style.setProperty("--f", f);
+  }
+  function setSw(id, on) { $(id).setAttribute("aria-checked", on ? "true" : "false"); }
+  function getSw(id) { return $(id).getAttribute("aria-checked") === "true"; }
+  function blkIdx(v) {
+    if (v <= 0) return 0;
+    var best = 1, d = 1e9, i;
+    for (i = 1; i < BLK.length; i++) {
+      var dd = Math.abs(BLK[i] - v);
+      if (dd < d) { d = dd; best = i; }
+    }
+    return best;
+  }
+  function onPick(id, fn) {
+    $(id).addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest(".step") : null;
+      if (b) fn(+b.getAttribute("data-v"));
+    });
+  }
+  function chipsHtml(list, cur, label) {
+    var h = "", i;
+    for (i = 0; i < list.length; i++) {
+      h += '<button type="button" class="step" role="radio" data-v="' + list[i] +
+        '" aria-checked="' + (list[i] === cur ? "true" : "false") + '"><b>' + label(list[i]) + "</b></button>";
+    }
+    return h;
+  }
+
+  /* ---------- look + status ---------- */
+  function stepItems(m) {
+    var a = [], i;
+    if (m === 4) return a;  /* True Pixelated: on/off only */
+    if (m === 2 || m === 3) {
+      for (i = 1; i <= 4; i++) a.push({ v: i, b: LVN[i], s: "+" + i });
+    } else {
+      for (i = 1; i <= 5; i++) a.push({ v: i, b: BLKN[i], s: BLK[i] + " px" });
+    }
+    return a;
+  }
+
+  function renderTT() {
+    var on = lookMode === 4;
+    $("ttSzRow").style.display = on ? "" : "none";
+    $("ttSmRow").style.display = on ? "" : "none";
+    $("strRow").style.display = on ? "none" : "";
+    $("ttszBox").innerHTML = chipsHtml(TTSZ, ttSize, function (v) { return TTSZN[v]; });
+    $("ttszV").textContent = TTSZN[ttSize];
+    $("ttszD").textContent = TTSZD[ttSize];
+    $("ttsmBox").innerHTML = chipsHtml(TTSM, ttSm, function (v) { return TTSMN[v]; });
+    $("ttsmV").textContent = TTSMN[ttSm];
+    $("ttsmD").textContent = TTSMD[ttSm];
+  }
+
+  function updateLookUI() {
+    renderTT();
+    Array.prototype.forEach.call($("lookSeg").children, function (b) {
+      b.setAttribute("aria-checked", +b.getAttribute("data-m") === lookMode ? "true" : "false");
+    });
+
+    var items = stepItems(lookMode || 1), h = "", i, it;
+    for (i = 0; i < items.length; i++) {
+      it = items[i];
+      h += '<button type="button" class="step" role="radio" data-v="' + it.v + '" aria-checked="' +
+        (lookMode && it.v === strVal ? "true" : "false") + '"' + (lookMode ? "" : ' tabindex="-1"') +
+        "><b>" + it.b + "</b><small>" + it.s + "</small></button>";
+    }
+    $("steps").style.setProperty("--n", items.length);
+    $("steps").innerHTML = h;
+    $("steps").setAttribute("aria-disabled", lookMode ? "false" : "true");
+
+    if (lookMode === 0) {
+      $("strV").textContent = "—";
+      $("strD").textContent = "No look selected. Textures stay original.";
+    } else if (lookMode === 1) {
+      $("strV").textContent = BLK[strVal] + " px";
+      $("strD").textContent = BLKN[strVal] + " — every texture is reduced to about " + BLK[strVal] + " pixels across.";
+    } else if (lookMode === 2) {
+      $("strV").textContent = LVN[strVal];
+      $("strD").textContent = "Textures are sampled " + strVal + " mip level" + (strVal === 1 ? "" : "s") + " smaller. Colors stay the same.";
+    } else if (lookMode === 3) {
+      $("strV").textContent = LVN[strVal];
+      $("strD").textContent = "Surfaces become near-solid color. Start low (+1).";
+    } else if (lookMode === 4) {
+      $("strV").textContent = "On";
+      $("strD").textContent = "True Pixelated — nearest sampling only. Full texture data, sharp pixels. Lighting stays.";
+      $("steps").innerHTML = "";
+      $("steps").setAttribute("aria-disabled", "true");
+    }
+    updateStatus();
+  }
+
+  function lookModeFromFiles(s) {
+    return (parseInt(s.testtex, 10) > 0 || parseInt(s.flat, 10) > 0 || parseInt(s.style, 10) > 0 || parseInt(s.blk, 10) > 0) ? 1 : 0;
+  }
+  function updateStatus() {
+    var sc = parseInt($("scale").value, 10);
+    var look = "Look off";
+    if (lookMode === 1) look = "Pixel Blocks · " + BLK[strVal] + " px";
+    else if (lookMode === 2) look = "Detail Cut +" + strVal;
+    else if (lookMode === 3) look = "Flat +" + strVal;
+    else if (lookMode === 4) look = "True Pixelated";
+    $("status").innerHTML =
+      '<span class="chip' + (lookMode ? " on" : "") + '"><i></i>' + look + "</span>" +
+      '<span class="chip">Scale ' + sc + "%</span>" +
+      '<span class="chip">' + (fpsVal ? fpsVal + " fps cap" : "No fps cap") + "</span>";
+  }
+
+  /* Recommended test setup: one tap writes known-good values so "does the module work at all" can be answered. */
+  function setRecommended() {
+    if (demo) { toast("Demo mode — nothing was changed."); return; }
+    var map = { mode: 4, near: 1, bias: 0, sedge: 1, blk: 8, style: 0, flat: 0, testtex: 0,
+                delay: 0, minsz: 64, scale: 0, hookdelay: 0 };
+    writeFiles(map).then(function (r) {
+      if (!r.ok) { toast("Could not save" + (writeFail ? " (" + writeFail + ")" : "") + ". Is the game folder present and root allowed?"); return; }
+      return refresh().then(function () {
+        updatePend();
+        toast("Recommended test settings saved. Tap Apply, open CODM and play 5 minutes.");
+      });
+    });
+  }
+  function applyLookToFiles() {
+    var map = { near: 1, bias: 0, sedge: 1, blk: 0, style: 0, flat: 0, testtex: 0 };
+    if (lookMode === 1) map.blk = BLK[strVal];
+    else if (lookMode === 2) map.style = strVal;
+    else if (lookMode === 3) map.flat = strVal;
+    else if (lookMode === 4) map.testtex = 1;
+    return save(map, "Look");
+  }
+
+  function renderFps() {
+    var list = FPS.slice();
+    if (fpsVal > 0 && list.indexOf(fpsVal) < 0) {
+      list.push(fpsVal);
+      list.sort(function (a, b) { return a - b; });
+    }
+    $("fpsBox").innerHTML = chipsHtml(list, fpsVal, function (v) { return v ? v : "Off"; });
+    $("fpsV").textContent = fpsVal ? fpsVal + " fps" : "Off";
+  }
+  function renderMin() {
+    $("minBox").innerHTML = chipsHtml(MINS, minVal, function (v) { return v; });
+    $("minszV").textContent = minVal + " px";
+  }
+  function renderHook() {
+    $("hookBox").innerHTML = chipsHtml(HOOKS, hookVal, function (v) { return v ? v + " s" : "Early"; });
+    $("hookV").textContent = hookVal ? hookVal + " s" : "Early";
+    $("hookD").textContent = hookVal
+      ? "Hooks are installed " + hookVal + " seconds after the game engine appears."
+      : "Hooks are installed the moment the game engine loads. This is the default.";
+  }
+  function updateLogDeps() {
+    var f = getSw("fz"), t = getSw("th");
+    $("th").classList.toggle("dim", !f);
+    $("core").classList.toggle("dim", !(f && t));
+  }
+
+  function fmtT(s) {
+    s = Math.round(s);
+    return s >= 60 ? Math.floor(s / 60) + "m " + (s % 60) + "s" : s + "s";
+  }
+  function renderStats(line) {
+    var o = kv(line || ""), has = o.fps !== undefined;
+    $("tFps").textContent = has ? num(o.fps) : "—";
+    $("tAvg").textContent = has ? num(o.avg, 1) : "—";
+    $("tP99").textContent = has ? num(o.p99) : "—";
+    $("tFz").textContent = has && o.fz !== undefined ? o.fz : "—";
+    $("tFzT").className = "tile" + (has && o.fz !== undefined ? (+o.fz > 0 ? " warn" : " ok") : "");
+    $("sstat").textContent = has
+      ? "Last 5-second window" + (o.t ? " · " + fmtT(parseFloat(o.t)) + " into the session" : "")
+      : "No frame data yet. Play a match to fill this in.";
+  }
+
+  /* ---------- render state ---------- */
+  function render(s) {
+    var ban = $("banner");
+    ban.innerHTML = "";
+    function banner(cls, text, btn) {
+      var d = document.createElement("div");
+      d.className = "banner " + cls;
+      d.textContent = text;
+      (Array.isArray(btn) ? btn : (btn ? [btn] : [])).forEach(function (bt) {
+        var b = document.createElement("button");
+        b.className = "btn";
+        b.type = "button";
+        b.textContent = bt.label;
+        b.addEventListener("click", bt.fn);
+        d.appendChild(b);
+      });
+      ban.appendChild(d);
+    }
+    if (demo) {
+      banner("warn", "Preview only. Open this page inside SukiSU Ultra (Module → WebUI) to change real settings.");
+    }
+    $("ver").hidden = !s.ver;
+    $("ver").textContent = s.ver || "";
+    $("aVer").textContent = s.ver || "—";
+    $("aDir").textContent = D;
+    if (s.nodir) {
+      $("status").innerHTML = '<span class="chip msg">Game folder not found.</span>';
+      $("aDir").textContent = "not found";
+      banner("bad", "Couldn't find the game's settings folder. Open CODM once, then check again. If it keeps happening, run diagnostics and send the result to the developer.", [
+        { label: "Check again", fn: function () { refresh().then(function () { toast("Checked again."); }); } },
+        { label: "Run diagnostics", fn: runDiag }
+      ]);
+      return;
+    }
+    if (s.err) banner("bad", "Could not read settings: " + s.err);
+    /* The module only works in mode 4. If mode.txt holds anything else (0-3, empty, missing),
+       repair it right away instead of asking the user to. */
+    var oldMode = s.mode, fixing = false;
+    if (!demo && s.mode !== "4" && !modeFixTried) {
+      modeFixTried = true;
+      fixing = true;
+      writeFiles({ mode: 4 }).then(function (r) {
+        if (r.ok) {
+          $("aMode").textContent = "4 · ready"; $("aMode").className = "ok";
+          toast("Module mode was " + (oldMode || "empty") + ". It is now 4. Tap Apply to restart CODM.");
+        } else {
+          banner("warn", "Module mode is " + (oldMode || "empty") + " and could not be set to 4. Open CODM once, then check again.");
+        }
+      });
+    }
+    var modeOk = demo || fixing || s.mode === "4";
+    $("aMode").textContent = demo ? "4 · demo" : (modeOk ? "4 · ready" : (s.mode || "empty") + " · needs 4");
+    $("aMode").className = modeOk ? "ok" : "warn";
+
+    /* Texture looks only work with OpenGL ES. If the last session logged no GL activity, say so. */
+    var glN = parseInt(s.gl, 10), vkN = parseInt(s.vk, 10) || 0, sbgN = parseInt(s.sbg, 10) || 0;
+    if (!demo && glN === 0 && (vkN > 0 || sbgN >= 2)) {
+      banner("warn", vkN > 0
+        ? "Mukhang Vulkan ang gamit ng CODM sa phone mo. Sa OpenGL ES lang gumagana ang texture looks, kaya wala silang mababago dito. Kung gusto mong makita kung bakit, Tools → Export report tapos ipadala mo."
+        : "Walang OpenGL na nakita sa huling laro. Kung nakalaro ka na ng buong match, malamang Vulkan ang gamit ng phone mo at hindi tatama ang texture looks. Tools → Export report kung gusto mong ipa-check.");
+    }
+
+    /* Module status written by the game process (codm_tex.status), parsed into st{} */
+    var st = {};
+    (s.st || "").split("|").forEach(function (l) { var i = l.indexOf("="); if (i > 0) st[l.slice(0, i)] = l.slice(i + 1); });
+    function why0Text(w) {
+      if (!w || w === "none") return "";
+      var m = { hook_not_active: "hindi pa active ang hook", look_off: "naka-OFF ang texture look", no_candidates: "walang nakitang texture na pwedeng baguhin",
+                delay: "start delay (ayaw galawin ang textures sa unang segundo)", minsz: "masyadong mataas ang min texture size", skip_rule: "may skip rule", unbound: "walang naka-bind na texture" };
+      return w.split(",").map(function (t) { var k = t.replace(/\(.*$/, ""), n = (/\((\d+)\)/.exec(t) || [0, ""])[1]; return (m[k] || k) + (n ? " (" + n + ")" : ""); }).join(", ");
+    }
+
+    /* Did the module ever run inside CODM? Any of: a start line in the log, the status file, or the logcat breadcrumb. */
+    var injected = !!(s.st || s.nv || parseInt(s.inj, 10) > 0);
+    if (!demo && !s.nodir && !injected) {
+      if (s.so === "0") banner("bad", "Wala ang zygisk/arm64-v8a.so sa module folder, kaya walang tatakbo sa CODM. I-reinstall ang zip ng module.");
+      else if (s.moddis === "1") banner("bad", "Naka-disable ang module sa manager. I-enable mo, tapos reboot.");
+      else if (s.pend === "1") banner("warn", "May naka-pending na update ng module. Mag-reboot muna ang phone, tapos buksan ang CODM.");
+      else if (!s.zyg) banner("bad", "Wala akong makitang Zygisk framework (ZygiskNext, ReZygisk, zygisksu, o Zygisk ng Magisk na naka-on), at wala pang bakas na tumakbo ang module sa CODM (walang log, walang status, walang logcat breadcrumb). Kung wala talaga kang Zygisk, hindi tatakbo ang module. Kung meron, buksan ang CODM hanggang lobby tapos balik ka rito.");
+      else banner("warn", "May Zygisk (" + s.zyg.replace(/,$/, "") + ") pero wala pang bakas na tumakbo ang module sa CODM. Reboot, buksan ang CODM hanggang lobby, tapos balik rito. Kung wala pa rin: alisin ang CODM sa DenyList / Enforce DenyList, at siguraduhing naka-on ang module sa Zygisk.");
+    }
+    if (!demo && st.stage) {
+      if (st.dir_writable === "no") banner("bad", "Tumakbo ang module pero hindi masulatan ng CODM ang settings folder, kaya walang log. Tools → Export report tapos ipadala.");
+      else if (st.stage === "injected") banner("warn", "Naka-inject ang module sa CODM pero hindi pa umabot sa start. Buksan ulit ang CODM at hintayin ang lobby; kung ganito pa rin, Export report.");
+      var ssf = /^forced_off_prev_(\d+)$/.exec(st.scale_safety || "");
+      if (ssf) banner("warn", "Na-OFF ang Render scale (dating " + (ssf[1] === "1" ? "naka-on" : ssf[1] + "%") + ") kasi hindi umabot ng 120 frames ang nakaraang laro. Pwedeng crash, pwede ring maaga mo lang sinara ang laro. Ang scale lang ang binago, ang iba mong settings ay hindi ginalaw. Kung gusto mo ulit, i-set at i-Apply; kung mag-crash ulit, Export report agad.");
+      if (st.cfg_bad && st.cfg_bad !== "none") banner("warn", "May sirang settings file (" + st.cfg_bad.replace(/,/g, ", ") + "), kaya default ang ginamit ng module at inayos ang file. Hindi ito 'applied' na setting mo. I-Apply ulit ang gusto mo.");
+    }
+
+    /* Diagnostics/logging running does not prove the look is visible. Say what the last session really did. */
+    var apN = parseInt(s.ap, 10);
+    if (!demo && glN > 0 && lookModeFromFiles(s) > 0) {
+      if (apN === 0) banner("warn", "OpenGL was hooked, but 0 textures were changed in the last session. Logging works; the look did not apply." + (why0Text(st.why0) ? " Dahilan: " + why0Text(st.why0) + "." : " Check Start delay (should be Off), try Pixel Blocks.") + " Tools → Export report kung hindi pa rin.");
+      else if (apN > 0) toast(apN + " textures were changed in the last session.");
+    }
+    if (!demo && s.nv && s.ver && s.nv !== s.ver) {
+      banner("warn", "Installed module is " + s.ver + " but the log still shows " + s.nv + " from before the update. Open CODM once, then check again. If this stays, reboot the phone.");
+    }
+
+    /* determine look mode from files */
+    var sty = parseInt(s.style, 10) || 0;
+    var blk = parseInt(s.blk, 10) || 0;
+    var flt = parseInt(s.flat, 10) || 0;
+    var ttx = parseInt(s.testtex, 10) || 0;
+    ttSize = Math.max(-2, Math.min(3, parseInt(s.ttsize, 10) || 0));
+    ttSm = Math.max(0, Math.min(1, parseInt(s.ttsm, 10) || 0));
+    if (ttx > 0) {
+      lookMode = 4;
+      strVal = 1;
+    } else if (flt > 0) {
+      lookMode = 3;
+      strVal = Math.max(1, Math.min(4, flt));
+    } else if (sty > 0) {
+      lookMode = 2;
+      strVal = Math.max(1, Math.min(4, sty));
+    } else if (blk > 0) {
+      lookMode = 1;
+      strVal = blkIdx(blk);
+    } else {
+      lookMode = 0;
+      strVal = 3;
+    }
+
+    /* display */
+    var sc = parseInt(s.scale, 10) || 0;
+    $("scale").value = sc >= 20 && sc <= 99 ? Math.max(40, sc) : 100;
     $("scaleV").textContent = $("scale").value + "%";
-  });
+    fill($("scale"));
 
-  $("applyBtn").addEventListener("click", function() {
-    var sVal = parseInt($("scale").value, 10);
-    var scaleOut = sVal >= 100 ? 0 : sVal;
+    fpsVal = parseInt(s.fps, 10) || 0;
+    if (fpsVal < 20 || fpsVal > 120) fpsVal = 0;
+    renderFps();
 
-    writeTxt("mode.txt", "4");
-    writeTxt("scale.txt", scaleOut);
-    writeTxt("blk.txt", lookMode === 1 ? BLK[strVal] : 0);
-    writeTxt("testtex.txt", lookMode === 4 ? 1 : 0);
-    writeTxt("flat.txt", lookMode === 3 ? 2 : 0);
-    writeTxt("style.txt", lookMode === 2 ? 2 : 0);
+    setSw("fz", s.fz !== "0");
+    setSw("th", s.th !== "0");
+    setSw("core", s.core !== "0");
+    updateLogDeps();
 
-    toast("Applying settings...");
-    sh("am force-stop " + PKG).then(function() {
-      if ($("reopen").checked) {
-        toast("Applied! Reopening CODM...");
-        setTimeout(function() {
-          sh("monkey -p " + PKG + " -c android.intent.category.LAUNCHER 1");
-        }, 1200);
-      } else {
-        toast("Applied! Buksan muli ang laro.");
+    var ms = parseInt(s.minsz, 10) || 64, mi = 0;
+    MINS.forEach(function (v, i) {
+      if (Math.abs(v - ms) < Math.abs(MINS[mi] - ms)) mi = i;
+    });
+    minVal = MINS[mi];
+    renderMin();
+
+    var hk = parseInt(s.hookdelay, 10) || 0, hi = 0;
+    HOOKS.forEach(function (v, i) { if (Math.abs(v - hk) < Math.abs(HOOKS[hi] - hk)) hi = i; });
+    hookVal = HOOKS[hi];
+    renderHook();
+
+    var di = Math.max(0, Math.min(12, Math.round((parseInt(s.delay, 10) || 0) / 5)));
+    $("delay").value = di;
+    $("delayV").textContent = di ? (di * 5) + " s" : "Off";
+    fill($("delay"));
+
+    cur = fromState(s);
+    if (fixing) cur.mode = "4";
+    if (!demo && (parseInt(s.bias, 10) || 0) > 0) writeFiles({ bias: 0 });
+    if (!demo && s.near !== "1") writeFiles({ near: 1 });
+    if (!demo && s.sedge !== "1") writeFiles({ sedge: 1 });
+
+    blOff = {}; blDel = {};
+    (s.bloff || "").split("\n").forEach(function (l) { l = l.trim().replace(/\s+/g, " "); if (l) blOff[l] = 1; });
+    (s.bldel || "").split("\n").forEach(function (l) { l = l.trim().replace(/\s+/g, " "); if (l) blDel[l] = 1; });
+    parseGroups(s.skip || "", s.texg || "");
+    cur.skip = nl(skipLines()); cur.bloff = nk(blOff); cur.bldel = nk(blDel);
+    if (!base) setBaseline();
+    updatePend();
+    renderGroups();
+    renderSkipList();
+    updateLookUI();
+    renderStats(s.ft);
+  }
+
+  /* ---------- texture groups & skip manager ---------- */
+  function fmtName(f) {
+    var e = {
+      0x9270: "R11 EAC", 0x9271: "R11 EAC signed", 0x9272: "RG11 EAC", 0x9273: "RG11 EAC signed",
+      0x9274: "ETC2 RGB", 0x9275: "ETC2 sRGB", 0x9276: "ETC2 RGB+A1", 0x9277: "ETC2 sRGB+A1",
+      0x9278: "ETC2 RGBA", 0x9279: "ETC2 sRGBA"
+    };
+    var A = ["4x4", "5x4", "5x5", "6x5", "6x6", "8x5", "8x6", "8x8", "10x5", "10x6", "10x8", "10x10", "12x10", "12x12"];
+    if (e[f]) return e[f];
+    if (f >= 0x93b0 && f <= 0x93bd) return "ASTC " + A[f - 0x93b0];
+    if (f >= 0x93d0 && f <= 0x93dd) return "ASTC " + A[f - 0x93d0] + " sRGB";
+    return "Format 0x" + f.toString(16);
+  }
+  
+  function parseGroups(skipText, texgText) {
+    var map = {}, m, re = /fmt=(\d+)\s+hex=\S+\s+sz=(\d+)\s+n=(\d+)\s+ap=(\d+)/;
+    skipSet = {};
+    customSkips = [];
+    
+    skipText.split("\n").forEach(function (l) {
+      l = l.trim();
+      if (!l) return;
+      var active = true;
+      if (l.startsWith("#")) {
+        active = false;
+        l = l.substring(1).trim();
+      }
+      m = /^\s*(\d+)\s+(\d+)\s*$/.exec(l);
+      if (m && active) {
+        if (m[2] !== "0") skipSet[m[1] + "|" + m[2]] = 1;
+      }
+      customSkips.push({ line: l, active: active });
+    });
+    
+    texgText.split("\n").forEach(function (l) {
+      m = re.exec(l);
+      if (!m) return;
+      map[m[1] + "|" + m[2]] = { fmt: +m[1], sz: +m[2], n: +m[3], ap: +m[4] };
+    });
+    
+    Object.keys(skipSet).forEach(function (k) {
+      if (!map[k]) {
+        var a = k.split("|");
+        map[k] = { fmt: +a[0], sz: +a[1], n: 0, ap: 0 };
       }
     });
+    groups = Object.keys(map).map(function (k) { return map[k]; });
+    groups.sort(function (a, b) { return b.sz - a.sz || b.n - a.n; });
+  }
+
+  function skipLines() {
+    var lines = [];
+    var seen = {};
+    
+    customSkips.forEach(function(cs) {
+      var out = cs.active ? cs.line : ("# " + cs.line);
+      lines.push(out);
+      if (cs.active) seen[cs.line] = true;
+    });
+    
+    Object.keys(skipSet).forEach(function(k) {
+      var line = k.replace("|", " ");
+      if (!seen[line]) {
+        lines.push(line);
+        seen[line] = true;
+      }
+    });
+    return lines;
+  }
+
+  function writeSkip(linesIn) {
+    var lines = linesIn || skipLines();
+    cur.skip = nl(lines);
+    if (demo) { fake.skip = lines.join("\n"); return Promise.resolve({ ok: true }); }
+    var cmd = "D=" + D + "; [ -d $D ] || { echo NODIR; exit 1; }; ";
+    cmd += lines.length
+      ? ("printf '%s\\n' " + lines.map(function (l) { return '"' + l + '"'; }).join(" ") + " > $D/skip.txt; ")
+      : ": > $D/skip.txt; ";
+    cmd += "chmod 666 $D/skip.txt 2>/dev/null; echo OK";
+    return queued(function () {
+      return sh(cmd).then(function (r) {
+        r.ok = r.stdout.indexOf("OK") >= 0;
+        return r;
+      });
+    });
+  }
+
+  function writeBl() {
+    cur.bloff = nk(blOff); cur.bldel = nk(blDel);
+    if (demo) {
+      fake.bloff = Object.keys(blOff).join("\n"); fake.bldel = Object.keys(blDel).join("\n");
+      return Promise.resolve({ ok: true });
+    }
+    function one(file, obj) {
+      var a = Object.keys(obj);
+      return a.length
+        ? "printf '%s\\n' " + a.map(function (l) { return '"' + l + '"'; }).join(" ") + " > $D/" + file + "; "
+        : ": > $D/" + file + "; ";
+    }
+    var cmd = "D=" + D + "; [ -d $D ] || { echo NODIR; exit 1; }; " +
+      one("bltoff.txt", blOff) + one("bltdel.txt", blDel) +
+      "chmod 666 $D/bltoff.txt $D/bltdel.txt 2>/dev/null; echo OK";
+    return queued(function () {
+      return sh(cmd).then(function (r) {
+        r.ok = r.stdout.indexOf("OK") >= 0;
+        return r;
+      });
+    });
+  }
+
+  function skipDone(r) {
+    var p = r.ok && updatePend();
+    toast(!r.ok ? "Could not save the list."
+      : (p ? "List saved. Tap Apply for CODM." : "Back to original. Nothing to apply."));
+  }
+
+  function renderGroups() {
+    var box = $("groups"), cnt = $("gcount");
+    if (!groups.length) {
+      cnt.hidden = true;
+      box.innerHTML = '<p class="desc">No groups yet. Play a match with the logs on, then tap Refresh list.</p>';
+      return;
+    }
+    var h = "", off = 0;
+    groups.forEach(function (g) {
+      var key = g.fmt + "|" + g.sz, sk = !!skipSet[key];
+      if (sk) off++;
+      h += '<button class="sw" type="button" role="switch" data-k="' + key + '" aria-checked="' + (sk ? "false" : "true") + '">' +
+        '<span><span class="t">' + esc(fmtName(g.fmt)) + ", " + g.sz + ' px</span><span class="d">' +
+        (g.n ? g.n + " seen · " + g.ap + " changed" : "Not seen in the current log") +
+        '</span></span><span class="knob"></span></button>';
+    });
+    box.innerHTML = h;
+    cnt.hidden = false;
+    cnt.textContent = groups.length + " group" + (groups.length === 1 ? "" : "s") + (off ? " · " + off + " off" : "");
+  }
+
+  function renderSkipList() {
+    var html = "";
+    var TRASH = '<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
+    var nDel = 0;
+    builtins.forEach(function(b) {
+      if (blDel[b]) { nDel++; return; }
+      var on = !blOff[b];
+      html += '<div class="skip-item builtin' + (on ? '' : ' off') + '">' +
+        '<div class="skip-info"><span>' + b + '</span><small>Built-in' + (on ? '' : ' (off)') + '</small></div>' +
+        '<div class="skip-actions">' +
+          '<button class="sw bl-toggle" data-k="' + b + '" aria-checked="' + (on ? "true" : "false") + '"><span class="knob"></span></button>' +
+          '<button class="ib skip-del bl-del" data-k="' + b + '" aria-label="Delete">' + TRASH + '</button>' +
+        '</div></div>';
+    });
+    if (nDel) {
+      html += '<button class="btn bl-restore" type="button" style="margin-top:4px">Restore deleted built-ins (' + nDel + ')</button>';
+    }
+
+    customSkips.forEach(function(cs, i) {
+      html += '<div class="skip-item">' +
+        '<div class="skip-info"><span>' + esc(cs.line) + '</span></div>' +
+        '<div class="skip-actions">' +
+          '<button class="sw skip-toggle" data-idx="' + i + '" aria-checked="' + (cs.active ? "true" : "false") + '"><span class="knob"></span></button>' +
+          '<button class="ib skip-del" data-idx="' + i + '" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>' +
+        '</div></div>';
+    });
+    
+    if (customSkips.length === 0) {
+      html += '<p class="desc" style="text-align:center; margin-top:8px;">No custom rules added yet.</p>';
+    }
+    $("skipList").innerHTML = html;
+  }
+
+  $("groups").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".sw") : null;
+    if (!b) return;
+    var key = b.getAttribute("data-k");
+    if (skipSet[key]) delete skipSet[key];
+    else skipSet[key] = 1;
+    b.setAttribute("aria-checked", skipSet[key] ? "false" : "true");
+    var off = Object.keys(skipSet).length;
+    $("gcount").textContent = groups.length + " group" + (groups.length === 1 ? "" : "s") + (off ? " · " + off + " off" : "");
+    writeSkip().then(skipDone);
   });
 
-  $("recTest").addEventListener("click", function() {
-    lookMode = 1; strVal = 4;
-    $("scale").value = 100; $("scaleV").textContent = "100%";
-    renderSteps();
-    toast("Recommended settings ready. Tap Apply.");
+  $("skipAdd").addEventListener("click", function () {
+    var lines = $("skipt").value.split("\n");
+    var added = 0;
+    lines.forEach(function(l) {
+      l = l.trim();
+      if (l) {
+        var exists = customSkips.some(function(cs) { return cs.line === l; });
+        if (!exists) {
+          customSkips.push({ line: l, active: true });
+          added++;
+        }
+      }
+    });
+    if (added > 0) {
+      $("skipt").value = "";
+      renderSkipList();
+      writeSkip().then(function(r) {
+        if (r.ok) updatePend();
+        toast("Added " + added + " rule(s). Tap Apply for CODM.");
+      });
+    } else {
+      toast("No new valid rules found.");
+    }
   });
 
-  $("resetDef").addEventListener("click", function() {
-    writeTxt("scale.txt", "0");
-    writeTxt("blk.txt", "0");
-    writeTxt("testtex.txt", "1");
-    toast("Reset complete. Tap Apply.");
+  $("skipList").addEventListener("click", function(e) {
+    var blr = e.target.closest(".bl-restore");
+    if (blr) {
+      Object.keys(blDel).forEach(function (k) { delete blOff[k]; });
+      blDel = {};
+      renderSkipList();
+      writeBl().then(skipDone);
+      return;
+    }
+    var bld = e.target.closest(".bl-del");
+    if (bld) {
+      var bk = bld.getAttribute("data-k");
+      if (bld.classList.contains("confirm")) {
+        blOff[bk] = 1; blDel[bk] = 1;
+        renderSkipList();
+        writeBl().then(skipDone);
+      } else {
+        bld.classList.add("confirm");
+        bld.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
+        toast("Tap the check again to delete this built-in.");
+        setTimeout(function () {
+          if (bld && $("skipList").contains(bld) && bld.classList.contains("confirm")) {
+            bld.classList.remove("confirm");
+            bld.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
+          }
+        }, 2500);
+      }
+      return;
+    }
+    var blt = e.target.closest(".bl-toggle");
+    if (blt) {
+      var tk = blt.getAttribute("data-k");
+      if (blOff[tk]) delete blOff[tk]; else blOff[tk] = 1;
+      renderSkipList();
+      writeBl().then(skipDone);
+      return;
+    }
+    var delBtn = e.target.closest(".skip-del");
+    if (delBtn) {
+      var idx = delBtn.getAttribute("data-idx");
+      if (delBtn.classList.contains("confirm")) {
+        customSkips.splice(idx, 1);
+        renderSkipList();
+        writeSkip().then(skipDone);
+      } else {
+        delBtn.classList.add("confirm");
+        delBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
+        setTimeout(function() {
+          if (delBtn && $("skipList").contains(delBtn)) {
+            delBtn.classList.remove("confirm");
+            delBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
+          }
+        }, 2000);
+      }
+      return;
+    }
+    
+    var toggleBtn = e.target.closest(".skip-toggle");
+    if (toggleBtn) {
+      var tidx = toggleBtn.getAttribute("data-idx");
+      customSkips[tidx].active = !customSkips[tidx].active;
+      renderSkipList();
+      writeSkip().then(skipDone);
+    }
   });
 
-  $("clrLog").addEventListener("click", function() {
-    sh("rm -f " + D + "/codm_tex.log");
-    toast("Log cleared.");
+  /* Finds the game's files folder. Handles other Android users (dual apps / clone),
+     the mirror path, and shells that need nsenter or su to see /data/data. */
+  var PROBE = "P=" + PKG + "; for d in /data/data/$P/files /data/user/*/$P/files /data_mirror/data_ce/null/*/$P/files; do " +
+    "[ -d \"$d\" ] && echo \"C|$d|$(stat -c %Y \"$d/codm_tex.log\" 2>/dev/null || echo 0)\"; done";
+  function pickDir(out) {
+    var best = null;
+    out.split("\n").forEach(function (l) {
+      var a = l.split("|");
+      if (a[0] !== "C" || !a[1]) return;
+      var t = parseInt(a[2], 10) || 0;
+      if (!best || t > best.t) best = { p: a[1], t: t };
+    });
+    return best;
+  }
+  function findDir() {
+    if (demo) return Promise.resolve(true);
+    var tries = [0, 1, 2], i = 0;
+    function next() {
+      if (i >= tries.length) { WR = 0; return Promise.resolve(false); }
+      WR = tries[i++];
+      return sh(PROBE).then(function (r) {
+        var b = pickDir(r.stdout);
+        if (b) { D = b.p; return true; }
+        return next();
+      });
+    }
+    return next();
+  }
+  function refresh() { return findDir().then(readState).then(render); }
+
+  /* One shell script is used both for the on-screen view and for the exported codm_diag.txt */
+  /* Everything in the report passes through this filter so tokens / login data never leave the phone. */
+  var REDACT = "sed -E -e 's/eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_.-]+/[JWT]/g' " +
+    "-e 's/((token|Token|TOKEN|ticket|Ticket|openid|passwd|password|secret|session|sessionid|authorization|login)[=: ]+)[A-Za-z0-9._%+\\/=-]{8,}/\\1[redacted]/g'";
+  function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
+  function diagBody() {
+    return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
+      "echo '== report'; echo 'UI: v0.36'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== who'; id; getenforce 2>&1; " +
+      "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
+      "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
+      "echo '== hardware / ABI facts'; for k in ro.build.version.release ro.build.version.sdk ro.board.platform ro.hardware ro.hardware.egl ro.hardware.vulkan ro.product.cpu.abi; do echo \"$k=$(getprop $k)\"; done; echo \"uname_m=$(uname -m)\"; grep -m2 -i -E '^(hardware|model name)' /proc/cpuinfo 2>/dev/null; " +
+      "echo '== gpu'; timeout 6 dumpsys SurfaceFlinger 2>/dev/null | grep -m3 -i -E 'GLES|EGL'; " +
+      "echo '== game'; timeout 6 dumpsys package $P 2>/dev/null | grep -m4 -E 'versionName|versionCode|lastUpdateTime'; " +
+      "echo '== users'; ls /data/user 2>&1; " +
+      "echo '== status summary (each step separate)'; M=/data/adb/modules/codm_tex_logger; " +
+      "echo \"installed=$(sed -n 's/^version=//p' $M/module.prop 2>/dev/null | head -n 1) zygisk_so=$([ -f $M/zygisk/arm64-v8a.so ] && echo yes || echo NO) module_disabled=$([ -f $M/disable ] && echo yes || echo no) pending_update=$([ -d /data/adb/modules_update/codm_tex_logger ] && echo yes || echo no)\"; " +
+      ZYG_SCRIPT +
+      "echo \"injection_breadcrumb_in_logcat=$(timeout 5 logcat -d -s codm_tex 2>/dev/null | grep -c postAppSpecialize)\"; " +
+      "ls -ln $D/codm_tex.status 2>&1 | head -n 1; " +
+      "if [ -f $D/codm_tex.status ]; then for k in ver stage dir_writable lib hook gfx cand skip_rule skip_minsz skip_delay applied why0 cfg_bad cfg_missing injected started updated; do echo \"status.$k=$(sed -n 's/^'$k'=//p' $D/codm_tex.status)\"; done; else echo 'status file: none (module has not run in CODM since install/update)'; fi; " +
+      "echo \"settings_files_owned_by_game=$(ls -ln $D/*.txt 2>/dev/null | awk '$3!=0' | wc -l) (0 = only root wrote them: the game process never created or repaired any)\"; " +
+      "echo '== game dir'; ls -ldZ /data/data/$P /data/data/$P/files 2>&1; ls -ldZ /data/user/*/$P 2>&1; " +
+      "echo '== settings folder'; echo \"$D\"; ls -la $D 2>&1 | grep -v -i -E 'login|token|jwt|ticket|passwd|account' | head -n 60; " +
+      "echo '== settings'; for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay; do echo \"$f=$(cat $D/$f.txt 2>/dev/null)\"; done; " +
+      "for f in skip bltoff bltdel; do echo \"-- $f.txt\"; cat $D/$f.txt 2>/dev/null; done; " +
+      "echo '== modules'; for m in /data/adb/modules/*; do [ -d \"$m\" ] || continue; if [ -f \"$m/disable\" ]; then s=disabled; else s=on; fi; echo \"${m##*/} ($s) $(sed -n 's/^version=//p' $m/module.prop 2>/dev/null | head -n 1)\"; done; " +
+      "echo '== log'; if [ -f $L ]; then echo \"size=$(wc -c < $L) lines=$(wc -l < $L)\"; grep '^=== start' $L | tail -n 3; grep -E '^(GFX|HOOK|GLINFO)' $L | tail -n 8; echo '-- last 40 lines'; tail -n 40 $L; else echo 'no log'; fi; " +
+      "echo '== crash log (only CODM-related lines; other apps crashing, e.g. e.android:clean / android:channel, are hidden)'; C=$(timeout 8 logcat -b crash -d -t 400 2>&1); echo \"$C\" | grep -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | tail -n 80; echo \"(hidden non-CODM crash lines: $(echo \"$C\" | grep -v -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | grep -c .))\"; " +
+      "echo '== logcat'; timeout 10 logcat -d -t 600 2>/dev/null | grep -i -E 'garena|codm|libunity|zygisk|lsplt|FATAL|SIGSEGV|SIGABRT|tombstone|anogs|tersafe' | tail -n 80; " +
+      "echo '== tombstone'; T=$(grep -l -s $P /data/tombstones/tombstone_* 2>/dev/null | tail -n 1); if [ -n \"$T\" ]; then echo \"$T\"; echo \"tombstone_time=$(date -r \"$T\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c %y \"$T\" 2>/dev/null | cut -c1-19)\"; [ -n \"$(find \"$T\" -mmin +1440 2>/dev/null)\" ] && echo 'STALE: older than 24 h, NOT from the last session; do not treat as the current crash'; head -n 70 \"$T\"; else echo none; fi; " +
+      "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
+  }
+
+  function runDiag() {
+    $("logw").querySelector("h3").textContent = "Diagnostics";
+    $("logt").textContent = "Collecting… this can take up to 30 seconds.";
+    $("logw").classList.add("open");
+    lockScroll();
+    if (demo) { $("logt").textContent = "Demo mode. Diagnostics run only inside the module WebUI."; return; }
+    sh(diagScript(), 60000).then(function (r) {
+      $("logt").textContent = "Tip: Tools → Export report saves this and the log as files you can send.\nexec errno: " + r.errno +
+        (r.stderr ? " | " + r.stderr : "") + "\n\n" + (r.stdout.trim() || "(no output)");
+      $("logt").scrollTop = 0;
+    });
+  }
+
+  /* ---------- events ---------- */
+  Array.prototype.forEach.call($("lookSeg").children, function (b) {
+    b.addEventListener("click", function () {
+      lookMode = +b.getAttribute("data-m");
+      if (lookMode === 1) { if (strVal < 1 || strVal > 5) strVal = 3; }
+      else if (lookMode === 2 || lookMode === 3) { if (strVal < 1 || strVal > 4) strVal = 2; }
+      updateLookUI();
+      applyLookToFiles();
+    });
+  });
+  onPick("steps", function (v) {
+    if (!lookMode) return;
+    strVal = v;
+    updateLookUI();
+    applyLookToFiles();
   });
 
-  $("expReport").addEventListener("click", function() {
-    toast("Creating report file in internal storage...");
-    sh("mkdir -p /sdcard/'CODM Log' && cp " + D + "/codm_tex.log /sdcard/'CODM Log'/ 2>/dev/null").then(function() {
-      toast("Report saved sa 'CODM Log' folder!");
+  $("scale").addEventListener("input", function () {
+    $("scaleV").textContent = $("scale").value + "%";
+    fill($("scale"));
+    updateStatus();
+  });
+  $("scale").addEventListener("change", function () {
+    var v = parseInt($("scale").value, 10);
+    save({ scale: v >= 100 ? 0 : v }, "Render scale");
+  });
+
+  onPick("fpsBox", function (v) {
+    fpsVal = v;
+    renderFps();
+    updateStatus();
+    save({ fps: v }, "Frame rate cap");
+  });
+  onPick("ttszBox", function (v) {
+    ttSize = v; renderTT();
+    save({ ttsize: v }, "Pixel size");
+  });
+  onPick("ttsmBox", function (v) {
+    ttSm = v; renderTT();
+    save({ ttsm: v }, "Edge blend");
+  });
+  onPick("hookBox", function (v) {
+    hookVal = v;
+    renderHook();
+    save({ hookdelay: v }, "Hook timing");
+  });
+  onPick("minBox", function (v) {
+    minVal = v;
+    renderMin();
+    save({ minsz: v }, "Smallest texture");
+  });
+
+  $("delay").addEventListener("input", function () {
+    var d = parseInt($("delay").value, 10);
+    $("delayV").textContent = d ? (d * 5) + " s" : "Off";
+    fill($("delay"));
+  });
+  $("delay").addEventListener("change", function () {
+    save({ delay: parseInt($("delay").value, 10) * 5 }, "Start delay");
+  });
+
+  $("gref").addEventListener("click", function () {
+    refresh().then(function () { toast("Groups refreshed."); });
+  });
+  $("sref").addEventListener("click", function () {
+    refresh().then(function () { toast("Stats refreshed."); });
+  });
+  $("gall").addEventListener("click", function () {
+    skipSet = {};
+    writeSkip().then(function (r) {
+      renderGroups();
+      skipDone(r);
     });
   });
 
-  Array.prototype.forEach.call(document.querySelectorAll("#dock .tabs button"), function(btn) {
-    btn.addEventListener("click", function() {
-      var v = btn.getAttribute("data-v");
-      $("v-home").classList.toggle("active", v === "home");
-      $("v-tools").classList.toggle("active", v === "tools");
-      Array.prototype.forEach.call(document.querySelectorAll("#dock .tabs button"), function(b) {
-        b.classList.toggle("on", b === btn);
+  ["fz", "th", "core"].forEach(function (k) {
+    $(k).addEventListener("click", function () {
+      var on = !getSw(k);
+      var m = {};
+      setSw(k, on);
+      updateLogDeps();
+      m[k] = on ? 1 : 0;
+      save(m, k === "fz" ? "Freeze log" : (k === "th" ? "Thread log" : "Core log"));
+    });
+  });
+
+  function cancelChanges() {
+    var map = {}, n = 0;
+    KEYS.forEach(function (k) { if (k !== "mode" && cur[k] !== base[k]) { map[k] = base[k]; n++; } });
+    blOff = Object.assign({}, baseBlOff);
+    blDel = Object.assign({}, baseBlDel);
+    var p = n ? writeFiles(map) : Promise.resolve({ ok: true });
+    p.then(function () { return writeSkip(baseSkipLines); })
+     .then(function () { return writeBl(); })
+     .then(function () { return refresh(); })
+     .then(function () { updatePend(); toast("Changes cancelled. Back to the original settings."); });
+  }
+  arm("recTest", "Tap again to overwrite settings", setRecommended);
+  $("cancelChg").addEventListener("click", function () { if (base) cancelChanges(); });
+
+  /* "Reopen CODM after Apply": opt-in, default OFF, remembered on this device */
+  var noticeEl = $("notice");
+  try { if (localStorage.getItem("ct_hide_notice") !== "1") noticeEl.hidden = false; } catch (e) { noticeEl.hidden = false; }
+  $("noticeX").addEventListener("click", function () {
+    noticeEl.hidden = true;
+    try { localStorage.setItem("ct_hide_notice", "1"); } catch (e) {}
+  });
+  var reopen = false;
+  try { reopen = localStorage.getItem("ct_reopen") === "1"; } catch (e) {}
+  var reopenEl = $("reopen");
+  if (reopenEl) {
+    reopenEl.checked = reopen;
+    reopenEl.addEventListener("change", function () {
+      reopen = reopenEl.checked;
+      try { localStorage.setItem("ct_reopen", reopen ? "1" : "0"); } catch (e) {}
+    });
+  }
+  $("stop").addEventListener("click", function () {
+    if (demo) { toast("Demo mode — nothing was applied or stopped."); return; }
+    /* wait for every queued setting write, and refuse to continue if the last one failed */
+    wq.then(function () {
+      if (writeFail) { toast("Not applied: setting \"" + writeFail + "\" did not save. Nothing was stopped."); return; }
+      return sh("am force-stop " + PKG).then(function (r) {
+        if (r.errno !== 0) { toast("Could not stop CODM. Nothing was applied."); return; }
+        setBaseline(); updatePend();
+        if (!reopen) { toast("CODM stopped. Open it again to apply. Settings are read at game start."); return; }
+        /* stop finished (am force-stop is synchronous); check the package, give the system a moment, then launch */
+        sh("pm path " + PKG + " >/dev/null 2>&1 && echo HAVE || echo NOPKG").then(function (c) {
+          if (c.stdout.indexOf("HAVE") < 0) { toast("CODM stopped, but package " + PKG + " was not found. Open it yourself."); return; }
+          setTimeout(function () {
+            var launch = "C=$(cmd package resolve-activity --brief -c android.intent.category.LAUNCHER " + PKG + " 2>/dev/null | tail -n 1); " +
+              "case \"$C\" in */*) am start -n \"$C\" >/dev/null 2>&1 && echo LAUNCHED || echo FAILSTART;; *) echo NOACT;; esac";
+            sh(launch, 10000).then(function (l) {
+              var ok = l.stdout.indexOf("LAUNCHED") >= 0;
+              toast(ok ? "Applied. Reopening CODM…" : "CODM stopped, but it could not be launched (" + (l.stdout.indexOf("NOACT") >= 0 ? "launcher activity not found" : (l.stderr || "start failed")).trim().slice(0, 80) + "). Open it yourself.");
+            });
+          }, 1200);
+        });
       });
     });
   });
 
-  renderSteps();
-  checkSystem();
+  function fmtBytes(n) {
+    n = +n || 0;
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+    return (n / (1024 * 1024)).toFixed(2) + " MB";
+  }
+
+  function refreshLogStat() {
+    var el = $("logStat");
+    if (!el) return;
+    if (demo) {
+      el.innerHTML = '<span class="warn">Demo mode</span> — log status is only available inside SukiSU.';
+      return;
+    }
+    el.textContent = "Checking…";
+    var cmd =
+      "L=" + D + "/codm_tex.log; " +
+      "if [ -d /sdcard ]; then O='/sdcard/CODM Log'; else O='/storage/emulated/0/CODM Log'; fi; " +
+      "echo '---LIVE---'; " +
+      "if [ -f \"$L\" ]; then " +
+      "  echo PRESENT; " +
+      "  wc -c < \"$L\"; " +
+      "  wc -l < \"$L\"; " +
+      "  date -r \"$L\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c '%y' \"$L\" 2>/dev/null | cut -c1-19; " +
+      "  grep -E '^=== start' \"$L\" 2>/dev/null | tail -n 1; " +
+      "else echo MISSING; fi; " +
+      "echo '---REPORT---'; " +
+      "R=$(ls -t \"$O\"/CODM_report_* 2>/dev/null | head -n 1); " +
+      "if [ -n \"$R\" ]; then echo PRESENT; echo \"${R##*/}\"; wc -c < \"$R\"; " +
+      "date -r \"$R\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c '%y' \"$R\" 2>/dev/null | cut -c1-19; " +
+      "else echo MISSING; fi";
+    sh(cmd).then(function (r) {
+      var out = (r.stdout || "").trim();
+      if (!out) {
+        el.innerHTML = '<span class="bad">Could not read log status.</span>';
+        return;
+      }
+      var parts = out.split("---REPORT---");
+      var livePart = (parts[0] || "").replace("---LIVE---", "").trim();
+      var ll = livePart.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      var rp = (parts[1] || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      var html = "";
+      if (ll[0] === "MISSING" || !ll.length) {
+        html += '<div><span class="warn">Live log:</span> <b>cleared / none</b></div>';
+      } else {
+        var startLine = ll.slice(4).join(" ") || "";
+        html += '<div><span class="ok">Live log:</span> <b>' + fmtBytes(ll[1] || "0") + "</b> · " + (ll[2] || "?") + " lines</div>";
+        html += "<div>Updated: " + esc(ll[3] || "?") + "</div>";
+        if (startLine) html += '<div class="startline">' + esc(startLine) + "</div>";
+      }
+      if (rp[0] === "PRESENT") {
+        html += '<div class="expgap"><span class="ok">Last report:</span> <b>' + esc(rp[1] || "?") + "</b></div>";
+        html += "<div>" + fmtBytes(rp[2] || 0) + (rp[3] ? " · " + esc(rp[3]) : "") + "</div>";
+      } else {
+        html += '<div class="expgap"><span class="warn">Last report:</span> <b>not yet</b></div>';
+      }
+      el.innerHTML = html;
+    });
+  }
+
+  arm("clr", "Tap again to clear", function () {
+    sh("rm -f " + D + "/codm_tex.log").then(function (r) {
+      toast(demo ? "Demo mode — nothing deleted." : (r.errno === 0 ? "Log cleared." : "Could not clear the log."));
+      refreshLogStat();
+    });
+  });
+
+  $("logref").addEventListener("click", function () { refreshLogStat(); });
+
+  $("diag").addEventListener("click", runDiag);
+  $("vlog").addEventListener("click", function () {
+    $("logw").querySelector("h3").textContent = "codm_tex.log · last 80 lines";
+    $("logt").textContent = "Loading…";
+    $("logw").classList.add("open");
+    lockScroll();
+    if (demo) {
+      $("logt").textContent = "Demo mode. The last lines of codm_tex.log appear here when running inside SukiSU.";
+      return;
+    }
+    sh("tail -n 80 " + D + "/codm_tex.log 2>&1").then(function (r) {
+      $("logt").textContent = r.stdout.trim() || "The log is empty.";
+      $("logt").scrollTop = $("logt").scrollHeight;
+    });
+  });
+  $("logx").addEventListener("click", function () {
+    $("logw").classList.remove("open");
+    unlockScroll();
+  });
+  arm("normal", "Tap again to turn all off", function () {
+    save(NORMAL, "All effects off").then(refresh);
+  });
+  arm("reset", "Tap again to reset", function () {
+    save(REC, "Defaults").then(function () {
+      skipSet = {};
+      customSkips = [];
+      blOff = {}; blDel = {};
+      return writeSkip().then(writeBl);
+    }).then(refresh);
+  });
+
+  /* slider grab handles */
+  Array.prototype.forEach.call(document.querySelectorAll("input[type=range]"), function (el) {
+    var w = document.createElement("div");
+    w.className = "sl";
+    el.parentNode.insertBefore(w, el);
+    w.appendChild(el);
+    var g = document.createElement("span");
+    g.className = "grab";
+    w.appendChild(g);
+    var drag = false, off = 0;
+    function frac() { return (el.value - el.min) / (el.max - el.min); }
+    function center() {
+      var r = el.getBoundingClientRect();
+      return r.left + 14 + frac() * (r.width - 28);
+    }
+    function move(e) {
+      var r = el.getBoundingClientRect(), mn = +el.min, mx = +el.max, st = +el.step || 1;
+      var f = (e.clientX - off - r.left - 14) / (r.width - 28);
+      f = Math.max(0, Math.min(1, f));
+      var v = mn + Math.round(f * (mx - mn) / st) * st;
+      if (String(v) !== el.value) {
+        el.value = v;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+    g.addEventListener("pointerdown", function (e) {
+      drag = true;
+      off = e.clientX - center();
+      try { g.setPointerCapture(e.pointerId); } catch (_) {}
+      e.preventDefault();
+    });
+    g.addEventListener("pointermove", function (e) { if (drag) move(e); });
+    function end() {
+      if (!drag) return;
+      drag = false;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    g.addEventListener("pointerup", end);
+    g.addEventListener("pointercancel", end);
+    fill(el);
+  });
+
+  $("exp").addEventListener("click", function () {
+    if (demo) {
+      toast("Demo mode — nothing exported.");
+      return;
+    }
+    var btn = $("exp"), label = btn.textContent;
+    var nm = ($("rptName").value || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 24);
+    $("rptName").value = nm;
+    try { localStorage.setItem("ct_name", nm); } catch (e) {}
+    btn.disabled = true;
+    btn.textContent = "Exporting… please wait";
+    var cmd =
+      "D=" + D + "; NM='" + nm + "'; if [ -d /sdcard ]; then O=\"/sdcard/CODM Log\"; else O=\"/storage/emulated/0/CODM Log\"; fi; " +
+      "mkdir -p \"$O\" || { echo FAILDIR; exit 1; }; " +
+      "B=$(getprop ro.product.brand | tr -cd 'A-Za-z0-9._-'); M=$(getprop ro.product.model | tr ' ' '_' | tr -cd 'A-Za-z0-9._-'); " +
+      "N=\"CODM_report_${B}_${M}\"; [ -n \"$NM\" ] && N=\"${N}_${NM}\"; N=\"${N}_$(date +%Y%m%d-%H%M%S)\"; " +
+      "T=\"$O/$N\"; mkdir -p \"$T\" || { echo FAILDIR; exit 1; }; " +
+      "if [ -f $D/codm_tex.log ]; then cp -f $D/codm_tex.log \"$T/codm_tex.log\"; else echo NOLOG; fi; " +
+      "( echo \"name: $NM\"; " + diagScript() + " ) > \"$T/codm_diag.txt\" 2>&1; " +
+      "cd \"$O\" || exit 1; OUT=\"\"; " +
+      "if command -v zip >/dev/null 2>&1 && zip -q -r \"$N.zip\" \"$N\" 2>/dev/null; then OUT=\"$N.zip\"; " +
+      "elif tar czf \"$N.tar.gz\" \"$N\" 2>/dev/null && tar tzf \"$N.tar.gz\" >/dev/null 2>&1; then OUT=\"$N.tar.gz\"; " +
+      "else rm -f \"$N.tar.gz\"; { cat \"$T/codm_diag.txt\"; echo; echo '== codm_tex.log =='; cat \"$T/codm_tex.log\" 2>/dev/null; } > \"$N.txt\"; OUT=\"$N.txt\"; fi; " +
+      "rm -rf \"$T\"; chmod 666 \"$O/$OUT\" 2>/dev/null; " +
+      "echo OUT=$OUT; echo SIZE=$(wc -c < \"$O/$OUT\" 2>/dev/null || echo 0); echo DONE";
+    sh(cmd, 60000).then(function (r) {
+      btn.disabled = false;
+      btn.textContent = label;
+      var out = r.stdout || "";
+      var fn = /OUT=(\S+)/.exec(out), sz = /SIZE=(\d+)/.exec(out);
+      var kb = Math.max(1, Math.round((sz ? +sz[1] : 0) / 1024)) + " KB";
+      if (out.indexOf("FAILDIR") >= 0) toast("Could not create the CODM Log folder. Check that storage access is allowed.");
+      else if (out.indexOf("DONE") < 0 || !fn) toast("Export did not finish. Try again.");
+      else toast("Saved " + fn[1] + " (" + kb + ") in CODM Log. Send this one file." + (out.indexOf("NOLOG") >= 0 ? " There was no log yet, so play a match and export again." : ""));
+      refreshLogStat();
+    });
+  });
+
+  /* paint once with defaults, then load the real settings */
+  updateLookUI();
+  renderFps();
+  try { $("rptName").value = localStorage.getItem("ct_name") || ""; } catch (e) {}
+  renderMin();
+  renderHook();
+  refresh();
+  refreshLogStat();
 })();
 </script>
 </body>
