@@ -4,3 +4,5 @@ EGL/egl.h, GLES3/gl3.h, android/{log,dlext,native_window}.h (declarations only).
 2) mkdir -p /tmp/ht/files && chmod 777 /tmp/ht/files
 3) g++ -std=c++20 -I<stubs> -I. -Wl,--unresolved-symbols=ignore-all tests/host_test_cfg.cpp -o t -lpthread && ./t
    (same for host_test_scale.cpp). Run once as root and once as a normal user (log-recreate test needs non-root).
+4) v0.37: tests/host_test_chain.cpp (original-function safety net, wrap() loop guard, CHAIN/MAPS reports) is built the same way:
+   g++ -std=c++20 -I<stubs> -I. -Wl,--unresolved-symbols=ignore-all tests/host_test_chain.cpp -o t3 -lpthread -ldl && ./t3
