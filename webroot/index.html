@@ -85,8 +85,15 @@ h1 { margin: 2px 0 0; font-size: 26px; line-height: 1.1; font-weight: 800; lette
 .chip.msg { color: var(--mute); font-weight: 500; }
 
 /* ---------- views & cards ---------- */
-.view { display: none; }
-.view.active { display: block; animation: vin 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.view { display: none; opacity: 1; transform: none; }
+/* no "both" fill-mode: some WebViews re-trigger animation on layout
+   (e.g. when #notice is hidden) and leave the view stuck at opacity 0 */
+.view.active {
+  display: block;
+  opacity: 1;
+  transform: none;
+  animation: vin 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
 @keyframes vin { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
 
 .card {
@@ -1838,6 +1845,15 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   $("noticeX").addEventListener("click", function () {
     noticeEl.hidden = true;
     try { localStorage.setItem("ct_hide_notice", "1"); } catch (e) {}
+    /* Some WebViews re-run the view entrance animation when a sibling is
+       hidden and leave .view.active at opacity 0. Force home visible. */
+    showView("home");
+    var home = $("v-home");
+    if (home) {
+      home.style.opacity = "1";
+      home.style.transform = "none";
+      home.style.display = "block";
+    }
   });
   var reopen = false;
   try { reopen = localStorage.getItem("ct_reopen") === "1"; } catch (e) {}
