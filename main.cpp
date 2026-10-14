@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.36"
+#define VERSION "v0.37"
 #define PKG "com.garena.game.codm"
 #define DIR "/data/data/" PKG "/files/"
 #define LOGF DIR "codm_tex.log"
@@ -113,13 +113,45 @@ static void st_set(const char *k, const std::string &v) {
     st_kv[k] = v;
     st_kv["updated"] = std::to_string((long long)time(nullptr));
     FILE *f = fopen(STATF ".tmp", "w");
-    if (!f) return;
+    if (!f) { unlink(STATF ".tmp"); f = fopen(STATF ".tmp", "w"); }   /* leftover root-owned .tmp: the folder is the game's, replace it */
+    if (!f) {
+        static std::atomic<int> warned{0};
+        if (!warned.exchange(1)) __android_log_print(ANDROID_LOG_WARN, "codm_tex", "%s status file not writable errno=%d", VERSION, errno);
+        return;
+    }
     for (auto &kv : st_kv) fprintf(f, "%s=%s\n", kv.first.c_str(), kv.second.c_str());
     fclose(f);
     chmod(STATF ".tmp", 0666);
     rename(STATF ".tmp", STATF);
 }
 static void st_seti(const char *k, long long v) { st_set(k, std::to_string(v)); }
+
+/* ---------- Original-function safety net (v0.37) ----------
+   Every hook calls the "original" through a pointer that LSPlt (or wrap()) fills in. If that pointer is
+   still null, or points back at our own hook (another injector chained through us), the old code either
+   dropped the GL/EGL call or recursed. orig_or() resolves the real system function instead and caches it. */
+static void *real_sym(const char *n) {
+    void *p = dlsym(RTLD_DEFAULT, n);
+    if (p) return p;
+    static std::atomic<int> misses{0};
+    if (misses.load() >= 64) return nullptr;      /* symbol really is not there: stop probing on every GL call */
+    misses++;
+    static const char *libs[] = {"libEGL.so", "libGLESv3.so", "libGLESv2.so", "libandroid.so"};
+    for (const char *l : libs) {
+        void *h = dlopen(l, RTLD_NOW);
+        if (h && (p = dlsym(h, n))) return p;
+    }
+    return nullptr;
+}
+template <class F> static F orig_or(F &slot, const char *name, F self) {
+    F f = slot;
+    if (f && f != self) return f;
+    void *p = real_sym(name);
+    if (p && p != (void *)self) { slot = (F)p; return (F)p; }
+    return nullptr;
+}
+static void maps_report(const char *tag);    /* defined below: lists non-system executable mappings (other injectors) */
+static void chain_report(const char *tag);   /* defined below: who owns the "original" function behind each of our hooks */
 
 /* ---------- Render scale and mip bias ---------- */
 static std::atomic<int> g_scale{0};        /* 0 = off, 20-99 = percent of native resolution */
@@ -148,13 +180,13 @@ static void (*o_act)(GLenum) = nullptr;
 static void h_act(GLenum u) {
     int i = (int)u - 0x84C0;
     tl_unit = (i >= 0 && i < 32) ? i : 0;
-    if (o_act) o_act(u);
+    if (auto f = orig_or(o_act, "glActiveTexture", h_act)) f(u);
 }
 
 static void (*o_bind)(GLenum, GLuint) = nullptr;
 static void h_bind(GLenum t, GLuint id) {
     if (t == GL_TEXTURE_2D) tl_bound[tl_unit] = id;
-    if (o_bind) o_bind(t, id);
+    if (auto f = orig_or(o_bind, "glBindTexture", h_bind)) f(t, id);
 }
 
 static void (*o_del)(GLsizei, const GLuint *) = nullptr;
@@ -165,7 +197,7 @@ static void h_del(GLsizei n, const GLuint *ids) {
             for (int u = 0; u < 32; u++) if (tl_bound[u] == ids[i]) tl_bound[u] = 0;
         }
     }
-    if (o_del) o_del(n, ids);
+    if (auto f = orig_or(o_del, "glDeleteTextures", h_del)) f(n, ids);
 }
 
 /* ---------- Detail Cut (style.txt: 0 = off, 1-4 = minimum LOD; sedge.txt: 1 = NEAREST magnification) ---------- */
@@ -224,19 +256,19 @@ static void h_tp(GLenum t, GLenum p, GLint v) {
             }
         }
     }
-    if (real_tp) real_tp(t, p, v);
+    if (auto f = orig_or(real_tp, "glTexParameteri", h_tp)) f(t, p, v);
 }
 
 static void (*o_tpf)(GLenum, GLenum, GLfloat) = nullptr;
 static void h_tpf(GLenum t, GLenum p, GLfloat v) {
     if ((g_style.load() > 0 || g_flat.load() > 0 || g_testtex.load() > 0) && p == TEX_ANISO && v > 1.0f) v = 1.0f;
-    if (o_tpf) o_tpf(t, p, v);
+    if (auto f = orig_or(o_tpf, "glTexParameterf", h_tpf)) f(t, p, v);
 }
 
 static void (*o_smp)(GLuint, GLenum, GLint) = nullptr;
 static void h_smp(GLuint s, GLenum p, GLint v) {
     g_smp++;
-    if (o_smp) o_smp(s, p, v);
+    if (auto f = orig_or(o_smp, "glSamplerParameteri", h_smp)) f(s, p, v);
 }
 
 /* ---------- Texture groups, skip rules, minimum size, start delay ---------- */
@@ -303,7 +335,7 @@ static void texn_log(int w, int h, int lv, int fmt, bool cand) {
 
 static void (*o_st)(GLenum, GLsizei, GLenum, GLsizei, GLsizei) = nullptr;
 static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
-    if (o_st) o_st(t, lv, fmt, w, h);
+    if (auto f = orig_or(o_st, "glTexStorage2D", h_st)) f(t, lv, fmt, w, h);
     int b = g_bias.load(), k = g_blk.load();
     int mx = std::max(w, h);
     bool cand = (t == GL_TEXTURE_2D && lv >= 3 && mx >= 64 && is_cmp(fmt));
@@ -479,44 +511,44 @@ static inline bool on_rt() {
     int i_ = on_rt() ? 0 : 1; c_cnt[i_][K]++; c_ns[i_][K] += d_; } while (0)
 
 static void (*o_comp)(GLuint) = nullptr;
-static void h_comp(GLuint s) { if (!o_comp) return; TIMED(K_COMP, o_comp(s)); }
+static void h_comp(GLuint s) { auto fn_ = orig_or(o_comp, "glCompileShader", h_comp); if (!fn_) return; TIMED(K_COMP, fn_(s)); }
 
 static void (*o_link)(GLuint) = nullptr;
-static void h_link(GLuint p) { if (!o_link) return; TIMED(K_LINK, o_link(p)); }
+static void h_link(GLuint p) { auto fn_ = orig_or(o_link, "glLinkProgram", h_link); if (!fn_) return; TIMED(K_LINK, fn_(p)); }
 
 static void (*o_pbin)(GLuint, GLenum, const void *, GLsizei) = nullptr;
 static void h_pbin(GLuint p, GLenum f, const void *b, GLsizei n) {
-    if (!o_pbin) return; TIMED(K_PBIN, o_pbin(p, f, b, n));
+    auto fn_ = orig_or(o_pbin, "glProgramBinary", h_pbin); if (!fn_) return; TIMED(K_PBIN, fn_(p, f, b, n));
 }
 
 static void (*o_buf)(GLenum, GLsizeiptr, const void *, GLenum) = nullptr;
 static void h_buf(GLenum t, GLsizeiptr sz, const void *d, GLenum u) {
-    if (!o_buf) return; TIMED(K_BUF, o_buf(t, sz, d, u));
+    auto fn_ = orig_or(o_buf, "glBufferData", h_buf); if (!fn_) return; TIMED(K_BUF, fn_(t, sz, d, u));
 }
 
 static void (*o_ti2)(GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const void *) = nullptr;
 static void h_ti2(GLenum t, GLint l, GLint ifmt, GLsizei w, GLsizei h, GLint b, GLenum f, GLenum ty, const void *p) {
-    if (!o_ti2) return; TIMED(K_TEX, o_ti2(t, l, ifmt, w, h, b, f, ty, p));
+    auto fn_ = orig_or(o_ti2, "glTexImage2D", h_ti2); if (!fn_) return; TIMED(K_TEX, fn_(t, l, ifmt, w, h, b, f, ty, p));
 }
 
 static void (*o_cti2)(GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const void *) = nullptr;
 static void h_cti2(GLenum t, GLint l, GLenum f, GLsizei w, GLsizei h, GLint b, GLsizei n, const void *p) {
-    if (!o_cti2) return; TIMED(K_TEX, o_cti2(t, l, f, w, h, b, n, p));
+    auto fn_ = orig_or(o_cti2, "glCompressedTexImage2D", h_cti2); if (!fn_) return; TIMED(K_TEX, fn_(t, l, f, w, h, b, n, p));
 }
 
 static void (*o_tsi2)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void *) = nullptr;
 static void h_tsi2(GLenum t, GLint l, GLint x, GLint y, GLsizei w, GLsizei h, GLenum f, GLenum ty, const void *p) {
-    if (!o_tsi2) return; TIMED(K_TEX, o_tsi2(t, l, x, y, w, h, f, ty, p));
+    auto fn_ = orig_or(o_tsi2, "glTexSubImage2D", h_tsi2); if (!fn_) return; TIMED(K_TEX, fn_(t, l, x, y, w, h, f, ty, p));
 }
 
 static void (*o_ctsi2)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLsizei, const void *) = nullptr;
 static void h_ctsi2(GLenum t, GLint l, GLint x, GLint y, GLsizei w, GLsizei h, GLenum f, GLsizei n, const void *p) {
-    if (!o_ctsi2) return; TIMED(K_TEX, o_ctsi2(t, l, x, y, w, h, f, n, p));
+    auto fn_ = orig_or(o_ctsi2, "glCompressedTexSubImage2D", h_ctsi2); if (!fn_) return; TIMED(K_TEX, fn_(t, l, x, y, w, h, f, n, p));
 }
 
 static void (*o_ts3)(GLenum, GLsizei, GLenum, GLsizei, GLsizei, GLsizei) = nullptr;
 static void h_ts3(GLenum t, GLsizei lv, GLenum f, GLsizei w, GLsizei h, GLsizei d) {
-    if (!o_ts3) return; TIMED(K_TEX, o_ts3(t, lv, f, w, h, d));
+    auto fn_ = orig_or(o_ts3, "glTexStorage3D", h_ts3); if (!fn_) return; TIMED(K_TEX, fn_(t, lv, f, w, h, d));
 }
 
 /* ---------- Per-thread CPU usage (shows which threads were busy during a freeze) ---------- */
@@ -758,7 +790,8 @@ static void log_gl_info() {
 static EGLBoolean (*o_swap)(EGLDisplay, EGLSurface) = nullptr;
 static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     int64_t t_pre = now_ns();
-    EGLBoolean r = o_swap ? o_swap(d, s) : EGL_FALSE;
+    auto f_swap = orig_or(o_swap, "eglSwapBuffers", h_swap);
+    EGLBoolean r = f_swap ? f_swap(d, s) : EGL_FALSE;
     int64_t t_post = now_ns();
 
     pid_t tid = (pid_t)syscall(SYS_gettid);
@@ -782,6 +815,7 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     frame_no++;
     if (frame_no == 1) { L("GFX api=gles (eglSwapBuffers seen)\n"); st_set("gfx", "gles"); st_set("stage", "gfx"); }
     if (frame_no == 120 && g_scale_marked.load()) { unlink(SCRASHF); L("scale ok: crash marker cleared after 120 frames\n"); }
+    if (frame_no == 120) maps_report("frame120");
     if (frame_no == 30) log_gl_info();
 
     /* FPS cap: sleep the remaining time so frame intervals stay even */
@@ -914,6 +948,7 @@ static void mark_scale_in_use() {
 
 static EGLSurface (*o_cws)(EGLDisplay, EGLConfig, EGLNativeWindowType, const EGLint *) = nullptr;
 static EGLSurface h_cws(EGLDisplay d, EGLConfig c, EGLNativeWindowType win, const EGLint *at) {
+    { static std::atomic<int> first{0}; if (!first.exchange(1)) st_set("first_cws", "1"); }
     int s = g_scale.load();
     ANativeWindow *nwin = (ANativeWindow *)win;
     if (s > 0 && nwin) {
@@ -937,13 +972,15 @@ static EGLSurface h_cws(EGLDisplay d, EGLConfig c, EGLNativeWindowType win, cons
             }
         }
     }
-    return o_cws ? o_cws(d, c, win, at) : EGL_NO_SURFACE;
+    auto f_cws = orig_or(o_cws, "eglCreateWindowSurface", h_cws);
+    return f_cws ? f_cws(d, c, win, at) : EGL_NO_SURFACE;
 }
 
 static int32_t (*o_sbg)(ANativeWindow *, int32_t, int32_t, int32_t) = nullptr;
 static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
     int s = g_scale.load();
     int n = ++g_sbgn;
+    if (n == 1) st_set("first_sbg", "1");
     if (n <= 20) L("SBG call %dx%d fmt=%d\n", ww, hh, f);
     if (s > 0 && w) {
         if (ww == 0 || hh == 0) {
@@ -959,7 +996,8 @@ static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
             } else if (n <= 20) L("SBG %dx%d: scale skipped (size out of range)\n", ww, hh);
         }
     }
-    return o_sbg ? o_sbg(w, ww, hh, f) : ANativeWindow_setBuffersGeometry(w, ww, hh, f);
+    auto ob = (o_sbg && o_sbg != h_sbg) ? o_sbg : nullptr;
+    return ob ? ob(w, ww, hh, f) : ANativeWindow_setBuffersGeometry(w, ww, hh, f);
 }
 
 static void *wrap(const char *n, void *r) {
@@ -973,40 +1011,45 @@ static void *wrap(const char *n, void *r) {
         }
         return r;
     }
-    if (!strcmp(n, "glTexParameteri")) { if (!real_tp) real_tp = (decltype(real_tp))r; return (g_near.load() || g_style.load() || g_flat.load() || g_testtex.load()) ? (void *)h_tp : r; }
-    if (!strcmp(n, "glTexParameterf")) { if (!o_tpf) o_tpf = (decltype(o_tpf))r; return (g_style.load() || g_flat.load() || g_testtex.load()) ? (void *)h_tpf : r; }
+    /* v0.37: never keep our own hook as the "original" (another injector may hand our pointer back to us),
+       and hand an already-wrapped pointer back untouched, so the chain can never loop. */
+#define WRAP_ONE(NAME, O, H) if (!strcmp(n, NAME)) { if (r == (void *)(H)) return r; if (!(O)) (O) = (decltype(O))r; return (void *)(H); }
+    if (!strcmp(n, "glTexParameteri")) { if (r == (void *)h_tp) return r; if (!real_tp) real_tp = (decltype(real_tp))r; return (g_near.load() || g_style.load() || g_flat.load() || g_testtex.load()) ? (void *)h_tp : r; }
+    if (!strcmp(n, "glTexParameterf")) { if (r == (void *)h_tpf) return r; if (!o_tpf) o_tpf = (decltype(o_tpf))r; return (g_style.load() || g_flat.load() || g_testtex.load()) ? (void *)h_tpf : r; }
     if (g_near.load() || g_style.load() || g_flat.load() || g_testtex.load()) {
-        if (!strcmp(n, "glActiveTexture")) { if (!o_act) o_act = (decltype(o_act))r; return (void *)h_act; }
-        if (!strcmp(n, "glBindTexture")) { if (!o_bind) o_bind = (decltype(o_bind))r; return (void *)h_bind; }
-        if (!strcmp(n, "glDeleteTextures")) { if (!o_del) o_del = (decltype(o_del))r; return (void *)h_del; }
-        if (!strcmp(n, "glSamplerParameteri")) { if (!o_smp) o_smp = (decltype(o_smp))r; return (void *)h_smp; }
+        WRAP_ONE("glActiveTexture", o_act, h_act)
+        WRAP_ONE("glBindTexture", o_bind, h_bind)
+        WRAP_ONE("glDeleteTextures", o_del, h_del)
+        WRAP_ONE("glSamplerParameteri", o_smp, h_smp)
     }
-    if (!strcmp(n, "glTexStorage2D")) { if (!o_st) o_st = (decltype(o_st))r; return (void *)h_st; }
-    if (!strcmp(n, "eglSwapBuffers")) { if (!o_swap) o_swap = (decltype(o_swap))r; return (void *)h_swap; }
-    if (!strcmp(n, "eglCreateWindowSurface")) { if (!o_cws) o_cws = (decltype(o_cws))r; return (void *)h_cws; }
-    if (!strcmp(n, "ANativeWindow_setBuffersGeometry")) { if (!o_sbg) o_sbg = (decltype(o_sbg))r; return (void *)h_sbg; }
+    WRAP_ONE("glTexStorage2D", o_st, h_st)
+    WRAP_ONE("eglSwapBuffers", o_swap, h_swap)
+    WRAP_ONE("eglCreateWindowSurface", o_cws, h_cws)
+    WRAP_ONE("ANativeWindow_setBuffersGeometry", o_sbg, h_sbg)
     if (g_fz.load()) {
-        if (!strcmp(n, "glCompileShader")) { if (!o_comp) o_comp = (decltype(o_comp))r; return (void *)h_comp; }
-        if (!strcmp(n, "glLinkProgram")) { if (!o_link) o_link = (decltype(o_link))r; return (void *)h_link; }
-        if (!strcmp(n, "glProgramBinary")) { if (!o_pbin) o_pbin = (decltype(o_pbin))r; return (void *)h_pbin; }
-        if (!strcmp(n, "glBufferData")) { if (!o_buf) o_buf = (decltype(o_buf))r; return (void *)h_buf; }
-        if (!strcmp(n, "glTexImage2D")) { if (!o_ti2) o_ti2 = (decltype(o_ti2))r; return (void *)h_ti2; }
-        if (!strcmp(n, "glCompressedTexImage2D")) { if (!o_cti2) o_cti2 = (decltype(o_cti2))r; return (void *)h_cti2; }
-        if (!strcmp(n, "glTexSubImage2D")) { if (!o_tsi2) o_tsi2 = (decltype(o_tsi2))r; return (void *)h_tsi2; }
-        if (!strcmp(n, "glCompressedTexSubImage2D")) { if (!o_ctsi2) o_ctsi2 = (decltype(o_ctsi2))r; return (void *)h_ctsi2; }
-        if (!strcmp(n, "glTexStorage3D")) { if (!o_ts3) o_ts3 = (decltype(o_ts3))r; return (void *)h_ts3; }
+        WRAP_ONE("glCompileShader", o_comp, h_comp)
+        WRAP_ONE("glLinkProgram", o_link, h_link)
+        WRAP_ONE("glProgramBinary", o_pbin, h_pbin)
+        WRAP_ONE("glBufferData", o_buf, h_buf)
+        WRAP_ONE("glTexImage2D", o_ti2, h_ti2)
+        WRAP_ONE("glCompressedTexImage2D", o_cti2, h_cti2)
+        WRAP_ONE("glTexSubImage2D", o_tsi2, h_tsi2)
+        WRAP_ONE("glCompressedTexSubImage2D", o_ctsi2, h_ctsi2)
+        WRAP_ONE("glTexStorage3D", o_ts3, h_ts3)
     }
+#undef WRAP_ONE
     return r;
 }
 
 static void *(*o_dlsym)(void *, const char *) = nullptr;
 static void *h_dlsym(void *h, const char *n) {
-    void *r = o_dlsym(h, n);
+    void *r = (o_dlsym && o_dlsym != h_dlsym) ? o_dlsym(h, n) : dlsym(h, n);   /* v0.37: was an unguarded call through o_dlsym */
     return wrap(n, r);
 }
 static void *(*o_egl)(const char *) = nullptr;
 static void *h_egl(const char *n) {
-    void *r = o_egl(n);
+    auto f = orig_or(o_egl, "eglGetProcAddress", h_egl);   /* v0.37: was an unguarded call through o_egl */
+    void *r = f ? f(n) : nullptr;
     return wrap(n, r);
 }
 
@@ -1054,6 +1097,7 @@ static int g_cfg_missing = 0;    /* settings files that did not exist yet (repor
 static void write_int_atomic(const char *path, int v) {
     std::string tmp = std::string(path) + ".tmp";
     FILE *f = fopen(tmp.c_str(), "w");
+    if (!f) { unlink(tmp.c_str()); f = fopen(tmp.c_str(), "w"); }   /* root-owned leftover .tmp */
     if (!f) return;
     fprintf(f, "%d\n", v);
     fclose(f);
@@ -1338,18 +1382,91 @@ static void reg_hooks(dev_t dv, ino_t in) {
 /* ---------- Mode 4: hook libunity right after it is loaded ---------- */
 static std::atomic<bool> g_hooked{false};
 static void *(*o_adle)(const char *, int, const android_dlextinfo *) = nullptr;
+static void *h_adle(const char *path, int flags, const android_dlextinfo *info);
+
+/* ---------- Coexistence diagnostics (v0.37, log only, no behaviour change) ----------
+   chain_report: after CommitHook, say which library owns the function our hook will call as "original".
+   A system library (libEGL, libandroid, libdl...) = clean. An app/anonymous mapping = another injector hooked that slot first.
+   maps_report: executable mappings that are neither system libraries nor the game's own libs. */
+static bool is_system_path(const std::string &p) {
+    static const char *pre[] = {"/system/", "/system_ext/", "/apex/", "/vendor/", "/product/", "/odm/", "/linkerconfig/"};
+    for (const char *x : pre) if (p.compare(0, strlen(x), x) == 0) return true;
+    return false;
+}
+struct MapOwner { bool found = false; char perms[8] = {0}; std::string path; };
+static MapOwner owner_of(const void *ptr) {
+    MapOwner o;
+    FILE *f = fopen("/proc/self/maps", "r");
+    if (!f) return o;
+    char line[768];
+    unsigned long long a = (unsigned long long)(uintptr_t)ptr;
+    while (fgets(line, sizeof line, f)) {
+        unsigned long long s0 = 0, e0 = 0; char pm[8] = {0}; int off = 0;
+        if (sscanf(line, "%llx-%llx %7s %*s %*s %*s %n", &s0, &e0, pm, &off) < 3) continue;
+        if (a < s0 || a >= e0) continue;
+        o.found = true; memcpy(o.perms, pm, sizeof pm);
+        o.path = off > 0 ? line + off : "";
+        while (!o.path.empty() && (o.path.back() == '\n' || o.path.back() == ' ')) o.path.pop_back();
+        break;
+    }
+    fclose(f);
+    return o;
+}
+static void chain_report(const char *tag) {
+    struct C { const char *name; void *ptr; };
+    C c[] = {
+        {"android_dlopen_ext", (void *)o_adle}, {"dlsym", (void *)o_dlsym}, {"eglGetProcAddress", (void *)o_egl},
+        {"glTexStorage2D", (void *)o_st}, {"eglSwapBuffers", (void *)o_swap},
+        {"eglCreateWindowSurface", (void *)o_cws}, {"ANativeWindow_setBuffersGeometry", (void *)o_sbg},
+    };
+    std::string foreign;
+    for (auto &x : c) {
+        if (!x.ptr) { L("CHAIN %s %s orig=null (not imported by the hooked library)\n", tag, x.name); continue; }
+        MapOwner o = owner_of(x.ptr);
+        bool fr = !o.found || o.path.empty() || !is_system_path(o.path);
+        L("CHAIN %s %s orig=%p in=%s perms=%s foreign=%d\n", tag, x.name, x.ptr,
+          o.found ? (o.path.empty() ? "[anon]" : o.path.c_str()) : "[unmapped]", o.perms, fr ? 1 : 0);
+        if (fr) { if (!foreign.empty()) foreign += ","; foreign += x.name; }
+    }
+    st_set("chain_foreign", foreign.empty() ? "none" : foreign);
+}
+static void maps_report(const char *tag) {
+    FILE *f = fopen("/proc/self/maps", "r");
+    if (!f) return;
+    char line[768];
+    std::set<std::string> seen;
+    int anon_x = 0, shown = 0, total = 0;
+    while (fgets(line, sizeof line, f)) {
+        char pm[8] = {0}; int off = 0;
+        if (sscanf(line, "%*[0-9a-fA-F]-%*[0-9a-fA-F] %7s %*s %*s %*s %n", pm, &off) < 1) continue;
+        if (pm[2] != 'x') continue;                           /* executable mappings only */
+        std::string p = off > 0 ? line + off : "";
+        while (!p.empty() && (p.back() == '\n' || p.back() == ' ')) p.pop_back();
+        if (p.empty()) { anon_x++; continue; }
+        if (p[0] != '/' || is_system_path(p) || p.find(PKG) != std::string::npos) continue;
+        if (!seen.insert(p).second) continue;
+        total++;
+        if (shown < 24) { shown++; L("MAPS %s non-system exec: %s\n", tag, p.c_str()); }
+    }
+    fclose(f);
+    L("MAPS %s non_system_exec=%d anon_exec_no_path=%d\n", tag, total, anon_x);
+    st_seti("maps_nonsys", total); st_seti("maps_anon_exec", anon_x);
+}
 
 static void install_unity_hooks() {
     if (g_hooked.exchange(true)) return;
     for (auto &m : lsplt::MapInfo::Scan()) {
         const std::string &p = m.path;
         if (p.size() < 12 || p.compare(p.size() - 12, 12, "/libunity.so") != 0) continue;
+        st_set("stage", "hooking");              /* if the game dies inside CommitHook, codm_tex.status stops at "hooking" */
+        maps_report("pre-commit");
         reg_hooks(m.dev, m.inode);
         L("pre-commit (unity)\n");
         bool ok = lsplt::CommitHook();
         g_hook_state = ok ? 1 : 2;
         st_set("hook", ok ? "committed" : "commit_failed"); st_set("stage", "hooked");
         L("commit=%d (unity)\n", (int)ok);
+        chain_report("unity");
         return;
     }
     st_set("lib", "not_in_maps");
@@ -1358,7 +1475,9 @@ static void install_unity_hooks() {
 }
 
 static void *h_adle(const char *path, int flags, const android_dlextinfo *info) {
-    void *r = o_adle ? o_adle(path, flags, info) : android_dlopen_ext(path, flags, info);
+    { static std::atomic<int> first{0}; if (!first.exchange(1)) { st_set("adle_first", "1"); L("adle first call: %s\n", path ? path : "(null)"); } }
+    auto oa = (o_adle && o_adle != h_adle) ? o_adle : nullptr;
+    void *r = oa ? oa(path, flags, info) : android_dlopen_ext(path, flags, info);
     if (r && path) {
         size_t n = strlen(path);
         if (n >= 11 && !strcmp(path + n - 11, "libunity.so")) {
@@ -1375,11 +1494,14 @@ static void hook_nativeloader() {
         const std::string &p = m.path;
         if (p.size() < 19 || p.compare(p.size() - 19, 19, "/libnativeloader.so") != 0) continue;
         lsplt::RegisterHook(m.dev, m.inode, "android_dlopen_ext", (void *)h_adle, (void **)&o_adle);
+        st_set("stage", "nl_hooking");
         bool ok = lsplt::CommitHook();
         L("nativeloader hook commit=%d\n", (int)ok);
+        st_set("nl_hook", ok ? "committed" : "commit_failed"); st_set("stage", "nl_hooked");
         return;
     }
     L("libnativeloader not found\n");
+    st_set("nl_hook", "not_found");
 }
 
 static void log_start(int mode) {
@@ -1427,10 +1549,13 @@ static void run(int mode) {
             }
             if (added) {
                 L("pre-commit\n");
+                st_set("stage", "hooking");
+                maps_report("pre-commit-late");
                 bool ok = lsplt::CommitHook();
                 g_hook_state = ok ? 1 : 2;
                 st_set("hook", ok ? "committed" : "commit_failed"); st_set("stage", "hooked");
                 L("commit=%d\n", (int)ok);
+                chain_report("late");
             }
         }
         sleep(1);
