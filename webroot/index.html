@@ -85,15 +85,8 @@ h1 { margin: 2px 0 0; font-size: 26px; line-height: 1.1; font-weight: 800; lette
 .chip.msg { color: var(--mute); font-weight: 500; }
 
 /* ---------- views & cards ---------- */
-.view { display: none; opacity: 1; transform: none; }
-/* no "both" fill-mode: some WebViews re-trigger animation on layout
-   (e.g. when #notice is hidden) and leave the view stuck at opacity 0 */
-.view.active {
-  display: block;
-  opacity: 1;
-  transform: none;
-  animation: vin 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
+.view { display: none; }
+.view.active { display: block; animation: vin 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
 @keyframes vin { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
 
 .card {
@@ -306,6 +299,15 @@ textarea:focus { outline: none; border-color: var(--primary); }
 .logstat .startline { opacity: 0.8; font-size: 12px; margin-top: 4px; }
 .logstat .expgap { margin-top: 8px; }
 
+/* "Reopen CODM after Apply": same font as the rest of the UI, normal-size checkbox */
+.rchk { display: flex; align-items: center; gap: 10px; margin: 6px 0 0; font-family: inherit; font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--text); cursor: pointer; }
+.rchk input { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--primary); }
+/* expandable "Ano ang gagawin nito?" under Quick test */
+.qt-more { margin: 0 0 14px; }
+.qt-more summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 2px; font-size: 13px; font-weight: 600; color: var(--primary); }
+.qt-more summary svg { width: 18px; height: 18px; stroke: var(--primary); }
+.qt-more .body { margin-top: 2px; }
+.qt-more .body .cap { margin: 0; }
 details summary { list-style: none; cursor: pointer; border-radius: 12px; }
 details summary::-webkit-details-marker { display: none; }
 summary svg { flex: none; width: 22px; height: 22px; stroke: var(--mute); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s; }
@@ -461,8 +463,8 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     <div class="status" id="status" role="status" aria-live="polite"><span class="chip msg">Reading settings…</span></div>
   </header>
   <div class="banner" id="notice" hidden>
-    <div id="noticeText">Pindutin lang ang <b>Apply</b> pag may binago ka, getss? Hindi nganii SAVE button ang <b>Export report</b, pang-bug report lang yun and ipapasa yun sa akin if may problem. Kung wala pang epekto sa laro, buksan mo muna ang CODM isang beses, tapos balik ka rito at tingnan ulit.</div>
-    <button class="btn" id="noticeX" type="button" aria-label="Close notice">Sige, gets ko na</button>
+    <div id="noticeText">Ang <b>APPLY</b> button ay pang-save mismo ng settings mo, getss? Yung <b>Export report</b> naman ay pang-send lang sa akin kapag may bug o irereport ka ngani, hindi siya save button. Kung wala pang epekto sa laro, buksan mo muna ang CODM isang beses, tapos balik ka rito at tingnan ulit.</div>
+    <button class="btn" id="noticeX" type="button" aria-label="Close notice">Sige, gets ko na ✕</button>
   </div>
   <div id="banner"></div>
 
@@ -470,7 +472,11 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   <div class="view active" id="v-home">
     <section class="card">
       <div class="ch"><h2>Quick test</h2></div>
-      <p class="cap">Di sure kung gumagana? Pindutin mo ito para ma-set ang pang-test: Pixel Blocks (Chunky, 8), walang start delay, off ang render scale, hook agad (hookdelay 0), min texture size 64. Ino-overwrite nito ang: Look (lahat ng modes), Start delay, Min size, Render scale, Hook delay, Module mode. HINDI nito ginagalaw: FPS cap, Freeze/Thread/Core logs, at skip lists. Tapos Apply, buksan ang CODM, at maglaro ka ng mga 5 minuto.</p>
+      <p class="cap" style="margin-bottom:6px">Di sure kung gumagana? Pindutin mo ito para ma-set ang pang-test, tapos Apply, buksan ang CODM, at maglaro ka ng mga 5 minuto.</p>
+      <details class="qt-more">
+        <summary><span>Ano ang gagawin nito?</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="body"><p class="cap">Ise-set nito: Pixel Blocks (Chunky, 8), walang start delay, off ang render scale, hook agad (hookdelay 0), min texture size 64. Ino-overwrite nito ang: Look (lahat ng modes), Start delay, Min size, Render scale, Hook delay, Module mode. HINDI nito ginagalaw: FPS cap, Freeze/Thread/Core logs, at skip lists.</p></div>
+      </details>
       <button class="btn primary" id="recTest" type="button">Set recommended settings (test)</button>
     </section>
 
@@ -639,10 +645,10 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   <div class="view" id="v-tools">
     <section class="card">
       <h2>Apply</h2>
-      <label class="lb" style="display:flex;gap:10px;align-items:center;font-size:14px">
-        <input type="checkbox" id="reopen"> Reopen CODM after Apply
+      <label class="rchk" for="reopen">
+        <input type="checkbox" id="reopen"><span>Reopen CODM after Apply</span>
       </label>
-      <p class="pnote">Naka-off ito dati pa. Binabasa lang ang settings pag nag-start ang CODM. Fino Force Stop ng Apply ang codm. Kung naka-on ito, bubuksan ulit ang laro pagkatapos ma-save. Sa OpenGL ES lang gumagana ang texture looks, wala silang epekto sa Vulkan.</p>
+      <p class="pnote">Naka-off ito dati pa. Binabasa lang ang settings pag nag-start ang CODM, getss? Isinasara ng Apply ang laro. Kung naka-on ito, bubuksan ulit ang laro pagkatapos ma-save. Sa OpenGL ES lang gumagana ang texture looks, wala silang epekto sa Vulkan.</p>
     </section>
 
     <section class="card">
@@ -655,6 +661,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
           <input id="rptName" type="text" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. Juan">
           <p class="pnote" style="margin-top:6px">Added to the file name so the developer knows whose report it is. Letters, numbers, - and _ only.</p>
         </div>
+        <p class="pnote"><b>Hindi ito save button</b> ngani. Pang-send lang ito sa akin kapag may bug o irereport ka. Ang <b>APPLY</b> ang pang-save ng settings mo, getss?</p>
         <button class="btn primary" id="exp" type="button">Export report for support</button>
         <div class="grid2" style="margin-top:0">
           <button class="btn" id="vlog" type="button">View log</button>
@@ -1703,7 +1710,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
-      "echo '== hardware / ABI facts'; for k in ro.build.version.release ro.build.version.sdk ro.board.platform ro.hardware ro.hardware.egl ro.hardware.vulkan ro.product.cpu.abi; do echo \"$k=$(getprop $k)\"; done; echo \"uname_m=$(uname -m)\"; grep -m2 -i -E '^(hardware|model name)' /proc/cpuinfo 2>/dev/null; " +
+      "echo '== hardware / ABI facts'; for k in ro.build.version.release ro.build.version.sdk ro.board.platform ro.hardware ro.hardware.egl ro.hardware.vulkan ro.product.cpu.abi ro.product.cpu.abilist ro.product.cpu.abilist64 ro.zygote; do echo \"$k=$(getprop $k)\"; done; echo \"uname_m=$(uname -m) linker64=$([ -e /system/bin/linker64 ] && echo yes || echo no) zygote64_running=$(ps -A 2>/dev/null | grep -c zygote64)\"; grep -m2 -i -E '^(hardware|model name)' /proc/cpuinfo 2>/dev/null; " +
       "echo '== gpu'; timeout 6 dumpsys SurfaceFlinger 2>/dev/null | grep -m3 -i -E 'GLES|EGL'; " +
       "echo '== game'; timeout 6 dumpsys package $P 2>/dev/null | grep -m4 -E 'versionName|versionCode|lastUpdateTime'; " +
       "echo '== users'; ls /data/user 2>&1; " +
@@ -1845,15 +1852,6 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   $("noticeX").addEventListener("click", function () {
     noticeEl.hidden = true;
     try { localStorage.setItem("ct_hide_notice", "1"); } catch (e) {}
-    /* Some WebViews re-run the view entrance animation when a sibling is
-       hidden and leave .view.active at opacity 0. Force home visible. */
-    showView("home");
-    var home = $("v-home");
-    if (home) {
-      home.style.opacity = "1";
-      home.style.transform = "none";
-      home.style.display = "block";
-    }
   });
   var reopen = false;
   try { reopen = localStorage.getItem("ct_reopen") === "1"; } catch (e) {}
