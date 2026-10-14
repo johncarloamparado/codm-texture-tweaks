@@ -11,4 +11,5 @@ if [ ! -f "$MODPATH/zygisk/arm64-v8a.so" ]; then
 fi
 ui_print "- Settings UI: KernelSU/SukiSU/APatch open it from the manager."
 ui_print "  Magisk has no built-in WebUI: use KsuWebUI or MMRL to open this module's page."
-ui_print "- Reboot, then open CODM once so the settings folder is created."
+ui_print "- Reboot, then open CODM once (until the lobby). The module writes codm_tex.status there."
+ui_print "  If the WebUI later says the module never ran: check Zygisk is ON and CODM is not on the DenyList."
