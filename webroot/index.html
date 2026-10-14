@@ -779,7 +779,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
-    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.36",
+    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.37",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
     ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
   };
@@ -1706,7 +1706,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.36'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.37'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -1719,7 +1719,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       ZYG_SCRIPT +
       "echo \"injection_breadcrumb_in_logcat=$(timeout 5 logcat -d -s codm_tex 2>/dev/null | grep -c postAppSpecialize)\"; " +
       "ls -ln $D/codm_tex.status 2>&1 | head -n 1; " +
-      "if [ -f $D/codm_tex.status ]; then for k in ver stage dir_writable lib hook gfx cand skip_rule skip_minsz skip_delay applied why0 cfg_bad cfg_missing injected started updated; do echo \"status.$k=$(sed -n 's/^'$k'=//p' $D/codm_tex.status)\"; done; else echo 'status file: none (module has not run in CODM since install/update)'; fi; " +
+      "if [ -f $D/codm_tex.status ]; then for k in ver stage dir_writable lib hook gfx cand skip_rule skip_minsz skip_delay applied why0 cfg_bad cfg_missing injected started updated nl_hook adle_first first_cws first_sbg chain_foreign maps_nonsys maps_anon_exec; do echo \"status.$k=$(sed -n 's/^'$k'=//p' $D/codm_tex.status)\"; done; else echo 'status file: none (module has not run in CODM since install/update)'; fi; " +
       "echo \"settings_files_owned_by_game=$(ls -ln $D/*.txt 2>/dev/null | awk '$3!=0' | wc -l) (0 = only root wrote them: the game process never created or repaired any)\"; " +
       "echo '== game dir'; ls -ldZ /data/data/$P /data/data/$P/files 2>&1; ls -ldZ /data/user/*/$P 2>&1; " +
       "echo '== settings folder'; echo \"$D\"; ls -la $D 2>&1 | grep -v -i -E 'login|token|jwt|ticket|passwd|account' | head -n 60; " +
