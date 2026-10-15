@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.37"
+#define VERSION "v0.38"
 #define PKG "com.garena.game.codm"
 #define DIR "/data/data/" PKG "/files/"
 #define LOGF DIR "codm_tex.log"
@@ -72,6 +72,7 @@
 #define TTSMF DIR "ttsm.txt"
 #define HDLYF DIR "hookdelay.txt"
 #define STATF DIR "codm_tex.status"   /* small key=value file the WebUI reads: how far the module got (written by the game process) */
+#define FULLF DIR "fullsize.txt"      /* largest landscape window size ever seen (so a window shrunk by something else is never taken as "native") */
 #define SCRASHF DIR "scale_crash.txt"   /* marker: written before render scale is applied, cleared after 120 good frames */
 
 static std::mutex mu;
@@ -143,9 +144,29 @@ static void *real_sym(const char *n) {
     }
     return nullptr;
 }
+/* v0.38: a stored "original" that is not inside any loaded library (for example a trampoline in a /memfd: region that
+   another injector later unmapped) must never be called: that is a SEGV_ACCERR. Such pointers are replaced by the
+   real system symbol. dladdr() is only run once per distinct pointer; good pointers are cached. */
+static std::atomic<void *> g_okp[96];
+static std::atomic<int> g_okn{0};
+static bool ptr_ok(void *p) {
+    if (!p) return false;
+    int n = std::min(g_okn.load(), 96);
+    for (int i = 0; i < n; i++) if (g_okp[i].load() == p) return true;
+    Dl_info di;
+    if (!dladdr(p, &di) || !di.dli_fname) return false;
+    int i = g_okn.fetch_add(1);
+    if (i < 96) g_okp[i] = p;
+    return true;
+}
 template <class F> static F orig_or(F &slot, const char *name, F self) {
     F f = slot;
-    if (f && f != self) return f;
+    if (f && f != self) {
+        if (ptr_ok((void *)f)) return f;
+        static std::atomic<int> warned{0};
+        if (warned++ < 20) L("CHAINFIX %s: original %p is outside every loaded library (foreign/memfd hook?) -> using the system symbol\n", name, (void *)f);
+        slot = nullptr;
+    }
     void *p = real_sym(name);
     if (p && p != (void *)self) { slot = (F)p; return (F)p; }
     return nullptr;
@@ -189,11 +210,13 @@ static void h_bind(GLenum t, GLuint id) {
     if (auto f = orig_or(o_bind, "glBindTexture", h_bind)) f(t, id);
 }
 
+static void defer_drop(GLuint id);
 static void (*o_del)(GLsizei, const GLuint *) = nullptr;
 static void h_del(GLsizei n, const GLuint *ids) {
     if (ids) {
         for (GLsizei i = 0; i < n; i++) {
             if (ids[i] < MAXTEX) g_tf[ids[i]] = 0;
+            defer_drop(ids[i]);
             for (int u = 0; u < 32; u++) if (tl_bound[u] == ids[i]) tl_bound[u] = 0;
         }
     }
@@ -287,10 +310,12 @@ static std::mutex g_gm;
 static std::atomic<int> g_gdirty{0};
 static std::atomic<int> g_sk_delay{0}, g_sk_minsz{0}, g_sk_rule{0}, g_cand{0}, g_nobound{0};   /* why candidates were left untouched */
 
+static thread_local bool tl_revisit = false;          /* true while a delayed texture is being processed (see revisit_pending) */
 static void grp_note(int fmt, int sz, bool applied) {
     std::lock_guard<std::mutex> lk(g_gm);
     for (int i = 0; i < g_ng; i++)
-        if (g_grp[i].fmt == fmt && g_grp[i].sz == sz) { g_grp[i].n++; if (applied) g_grp[i].ap++; g_gdirty = 1; return; }
+        if (g_grp[i].fmt == fmt && g_grp[i].sz == sz) { if (!tl_revisit) g_grp[i].n++; if (applied) g_grp[i].ap++; g_gdirty = 1; return; }
+    if (tl_revisit) return;
     if (g_ng < MAXG) { g_grp[g_ng].fmt = fmt; g_grp[g_ng].sz = sz; g_grp[g_ng].n = 1; g_grp[g_ng].ap = applied ? 1 : 0; g_ng++; g_gdirty = 1; }
 }
 
@@ -333,23 +358,49 @@ static void texn_log(int w, int h, int lv, int fmt, bool cand) {
       (now_ns() - g_tstart.load()) / 1e9, w, h, lv, fmt, cand ? 1 : 0);
 }
 
+/* v0.38: textures created during the start delay are remembered and processed on the render thread once the
+   delay is over (they used to be skipped for good, which is why delay=50 gave applied=0). */
+struct Pend { GLuint id; GLsizei lv; GLenum fmt; GLsizei w, h; };
+static std::vector<Pend> g_pend;
+static size_t g_pend_i = 0;
+static std::mutex g_pm;
+static std::atomic<int> g_pend_n{0}, g_pend_drop{0}, g_revisited{0};
+static std::atomic<int> g_n_ts3{0}, g_n_ts3_cmp{0}, g_n_cti2{0};   /* other texture upload paths (diagnostics) */
+static void defer_add(GLuint id, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
+    if (id == 0 || id >= MAXTEX) return;
+    std::lock_guard<std::mutex> lk(g_pm);
+    if (g_pend.size() >= 8192) { g_pend_drop++; return; }
+    g_pend.push_back({id, lv, fmt, w, h});
+    g_pend_n = (int)(g_pend.size() - g_pend_i);
+}
+static void defer_drop(GLuint id) {
+    if (g_pend_n.load() == 0) return;
+    std::lock_guard<std::mutex> lk(g_pm);
+    for (size_t i = g_pend_i; i < g_pend.size(); i++) if (g_pend[i].id == id) { g_pend[i].id = 0; }
+}
+
+static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, bool revisit);
 static void (*o_st)(GLenum, GLsizei, GLenum, GLsizei, GLsizei) = nullptr;
 static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
     if (auto f = orig_or(o_st, "glTexStorage2D", h_st)) f(t, lv, fmt, w, h);
+    tex_post(t, lv, fmt, w, h, false);
+}
+static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, bool revisit) {
     int b = g_bias.load(), k = g_blk.load();
     int mx = std::max(w, h);
     bool cand = (t == GL_TEXTURE_2D && lv >= 3 && mx >= 64 && is_cmp(fmt));
-    if (t == GL_TEXTURE_2D && mx >= 16) texn_log((int)w, (int)h, (int)lv, (int)fmt, cand);
+    if (!revisit && t == GL_TEXTURE_2D && mx >= 16) texn_log((int)w, (int)h, (int)lv, (int)fmt, cand);
     if (!cand) return;
-    g_cand++;
+    if (!revisit) g_cand++;
     bool skip = false;
-    if (in_skip((int)fmt, (int)w, (int)h)) { skip = true; g_sk_rule++; }
-    else if (mx < g_minsz.load()) { skip = true; g_sk_minsz++; }
+    if (in_skip((int)fmt, (int)w, (int)h)) { skip = true; if (!revisit) g_sk_rule++; }
+    else if (mx < g_minsz.load()) { skip = true; if (!revisit) g_sk_minsz++; }
     int dl = g_delay.load();
-    /* NOTE: textures created during the start delay are NOT revisited afterwards, so a delay
-       leaves most game textures untouched. Default is 0; the WebUI explains this. */
-    if (!skip && dl > 0 && now_ns() - g_tstart.load() < (int64_t)dl * 1000000000LL) { skip = true; g_sk_delay++; }
-    if (!skip && tl_bound[tl_unit] == 0) g_nobound++;
+    if (!skip && !revisit && dl > 0 && now_ns() - g_tstart.load() < (int64_t)dl * 1000000000LL) {
+        skip = true; g_sk_delay++;
+        defer_add(tl_bound[tl_unit], lv, fmt, w, h);       /* v0.38: come back to it after the delay */
+    }
+    if (!skip && !revisit && tl_bound[tl_unit] == 0) g_nobound++;
 
     /* Test Tex: force NEAREST sampling only — full texture data, sharp pixel look. */
     int tt = g_testtex.load();
@@ -456,6 +507,44 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
     }
 }
 
+/* Render thread, once per frame: process textures that were created during the start delay. */
+static void revisit_pending() {
+    if (g_pend_n.load() == 0) return;
+    int dl = g_delay.load();
+    if (dl > 0 && now_ns() - g_tstart.load() < (int64_t)dl * 1000000000LL) return;
+    Pend batch[48]; int nb = 0;
+    {
+        std::lock_guard<std::mutex> lk(g_pm);
+        while (nb < 48 && g_pend_i < g_pend.size()) { Pend p = g_pend[g_pend_i++]; if (p.id) batch[nb++] = p; }
+        if (g_pend_i >= g_pend.size()) { g_pend.clear(); g_pend_i = 0; g_pend_n = 0; }
+        else g_pend_n = (int)(g_pend.size() - g_pend_i);
+    }
+    if (!nb) return;
+    typedef GLboolean (*is_t)(GLuint);
+    typedef void (*giv_t)(GLenum, GLint *);
+    static is_t is_tex = (is_t)real_sym("glIsTexture");
+    static giv_t giv = (giv_t)real_sym("glGetIntegerv");
+    auto bindf = orig_or(o_bind, "glBindTexture", h_bind);
+    if (!is_tex || !giv || !bindf || !real_tp) { static int w = 0; if (!w++) L("REVISIT unavailable (is=%d giv=%d bind=%d tp=%d)\n", is_tex != nullptr, giv != nullptr, bindf != nullptr, real_tp != nullptr); return; }
+    GLint prev = 0; giv(0x8069 /* GL_TEXTURE_BINDING_2D */, &prev);
+    GLuint prev_tl = tl_bound[tl_unit];
+    int done = 0;
+    for (int i = 0; i < nb; i++) {
+        if (!is_tex(batch[i].id)) continue;
+        bindf(GL_TEXTURE_2D, batch[i].id);
+        tl_bound[tl_unit] = batch[i].id;
+        tl_revisit = true;
+        tex_post(GL_TEXTURE_2D, batch[i].lv, batch[i].fmt, batch[i].w, batch[i].h, true);
+        tl_revisit = false;
+        done++;
+    }
+    bindf(GL_TEXTURE_2D, (GLuint)prev);
+    tl_bound[tl_unit] = prev_tl;
+    int tot = (g_revisited += done);
+    static int logged = 0;
+    if (logged++ < 10) L("REVISIT batch=%d done=%d total=%d pending=%d applied=%d\n", nb, done, tot, g_pend_n.load(), g_applied.load());
+}
+
 /* Plain-words reason why nothing was changed yet; "none" once at least one texture was applied. */
 static std::string why0_reason() {
     if (g_applied.load() > 0) return "none";
@@ -474,8 +563,8 @@ static std::string why0_reason() {
 static void grp_dump(double t_s) {
     st_seti("cand", g_cand.load()); st_seti("applied", g_applied.load());
     st_seti("skip_rule", g_sk_rule.load()); st_seti("skip_minsz", g_sk_minsz.load());
-    st_seti("skip_delay", g_sk_delay.load()); st_set("why0", why0_reason());
-    L("TEXSKIP applied=%d cand=%d skip_rule=%d skip_minsz=%d skip_delay=%d unbound=%d\n", g_applied.load(), g_cand.load(), g_sk_rule.load(), g_sk_minsz.load(), g_sk_delay.load(), g_nobound.load());
+    st_seti("skip_delay", g_sk_delay.load()); st_seti("revisited", g_revisited.load()); st_seti("ts3_cmp", g_n_ts3_cmp.load()); st_set("why0", why0_reason());
+    L("TEXSKIP applied=%d cand=%d skip_rule=%d skip_minsz=%d skip_delay=%d unbound=%d revisited=%d pending=%d dropped=%d ts3=%d ts3cmp=%d cti2=%d\n", g_applied.load(), g_cand.load(), g_sk_rule.load(), g_sk_minsz.load(), g_sk_delay.load(), g_nobound.load(), g_revisited.load(), g_pend_n.load(), g_pend_drop.load(), g_n_ts3.load(), g_n_ts3_cmp.load(), g_n_cti2.load());
     Grp tmp[MAXG]; int n;
     { std::lock_guard<std::mutex> lk(g_gm); n = g_ng; for (int i = 0; i < n; i++) tmp[i] = g_grp[i]; g_gdirty = 0; }
     for (int i = 0; i < n; i++)
@@ -533,6 +622,7 @@ static void h_ti2(GLenum t, GLint l, GLint ifmt, GLsizei w, GLsizei h, GLint b, 
 
 static void (*o_cti2)(GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const void *) = nullptr;
 static void h_cti2(GLenum t, GLint l, GLenum f, GLsizei w, GLsizei h, GLint b, GLsizei n, const void *p) {
+    if (l == 0) g_n_cti2++;
     auto fn_ = orig_or(o_cti2, "glCompressedTexImage2D", h_cti2); if (!fn_) return; TIMED(K_TEX, fn_(t, l, f, w, h, b, n, p));
 }
 
@@ -548,6 +638,8 @@ static void h_ctsi2(GLenum t, GLint l, GLint x, GLint y, GLsizei w, GLsizei h, G
 
 static void (*o_ts3)(GLenum, GLsizei, GLenum, GLsizei, GLsizei, GLsizei) = nullptr;
 static void h_ts3(GLenum t, GLsizei lv, GLenum f, GLsizei w, GLsizei h, GLsizei d) {
+    int n3 = ++g_n_ts3; bool c3 = is_cmp(f); if (c3) g_n_ts3_cmp++;
+    if (n3 <= 25) L("TS3 target=0x%x lv=%d fmt=0x%x %dx%dx%d cmp=%d (not modified)\n", t, (int)lv, f, (int)w, (int)h, (int)d, c3 ? 1 : 0);
     auto fn_ = orig_or(o_ts3, "glTexStorage3D", h_ts3); if (!fn_) return; TIMED(K_TEX, fn_(t, lv, f, w, h, d));
 }
 
@@ -787,6 +879,7 @@ static void log_gl_info() {
     L("GLINFO ext lod_bias=%d aniso=%d\n", (e && strstr(e, "lod_bias")) ? 1 : 0, (e && strstr(e, "anisotropic")) ? 1 : 0);
 }
 
+static void mark_scale_progress(int frames);
 static EGLBoolean (*o_swap)(EGLDisplay, EGLSurface) = nullptr;
 static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     int64_t t_pre = now_ns();
@@ -813,7 +906,9 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     int64_t t = t_post;
     if (g_t0.load() == 0) g_t0 = t;
     frame_no++;
+    revisit_pending();
     if (frame_no == 1) { L("GFX api=gles (eglSwapBuffers seen)\n"); st_set("gfx", "gles"); st_set("stage", "gfx"); }
+    if (frame_no == 20 && g_scale_marked.load()) mark_scale_progress(20);
     if (frame_no == 120 && g_scale_marked.load()) { unlink(SCRASHF); L("scale ok: crash marker cleared after 120 frames\n"); }
     if (frame_no == 120) maps_report("frame120");
     if (frame_no == 30) log_gl_info();
@@ -912,6 +1007,7 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
    A marker file (scale_crash.txt) is written before scaling and removed after 120 rendered frames;
    if it is still there at the next launch, render scale is switched off so it can never boot-loop. */
 static std::atomic<int> g_fullw{0}, g_fullh{0};   /* native landscape size, 0 = not learned yet */
+static std::atomic<int> g_ovw{0}, g_ovh{0};       /* the last buffer size WE set: seeing it again must never be shrunk a second time */
 static std::atomic<int> g_sbgn{0};
 /* Scale a w x h pair together so the aspect ratio is kept. The shorter side never goes below 270 px
    (tiny buffers crash some drivers) unless the original is already smaller; then the longer side follows
@@ -934,10 +1030,22 @@ static bool scaled_pair(int w, int h, int s, int *ow, int *oh) {
     return true;
 }
 
+static void learn_full_wh(int w, int h) {
+    if (w <= 0 || h <= 0 || w < h || w > 8192) return;
+    if (w == g_ovw.load() && h == g_ovh.load()) return;      /* our own scaled size is never "native" */
+    if (w > g_fullw.load()) {
+        g_fullw = w; g_fullh = h;
+        FILE *f = fopen(FULLF, "w");
+        if (f) { fprintf(f, "%d %d\n", w, h); fclose(f); }
+    }
+}
 static void learn_full(ANativeWindow *nwin) {
     if (!nwin) return;
-    int w = ANativeWindow_getWidth(nwin), h = ANativeWindow_getHeight(nwin);
-    if (w > 0 && h > 0 && w >= h && w > g_fullw.load()) { g_fullw = w; g_fullh = h; }
+    learn_full_wh(ANativeWindow_getWidth(nwin), ANativeWindow_getHeight(nwin));
+}
+static void mark_scale_progress(int frames) {
+    FILE *f = fopen(SCRASHF, "w");
+    if (f) { fprintf(f, "%d %d\n", g_scale.load(), frames); fclose(f); }
 }
 
 static void mark_scale_in_use() {
@@ -956,21 +1064,32 @@ static EGLSurface h_cws(EGLDisplay d, EGLConfig c, EGLNativeWindowType win, cons
         if (w > 0 && h > 0) {
             if (w < h) {
                 L("SURFACE portrait %dx%d: skip\n", w, h);
+            } else if (w == g_ovw.load() && h == g_ovh.load()) {
+                L("SURFACE cur=%dx%d is already our scaled size: not shrunk again\n", w, h);
             } else {
                 learn_full(nwin);
                 int fw = g_fullw.load(), fh = g_fullh.load();
                 if (fw > 0 && fh > 0) {
                     int nw = 0, nh = 0;
-                    if (scaled_pair(fw, fh, s, &nw, &nh)) {
+                    if (scaled_pair(fw, fh, s, &nw, &nh) && (nw >= w || nh >= h)) {
+                        /* v0.38: the window is already as small as (or smaller than) the target, for example because another
+                           module/the system shrank it. Never make it smaller: that was the 1600x720 -> 880x396 -> 600x270 chain. */
+                        L("SURFACE cur=%dx%d full=%dx%d target=%dx%d: window already that small, left alone\n", w, h, fw, fh, nw, nh);
+                    } else if (scaled_pair(fw, fh, s, &nw, &nh)) {
                         int fmt = ANativeWindow_getFormat(nwin);
                         if (fmt < 0) fmt = 0;           /* keep the window's current format */
                         mark_scale_in_use();
+                        g_ovw = nw; g_ovh = nh;
                         int r = ANativeWindow_setBuffersGeometry(nwin, nw, nh, fmt);
                         L("SURFACE cur=%dx%d full=%dx%d -> %dx%d fmt=%d r=%d\n", w, h, fw, fh, nw, nh, fmt, r);
                     } else L("SURFACE %dx%d (full %dx%d): scale skipped (size out of range)\n", w, h, fw, fh);
                 }
             }
         }
+    }
+    if (s == 0 && nwin) {
+        static std::atomic<int> wn{0};
+        if (wn++ < 10) L("WINSIZE cws cur=%dx%d (render scale off, window untouched)\n", ANativeWindow_getWidth(nwin), ANativeWindow_getHeight(nwin));
     }
     auto f_cws = orig_or(o_cws, "eglCreateWindowSurface", h_cws);
     return f_cws ? f_cws(d, c, win, at) : EGL_NO_SURFACE;
@@ -981,7 +1100,8 @@ static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
     int s = g_scale.load();
     int n = ++g_sbgn;
     if (n == 1) st_set("first_sbg", "1");
-    if (n <= 20) L("SBG call %dx%d fmt=%d\n", ww, hh, f);
+    if (n <= 20) L("SBG call %dx%d fmt=%d cur=%dx%d\n", ww, hh, f, w ? ANativeWindow_getWidth(w) : 0, w ? ANativeWindow_getHeight(w) : 0);
+    if (w && ww >= hh && ww >= 640 && hh >= 360) learn_full_wh(ww, hh);   /* what Unity asks for is the real native size */
     if (s > 0 && w) {
         if (ww == 0 || hh == 0) {
             learn_full(w);                          /* "keep native size": never override, just learn it */
@@ -990,6 +1110,7 @@ static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
                its aspect ratio and cannot compound, because the request comes from Unity, not from us. */
             int nw = 0, nh = 0;
             if (scaled_pair(ww, hh, s, &nw, &nh)) {
+                g_ovw = nw; g_ovh = nh;
                 ww = nw; hh = nh;
                 mark_scale_in_use();
                 if (n <= 20) L("SBG overridden -> %dx%d\n", ww, hh);
@@ -1290,12 +1411,19 @@ static void load_cfg() {
         f = fopen(TTSMF, "w");
         if (f) { fprintf(f, "0\n"); fclose(f); }
     }
+    if (FILE *ff = fopen(FULLF, "r")) {
+        int fw = 0, fh = 0;
+        if (fscanf(ff, "%d %d", &fw, &fh) == 2 && fw >= 640 && fw <= 8192 && fh >= 360 && fw >= fh) { g_fullw = fw; g_fullh = fh; }
+        fclose(ff);
+    }
     if (access(SCRASHF, F_OK) == 0) {           /* previous launch did not reach 120 frames with render scale active (crash OR closed early) */
-        int prev = 0;
+        int prev = 0, fr = 0;
         FILE *mf = fopen(SCRASHF, "r");
-        if (mf) { if (fscanf(mf, "%d", &prev) != 1) prev = 0; fclose(mf); }
+        if (mf) { if (fscanf(mf, "%d %d", &prev, &fr) < 1) prev = 0; fclose(mf); }
         unlink(SCRASHF);
-        if (g_scale.load() > 0) {
+        /* v0.38: a launch that rendered 20+ frames was not a boot loop (the game was just closed): keep the user's scale. */
+        if (fr >= 20) L("SAFETY: last launch rendered %d frames with render scale %d%% then ended: not treated as a crash, scale kept\n", fr, prev);
+        else if (g_scale.load() > 0) {
             g_scale = 0;
             write_int_atomic(SCLF, 0);                 /* only scale.txt changes; no other setting is touched */
             L("SAFETY: last launch did not reach 120 frames with render scale %d%% on (crash or closed early) -> render scale forced OFF (scale.txt=0). Other settings unchanged.\n", prev);
@@ -1512,14 +1640,14 @@ static void log_start(int mode) {
 #else
     const char *abi = "other";
 #endif
-    L("=== start %s build=%s %s abi=%s mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d builtin=%d ===\n",
-      VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+    L("=== start %s build=%s %s abi=%s mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d ttsize=%d ttsm=%d builtin=%d ===\n",
+      VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), g_ttsize.load(), g_ttsm.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
     st_set("ver", VERSION); st_seti("pid", (long long)getpid()); st_set("abi", abi); st_set("stage", "started");
     st_seti("started", (long long)time(nullptr));
     st_set("scale_safety", g_scale_safety > 0 ? "forced_off_prev_" + std::to_string(g_scale_safety) : "no");
     st_set("cfg_bad", g_cfg_note.empty() ? "none" : g_cfg_note); st_seti("cfg_missing", g_cfg_missing);
     if (!g_cfg_note.empty()) L("CFG invalid or missing settings were replaced by defaults: %s\n", g_cfg_note.c_str());
-    if (g_delay.load() > 0) L("NOTE delay=%d: textures created in the first %d s are NOT modified (they are not revisited)\n", g_delay.load(), g_delay.load());
+    if (g_delay.load() > 0) L("NOTE delay=%d: textures created in the first %d s are modified once the delay is over (v0.38 revisits them)\n", g_delay.load(), g_delay.load());
 }
 
 static void run(int mode) {
