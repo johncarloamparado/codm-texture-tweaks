@@ -593,14 +593,18 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     </section>
 
     <section class="card">
-      <div class="ch"><h2>Texture groups</h2><span class="tag n" id="gcount" hidden></span></div>
-      <p class="cap">Turn a group off to leave those textures original. Play one match first so the list can fill in.</p>
-      <div id="groups"></div>
-      <div class="grid2">
-        <button class="btn" id="gref" type="button">Refresh list</button>
-        <button class="btn" id="gall" type="button">Turn all on</button>
-      </div>
-      <p class="pnote">A group is one format and size. Walls and floors can share a group, so switching it off affects both.</p>
+      <details id="groupd">
+        <summary class="ch"><h2>Texture groups</h2><span class="tag n" id="gcount" style="margin-left:auto" hidden></span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="body">
+          <p class="cap">Turn a group off to leave those textures original. Play one match first so the list can fill in.</p>
+          <div id="groups"></div>
+          <div class="grid2">
+            <button class="btn" id="gref" type="button">Refresh list</button>
+            <button class="btn" id="gall" type="button">Turn all on</button>
+          </div>
+          <p class="pnote">A group is one format and size. Walls and floors can share a group, so switching it off affects both.</p>
+        </div>
+      </details>
     </section>
 
     <section class="card">
@@ -614,11 +618,13 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
             <button class="btn" id="skipAdd" type="button">Add to List</button>
           </div>
           
+          <button class="btn" id="skipApply" type="button" style="margin:10px 0">Apply skip list &amp; reopen CODM</button>
+
           <div class="skip-list" id="skipList">
             <!-- rows are rendered by renderSkipList() -->
           </div>
           
-          <p class="pnote">Built-in rules protect scopes and character detail. Switch one off or delete it to let those textures be changed. Reset defaults restores them.</p>
+          <p class="pnote">The only built-in rule protects the scope (37497 256 512). Switch it off or delete it to let that texture be changed. Reset defaults restores it. A new or changed rule is read only when CODM starts: tap the button below.</p>
         </div>
       </details>
     </section>
@@ -833,7 +839,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     baseBlOff = Object.assign({}, blOff);
     baseBlDel = Object.assign({}, blDel);
   }
-  var builtins = ["37497 256 512", "37493 128 128", "37492 128 128", "37497 128 128"];
+  var builtins = ["37497 256 512"];
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -1863,7 +1869,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       try { localStorage.setItem("ct_reopen", reopen ? "1" : "0"); } catch (e) {}
     });
   }
-  $("stop").addEventListener("click", function () {
+  function doApply(forceReopen) {
     if (demo) { toast("Demo mode — nothing was applied or stopped."); return; }
     /* wait for every queued setting write, and refuse to continue if the last one failed */
     wq.then(function () {
@@ -1871,7 +1877,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       return sh("am force-stop " + PKG).then(function (r) {
         if (r.errno !== 0) { toast("Could not stop CODM. Nothing was applied."); return; }
         setBaseline(); updatePend();
-        if (!reopen) { toast("CODM stopped. Open it again to apply. Settings are read at game start."); return; }
+        if (!reopen && !forceReopen) { toast("CODM stopped. Open it again to apply. Settings are read at game start."); return; }
         /* stop finished (am force-stop is synchronous); check the package, give the system a moment, then launch */
         sh("pm path " + PKG + " >/dev/null 2>&1 && echo HAVE || echo NOPKG").then(function (c) {
           if (c.stdout.indexOf("HAVE") < 0) { toast("CODM stopped, but package " + PKG + " was not found. Open it yourself."); return; }
@@ -1886,7 +1892,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
         });
       });
     });
-  });
+  }
+  $("stop").addEventListener("click", function () { doApply(false); });
+  $("skipApply").addEventListener("click", function () { doApply(true); });
 
   function fmtBytes(n) {
     n = +n || 0;
