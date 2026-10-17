@@ -324,10 +324,7 @@ static void grp_note(int fmt, int sz, bool applied) {
    37497 256x512                  scope / reticle atlas (Lava Remix)
    37493, 37492, 37497 128x128    small character-detail textures */
 static const Sk g_builtin[] = {
-    {37497, 256, 512},
-    {37493, 128, 128},
-    {37492, 128, 128},
-    {37497, 128, 128},
+    {37497, 256, 512},          /* scope. v0.38: the other built-in rules were removed on purpose; add your own in the Skip Manager */
 };
 
 static bool in_skip(int fmt, int w, int h) {
