@@ -299,7 +299,7 @@ static inline int64_t now_ns();
 static std::atomic<int> g_minsz{64};                 /* minsz.txt: textures smaller than this are left untouched */
 static std::atomic<int> g_delay{0};                     /* delay.txt: seconds after launch during which no textures are modified */
 static std::atomic<int64_t> g_tstart{0};
-struct Sk { int fmt, a, b; };
+struct Sk { int fmt, a, b; int hit = 0; };   /* hit: set once the rule has matched a texture (logged as SKIPHIT) */
 static std::vector<Sk> g_bloff;                      /* bltoff.txt: built-in skip rules disabled from the WebUI; read once at startup */
 static std::vector<Sk> g_skip;                       /* skip.txt: "fmt size" (size 0 = any) or "fmt w h"; read once at startup */
 struct Grp { int fmt; int sz; int n; int ap; };
@@ -340,9 +340,14 @@ static bool in_skip(int fmt, int w, int h) {
         if (!off) return true;
     }
     for (auto &p : g_skip) {
-        if (p.fmt != fmt) continue;
-        if (p.b == 0) { if (p.a == 0 || p.a == sz) return true; }
-        else if (p.a == w && p.b == h) return true;
+        if (p.fmt != 0 && p.fmt != fmt) continue;               /* v0.38: fmt 0 = any format */
+        bool m = false;
+        if (p.b == 0) m = (p.a == 0 || p.a == sz);
+        else m = (p.a == w && p.b == h);
+        if (m) {
+            if (!p.hit) { p.hit = 1; L("SKIPHIT rule fmt=%d a=%d b=%d matched a texture fmt=%d %dx%d\n", p.fmt, p.a, p.b, fmt, w, h); }
+            return true;
+        }
     }
     return false;
 }
@@ -1341,10 +1346,13 @@ static void load_cfg() {
         char ln[96];
         while (g_skip.size() < 128 && fgets(ln, sizeof ln, f)) {
             int a = 0, b = 0, c = 0;
-            int n = sscanf(ln, "%d %d %d", &a, &b, &c);
+            /* v0.38: %i also reads 0x9279 (hex); before, a hex format was read as 0 and the whole line was silently ignored */
+            int n = sscanf(ln, "%i %i %i", &a, &b, &c);
             if (n == 2) g_skip.push_back({a, b, 0});
             else if (n == 3) g_skip.push_back({a, b, c});
+            else if (ln[0] != '\n' && ln[0] != '#') L("SKIPRULE ignored (cannot read it): %.40s", ln);
         }
+        for (auto &r : g_skip) L("SKIPRULE loaded fmt=%d a=%d b=%d (%s)\n", r.fmt, r.a, r.b, r.b ? "exact WxH" : (r.a ? "longest side" : "any size"));
         fclose(f);
     }
     g_bloff.clear();
