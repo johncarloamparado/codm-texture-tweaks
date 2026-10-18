@@ -2,6 +2,7 @@
 <!-- CODM Blocky Textures: WebUI for SukiSU Ultra / KernelSU. Reads and writes the module's settings files via ksu.exec. -->
 <html lang="en">
 <head>
+<script>try{if(localStorage.getItem("ct_density")==="compact")document.documentElement.classList.add("compact");}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
@@ -427,12 +428,12 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 @keyframes bootslide { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
 @keyframes bootfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { .bootlogo .logo, .bootbar i { animation: none; } .bootbar i { width: 100%; } }
-#savew {
+#savew, #namew {
   position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center;
   padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
   background: rgba(9, 9, 11, 0.82); backdrop-filter: blur(14px); overscroll-behavior: contain; touch-action: none;
 }
-#savew.open { display: flex; }
+#savew.open, #namew.open { display: flex; }
 body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 .savebox {
   width: 100%; max-width: 350px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
@@ -455,7 +456,77 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
 .sbtn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .sbtn.open { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 6px 20px var(--primary-glow); }
 .sbtn.open em { font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.22); }
-.sbtn.only { background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.45); color: var(--ok); }
+.sbtn.only { background: rgba(129, 140, 248, 0.12); border-color: rgba(129, 140, 248, 0.45); color: #c7d2fe; }
+.sbtn.only svg { color: var(--primary); }
+.srec { display: block; margin: 7px 0 0; text-align: center; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); }
+.savebox .sopt p { font-size: 11.5px; }
+.nin { width: 100%; margin-top: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0, 0, 0, 0.28); color: var(--text); font: inherit; font-size: 15px; }
+.nin:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+.nrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+
+/* quick fixes (Home) */
+.fixes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fix { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: var(--fill); color: var(--text); font: inherit; font-weight: 700; font-size: 14.5px; text-align: left; cursor: pointer; transition: all 0.2s ease; }
+.fix svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--mute); transition: color 0.2s; }
+.fix .fst { position: absolute; top: 14px; right: 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); }
+.fix[aria-checked="true"] { border-color: rgba(52, 211, 153, 0.55); background: rgba(52, 211, 153, 0.1); box-shadow: 0 4px 18px rgba(52, 211, 153, 0.12); }
+.fix[aria-checked="true"] svg, .fix[aria-checked="true"] .fst { color: var(--ok); }
+.fix:disabled { opacity: 0.5; cursor: not-allowed; }
+.fix:active { transform: scale(0.97); }
+
+/* skip rows: drag, edit, groups */
+.grip { flex: none; width: 34px; height: 40px; margin: -6px 0 -6px -8px; display: grid; place-items: center; border: 0; background: none; color: var(--mute); cursor: grab; touch-action: none; }
+.grip svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+.skip-edit { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; padding: 6px 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: text; }
+.skip-edit span { font-family: ui-monospace, monospace; font-size: 13.5px; font-weight: 600; word-break: break-all; }
+.skip-edit svg { flex: none; width: 13px; height: 13px; stroke: var(--mute); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
+.skip-item.off .skip-edit { opacity: 0.45; }
+.skip-in { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--primary); background: rgba(0, 0, 0, 0.3); color: var(--text); font-family: ui-monospace, monospace; font-size: 13.5px; font-weight: 600; }
+.skip-item.dragging { opacity: 0.35; }
+.skip-item.ghost { position: fixed; z-index: 90; margin: 0; pointer-events: none; border-color: var(--primary); background: #1f1f2b; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55); }
+.skip-item.drop-before { box-shadow: 0 -3px 0 var(--primary); }
+.skip-item.drop-after { box-shadow: 0 3px 0 var(--primary); }
+.skip-item.drop-group { outline: 2px solid var(--ok); outline-offset: -2px; background: rgba(52, 211, 153, 0.08); }
+.skip-group { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 18px; border: 1px solid rgba(129, 140, 248, 0.35); background: rgba(129, 140, 248, 0.05); }
+.sg-head { display: flex; align-items: center; gap: 10px; padding: 2px 2px 2px 8px; border-radius: 12px; }
+.sg-head.drop-group { outline: 2px solid var(--ok); outline-offset: -2px; background: rgba(52, 211, 153, 0.08); }
+.sg-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 0; border: 0; background: none; color: var(--text); font: inherit; font-weight: 700; font-size: 14px; text-align: left; cursor: text; }
+.sg-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sg-name svg { flex: none; width: 13px; height: 13px; stroke: var(--mute); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
+.sg-n { flex: none; font-size: 11px; font-weight: 700; color: var(--primary); background: rgba(129, 140, 248, 0.15); padding: 2px 8px; border-radius: 99px; }
+.sg-head .sw { width: auto; min-height: auto; padding: 0; border: none; flex: none; }
+.sg-body { display: flex; flex-direction: column; gap: 6px; }
+.drop-out { display: none; align-items: center; justify-content: center; min-height: 44px; border: 1.5px dashed var(--line); border-radius: 14px; color: var(--mute); font-size: 12.5px; }
+.skip-list.dragging-now .drop-out { display: flex; }
+.drop-out.drop-group { border-color: var(--ok); color: var(--ok); }
+
+/* compact (Tools > Button size): tighter spacing across the whole menu */
+html.compact .card { margin-top: 10px; padding: 14px; border-radius: 20px; }
+html.compact h2 { font-size: 16px; }
+html.compact .cap { margin: 2px 0 10px; font-size: 12.5px; line-height: 1.4; }
+html.compact .row { margin-top: 12px; }
+html.compact .cap + .row { margin-top: 2px; }
+html.compact .desc { margin: 2px 0 6px; font-size: 12.5px; line-height: 1.35; }
+html.compact .pnote { margin-top: 8px; font-size: 12px; }
+html.compact .val { padding: 2px 10px; font-size: 12.5px; }
+html.compact .btn { min-height: 40px; padding: 6px 14px; font-size: 14px; border-radius: 14px; }
+html.compact .ib { width: 36px; height: 36px; }
+html.compact .modes, html.compact .steps, html.compact .opts, html.compact .fixes { gap: 6px; }
+html.compact .mode { padding: 7px 10px; border-radius: 14px; }
+html.compact .step { min-height: 40px; padding: 5px 4px; border-radius: 12px; }
+html.compact .sw { min-height: 42px; padding: 2px 0; }
+html.compact .sw .d { margin-top: 0; font-size: 12px; }
+html.compact .fix { padding: 10px 12px; gap: 6px; border-radius: 16px; }
+html.compact .fix .fst { top: 10px; right: 12px; }
+html.compact .opt { padding: 10px 12px; border-radius: 14px; }
+html.compact .skip-list { gap: 6px; }
+html.compact .skip-item { padding: 6px 12px; border-radius: 14px; }
+html.compact .skip-group { padding: 6px; gap: 6px; }
+html.compact .skip-input-group { gap: 8px; margin-bottom: 12px; }
+html.compact .tiles { gap: 8px; }
+html.compact .tile { padding: 10px 6px 8px; }
+html.compact .savebox { padding: 14px; }
+html.compact .sbtn { min-height: 42px; }
 #logw {
   position: fixed; inset: 0; z-index: 60; display: none;
   padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px));
@@ -544,6 +615,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
       <button class="btn primary" id="recTest" type="button">Set recommended settings (test)</button>
     </section>
 
+
     <section class="card">
       <div class="ch"><h2>Look</h2></div>
       <p class="cap">Choose one look. Turning one on turns the others off.</p>
@@ -562,7 +634,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
           <small>Less fine detail</small>
         </button>
         <button type="button" class="mode" role="radio" aria-checked="false" data-m="3">
-          <span class="mt"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.5"/></svg><b>Flat</b></span>
+          <span class="mt"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" style="fill:currentColor;fill-opacity:.3"/><path d="M8.5 9.5h5"/></svg><b>Flat</b></span>
           <small>Near-solid colors</small>
         </button>
         <button type="button" class="mode" role="radio" aria-checked="false" data-m="4">
@@ -585,6 +657,20 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
         <div class="rh"><span class="lb" id="ttsmL">Edge blend</span><span class="val" id="ttsmV">Sharp</span></div>
         <p class="desc" id="ttsmD"></p>
         <div class="steps" id="ttsmBox" role="radiogroup" aria-labelledby="ttsmL" style="--n:2"></div>
+      </div>
+      <div class="row" id="fixRow" hidden>
+        <div class="rh"><span class="lb">Quick fixes</span></div>
+        <div class="fixes" style="margin-top:8px">
+          <button type="button" class="fix" id="fixScope" role="switch" aria-checked="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg>
+            <span>Fix scope</span><span class="fst">On</span>
+          </button>
+          <button type="button" class="fix" id="fixMenu" role="switch" aria-checked="true">
+            <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M8 10h8M8 14h5"/></svg>
+            <span>Fix menu</span><span class="fst">On</span>
+          </button>
+        </div>
+        <p class="pnote">While on, a very small number of textures stay original.</p>
       </div>
     </section>
 
@@ -686,7 +772,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
             <!-- rows are rendered by renderSkipList() -->
           </div>
           
-          <p class="pnote">The only built-in rule protects the scope (37497 256 512). Switch it off or delete it to let that texture be changed. Reset defaults restores it. A new or changed rule is read only when CODM starts: tap the button below.</p>
+          <p class="pnote">Built-in rules are controlled by the Quick fixes on Home. Switch one off or delete it to let that texture be changed. Reset defaults restores them. Drag a rule by its handle to move it, or drop it on another rule to group them. A new or changed rule is read only when CODM starts: tap Save.</p>
         </div>
       </details>
     </section>
@@ -712,8 +798,11 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
   <!-- ========== TOOLS ========== -->
   <div class="view" id="v-tools">
     <section class="card">
-      <h2>Save action</h2>
-      <p class="cap">Choose what the Save button does. Keep <b>Ask every time</b> if you want to decide each time in the Save window. The other two skip the window and run that action right away.</p>
+      <details id="prefd">
+        <summary class="ch"><h2>Save action &amp; button size</h2><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="body">
+          <div class="rh" style="margin-top:4px"><span class="lb">Save action</span></div>
+          <p class="cap" style="margin-top:4px">Choose what the Save button does. Keep <b>Ask every time</b> if you want to decide each time in the Save window. The other two skip the window and run that action right away.</p>
       <div class="opts" id="saveDef" role="radiogroup" aria-label="Default save action">
         <label class="opt" data-v="ask">
           <input type="radio" name="savedef" value="ask" checked>
@@ -728,6 +817,20 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
           <span class="ot"><span class="t">Always apply only</span><span class="d">Closes the game and leaves it closed. Changes load the next time you open CODM. A skip list change may not load cleanly if another app restarts the game first.</span></span>
         </label>
       </div>
+    
+          <div class="rh" style="margin-top:18px"><span class="lb">Button size</span></div>
+      <div class="opts" id="densityOpts" role="radiogroup" aria-label="Button size">
+        <label class="opt" data-v="normal">
+          <input type="radio" name="density" value="normal" checked>
+          <span class="ot"><span class="t">Normal</span><span class="d">Default button size.</span></span>
+        </label>
+        <label class="opt" data-v="compact">
+          <input type="radio" name="density" value="compact">
+          <span class="ot"><span class="t">Compact</span><span class="d">Slimmer buttons and rows.</span></span>
+        </label>
+      </div>
+            </div>
+      </details>
     </section>
 
     <section class="card">
@@ -774,6 +877,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
       <div class="kv" style="margin-top:8px"><span>Module</span><b>CODM Blocky Textures</b></div>
       <div class="kv"><span>Version</span><b id="aVer">—</b></div>
       <div class="kv"><span>Author</span><b>Q9 Papyrus</b></div>
+      <div class="kv"><span>Contributors</span><b>zynn, Shari</b></div>
       <div class="kv"><span>Module mode</span><b id="aMode">—</b></div>
       <div class="kv"><span>Settings folder</span><b id="aDir" style="font-size:12px;font-weight:500;word-break:break-all;text-align:right">—</b></div>
       <p class="pnote">The module always runs in mode 4: it hooks the game's engine the moment it loads, with no background polling. If this value ever shows anything else, it is corrected automatically.</p>
@@ -826,16 +930,30 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
     <div class="sopt">
       <button class="sbtn open" id="saveOpen" type="button">
         <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>
-        <span>Apply and open CODM</span><em>Recommended</em>
+        <span>Apply and open CODM</span>
       </button>
-      <p><b>Apply and open CODM</b> closes the game and starts it again right away, so the module reads your latest skip list and settings from a clean start. Best choice after changing skip rules.</p>
+      <span class="srec">Recommended</span>
+      <p>Closes CODM and starts it again, so your latest settings load from a clean start.</p>
     </div>
     <div class="sopt">
       <button class="sbtn only" id="saveOnly" type="button">
         <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
         <span>Apply only</span>
       </button>
-      <p><b>Apply only</b> closes the game and leaves it closed. Your changes load the next time you open CODM. If something else restarts the game before it has fully closed, the new skip list may not load cleanly.</p>
+      <p>Closes CODM and leaves it closed. Your changes load the next time you open it.</p>
+    </div>
+  </div>
+</div>
+<div id="namew" role="dialog" aria-modal="true" aria-labelledby="namet">
+  <div class="savebox">
+    <div class="sh">
+      <span class="sico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+      <div class="stt"><h3 id="namet">Name this group</h3><span>Up to 24 characters</span></div>
+    </div>
+    <input class="nin" id="namein" type="text" maxlength="24" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="Group name">
+    <div class="nrow">
+      <button class="btn" id="nameNo" type="button">Cancel</button>
+      <button class="btn primary" id="nameOk" type="button">Save</button>
     </div>
   </div>
 </div>
@@ -882,7 +1000,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
-    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.38",
+    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.39",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
     ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
   };
@@ -936,7 +1054,8 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
     baseBlOff = Object.assign({}, blOff);
     baseBlDel = Object.assign({}, blDel);
   }
-  var builtins = ["37497 256 512"];
+  var builtins = ["37497 256 512", "37497 512 1024", "37497 512 256", "37497 512 512", "37496 512 512"];
+  var FIXES = { scope: ["37497 256 512", "37497 512 1024", "37497 512 256", "37497 512 512"], menu: ["37496 512 512"] };
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -1213,6 +1332,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
       b.setAttribute("aria-checked", +b.getAttribute("data-m") === lookMode ? "true" : "false");
     });
 
+    $("fixRow").hidden = (lookMode === 0);
     var items = stepItems(lookMode || 1), h = "", i, it;
     for (i = 0; i < items.length; i++) {
       it = items[i];
@@ -1526,6 +1646,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
         active = false;
         l = l.substring(1).trim();
       }
+      if (builtins.indexOf(l.replace(/\s+/g, " ")) >= 0) return;      /* now a built-in rule */
       m = /^\s*(\d+)\s+(\d+)\s*$/.exec(l);
       if (m && active) {
         if (m[2] !== "0") skipSet[m[1] + "|" + m[2]] = 1;
@@ -1634,37 +1755,113 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
     cnt.textContent = groups.length + " group" + (groups.length === 1 ? "" : "s") + (off ? " · " + off + " off" : "");
   }
 
+  /* ---------- skip list: helpers, groups, rendering ---------- */
+  var TRASH = '<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
+  var GRIP = '<svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14"/></svg>';
+  var PENCIL = '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>';
+  var CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var LINE_RE = /^(0x[0-9a-fA-F]+|\d+)( (0x[0-9a-fA-F]+|\d+)){1,2}$/;
+  function normLine(l) { return String(l).trim().replace(/\s+/g, " "); }
+  function cleanLine(l) { l = normLine(l); return LINE_RE.test(l) ? l : ""; }
+  function lineExists(l, skipIdx) {
+    if (builtins.indexOf(l) >= 0) return "built-in";
+    for (var i = 0; i < customSkips.length; i++) if (i !== skipIdx && normLine(customSkips[i].line) === l) return "in the list";
+    return "";
+  }
+  var skipMeta = { groups: [], member: {} };       /* names and membership of rule groups; kept in this browser only */
+  try {
+    var smRaw = JSON.parse(localStorage.getItem("ct_skipmeta") || "null");
+    if (smRaw && smRaw.groups && smRaw.member) skipMeta = smRaw;
+  } catch (e) {}
+  function saveMeta() { try { localStorage.setItem("ct_skipmeta", JSON.stringify(skipMeta)); } catch (e) {} }
+  function groupById(id) {
+    for (var i = 0; i < skipMeta.groups.length; i++) if (skipMeta.groups[i].id === id) return skipMeta.groups[i];
+    return null;
+  }
+  function groupOf(line) { var id = skipMeta.member[normLine(line)]; return id ? groupById(id) : null; }
+  function pruneMeta() {
+    var have = {}, used = {};
+    customSkips.forEach(function (cs) { have[normLine(cs.line)] = 1; });
+    Object.keys(skipMeta.member).forEach(function (k) { if (!have[k] || !groupById(skipMeta.member[k])) delete skipMeta.member[k]; });
+    Object.keys(skipMeta.member).forEach(function (k) { used[skipMeta.member[k]] = 1; });
+    skipMeta.groups = skipMeta.groups.filter(function (g) { return used[g.id]; });
+  }
+  function normalizeOrder() {                       /* each group stays together, at the place of its first rule */
+    var out = [], done = {};
+    customSkips.forEach(function (cs) {
+      var g = groupOf(cs.line);
+      if (!g) { out.push(cs); return; }
+      if (done[g.id]) return;
+      done[g.id] = 1;
+      customSkips.forEach(function (c2) { var g2 = groupOf(c2.line); if (g2 && g2.id === g.id) out.push(c2); });
+    });
+    customSkips = out;
+  }
+  function fixInfo(name) {
+    var rules = FIXES[name].filter(function (r) { return !blDel[r]; });
+    return { n: rules.length, on: rules.length > 0 && rules.every(function (r) { return !blOff[r]; }), rules: rules };
+  }
+  function paintFixes() {
+    [["scope", "fixScope"], ["menu", "fixMenu"]].forEach(function (p) {
+      var b = $(p[1]);
+      if (!b) return;
+      var f = fixInfo(p[0]);
+      b.setAttribute("aria-checked", f.on ? "true" : "false");
+      b.disabled = f.n === 0;
+      b.querySelector(".fst").textContent = f.n === 0 ? "Deleted" : (f.on ? "On" : "Off");
+    });
+  }
+  function fixOf(rule) {
+    for (var k in FIXES) if (FIXES[k].indexOf(rule) >= 0) return k === "scope" ? "Fix scope" : "Fix menu";
+    return "";
+  }
+  function ruleRow(cs, i) {
+    return '<div class="skip-item' + (cs.active ? '' : ' off') + '" data-idx="' + i + '">' +
+      '<button class="grip" type="button" data-idx="' + i + '" aria-label="Drag to move or group">' + GRIP + '</button>' +
+      '<button class="skip-edit" type="button" data-idx="' + i + '" aria-label="Edit rule"><span>' + esc(cs.line) + '</span>' + PENCIL + '</button>' +
+      '<div class="skip-actions">' +
+        '<button class="sw skip-toggle" data-idx="' + i + '" aria-checked="' + (cs.active ? "true" : "false") + '"><span class="knob"></span></button>' +
+        '<button class="ib skip-del" data-idx="' + i + '" aria-label="Delete">' + TRASH + '</button>' +
+      '</div></div>';
+  }
   function renderSkipList() {
-    var html = "";
-    var TRASH = '<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
-    var nDel = 0;
-    builtins.forEach(function(b) {
+    pruneMeta();
+    normalizeOrder();
+    var html = "", nDel = 0;
+    builtins.forEach(function (b) {
       if (blDel[b]) { nDel++; return; }
       var on = !blOff[b];
       html += '<div class="skip-item builtin' + (on ? '' : ' off') + '">' +
-        '<div class="skip-info"><span>' + b + '</span><small>Built-in' + (on ? '' : ' (off)') + '</small></div>' +
+        '<div class="skip-info"><span>' + b + '</span><small>Built-in · ' + fixOf(b) + (on ? '' : ' (off)') + '</small></div>' +
         '<div class="skip-actions">' +
           '<button class="sw bl-toggle" data-k="' + b + '" aria-checked="' + (on ? "true" : "false") + '"><span class="knob"></span></button>' +
           '<button class="ib skip-del bl-del" data-k="' + b + '" aria-label="Delete">' + TRASH + '</button>' +
         '</div></div>';
     });
-    if (nDel) {
-      html += '<button class="btn bl-restore" type="button" style="margin-top:4px">Restore deleted built-ins (' + nDel + ')</button>';
-    }
+    if (nDel) html += '<button class="btn bl-restore" type="button" style="margin-top:4px">Restore deleted built-ins (' + nDel + ')</button>';
 
-    customSkips.forEach(function(cs, i) {
-      html += '<div class="skip-item">' +
-        '<div class="skip-info"><span>' + esc(cs.line) + '</span></div>' +
-        '<div class="skip-actions">' +
-          '<button class="sw skip-toggle" data-idx="' + i + '" aria-checked="' + (cs.active ? "true" : "false") + '"><span class="knob"></span></button>' +
-          '<button class="ib skip-del" data-idx="' + i + '" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>' +
-        '</div></div>';
+    var emitted = {};
+    customSkips.forEach(function (cs, i) {
+      var g = groupOf(cs.line);
+      if (!g) { html += ruleRow(cs, i); return; }
+      if (emitted[g.id]) return;
+      emitted[g.id] = 1;
+      var items = [];
+      customSkips.forEach(function (c2, j) { var g2 = groupOf(c2.line); if (g2 && g2.id === g.id) items.push([c2, j]); });
+      var allOn = items.every(function (x) { return x[0].active; });
+      html += '<div class="skip-group" data-gid="' + g.id + '">' +
+        '<div class="sg-head" data-gid="' + g.id + '">' +
+          '<button class="sg-name" type="button" data-gid="' + g.id + '" aria-label="Rename group"><span>' + esc(g.name) + '</span>' + PENCIL + '</button>' +
+          '<span class="sg-n">' + items.length + '</span>' +
+          '<button class="sw sg-toggle" data-gid="' + g.id + '" aria-checked="' + (allOn ? "true" : "false") + '"><span class="knob"></span></button>' +
+          '<button class="ib sg-ungroup" data-gid="' + g.id + '" aria-label="Ungroup">' + CROSS + '</button>' +
+        '</div>' +
+        '<div class="sg-body">' + items.map(function (x) { return ruleRow(x[0], x[1]); }).join("") + '</div></div>';
     });
-    
-    if (customSkips.length === 0) {
-      html += '<p class="desc" style="text-align:center; margin-top:8px;">No custom rules added yet.</p>';
-    }
+    if (customSkips.length === 0) html += '<p class="desc" style="text-align:center; margin-top:8px;">No custom rules added yet.</p>';
+    if (skipMeta.groups.length) html += '<div class="drop-out">Drop here to take a rule out of its group</div>';
     $("skipList").innerHTML = html;
+    paintFixes();
   }
 
   $("groups").addEventListener("click", function (e) {
@@ -1686,35 +1883,69 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
     writeSkip().then(skipDone);
   });
 
+  function afterListChange() {
+    pruneMeta(); saveMeta(); normalizeOrder(); syncSkipSet();
+    renderSkipList(); renderGroups();
+    return writeSkip().then(function (r) {
+      if (!r.ok) toast("Could not save the list."); else updatePend();
+      return r;
+    });
+  }
+
   $("skipAdd").addEventListener("click", function () {
-    var lines = $("skipt").value.split("\n");
-    var added = 0;
-    lines.forEach(function(l) {
-      l = l.trim();
-      if (l) {
-        var exists = customSkips.some(function(cs) { return cs.line === l; });
-        if (!exists) {
-          customSkips.push({ line: l, active: true });
-          added++;
-        }
-      }
+    var added = 0, bad = 0, dup = 0;
+    $("skipt").value.split("\n").forEach(function (l) {
+      if (!l.trim()) return;
+      var c = cleanLine(l);
+      if (!c) { bad++; return; }
+      if (lineExists(c, -1)) { dup++; return; }
+      customSkips.push({ line: c, active: true });
+      added++;
     });
     if (added > 0) {
       $("skipt").value = "";
-      syncSkipSet();
-      renderSkipList();
-      renderGroups();
-      writeSkip().then(function(r) {
-        if (r.ok) updatePend();
-        toast("Added " + added + " rule(s). Tap Save to apply them.");
+      afterListChange().then(function (r) {
+        if (r.ok) toast("Added " + added + " rule" + (added === 1 ? "" : "s") + ". Tap Save to apply." + (bad ? " " + bad + " line(s) were not valid." : ""));
       });
     } else {
-      toast("No new valid rules found.");
+      toast(bad ? "Use: format size, or format width height." : (dup ? "Already in the list." : "Nothing to add."));
     }
   });
 
-  $("skipList").addEventListener("click", function(e) {
-    var blr = e.target.closest(".bl-restore");
+  function startEdit(i) {
+    var row = $("skipList").querySelector('.skip-item[data-idx="' + i + '"]');
+    var btn = row && row.querySelector(".skip-edit");
+    if (!btn) return;
+    var inp = document.createElement("input");
+    inp.className = "skip-in"; inp.type = "text"; inp.value = customSkips[i].line;
+    inp.setAttribute("autocapitalize", "off"); inp.setAttribute("spellcheck", "false"); inp.setAttribute("autocomplete", "off");
+    btn.replaceWith(inp);
+    inp.focus(); inp.select();
+    var done = false;
+    function finish(save) {
+      if (done) return;
+      done = true;
+      if (!save) { renderSkipList(); return; }
+      var old = normLine(customSkips[i].line), c = cleanLine(inp.value);
+      if (!c) { toast("Use: format size, or format width height."); renderSkipList(); return; }
+      if (c === old) { renderSkipList(); return; }
+      if (lineExists(c, i)) { toast("That rule is already " + lineExists(c, i) + "."); renderSkipList(); return; }
+      var gid = skipMeta.member[old];
+      delete skipMeta.member[old];
+      if (gid) skipMeta.member[c] = gid;
+      customSkips[i].line = c;
+      afterListChange().then(function (r) { if (r.ok) toast("Rule updated. Tap Save to apply."); });
+    }
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); finish(true); }
+      else if (e.key === "Escape") finish(false);
+    });
+    inp.addEventListener("blur", function () { finish(true); });
+  }
+
+  $("skipList").addEventListener("click", function (e) {
+    var t = e.target;
+    var blr = t.closest(".bl-restore");
     if (blr) {
       Object.keys(blDel).forEach(function (k) { delete blOff[k]; });
       blDel = {};
@@ -1722,7 +1953,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
       writeBl().then(skipDone);
       return;
     }
-    var bld = e.target.closest(".bl-del");
+    var bld = t.closest(".bl-del");
     if (bld) {
       var bk = bld.getAttribute("data-k");
       blOff[bk] = 1; blDel[bk] = 1;
@@ -1730,7 +1961,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
       writeBl().then(skipDone);
       return;
     }
-    var blt = e.target.closest(".bl-toggle");
+    var blt = t.closest(".bl-toggle");
     if (blt) {
       var tk = blt.getAttribute("data-k");
       if (blOff[tk]) delete blOff[tk]; else blOff[tk] = 1;
@@ -1738,27 +1969,144 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
       writeBl().then(skipDone);
       return;
     }
-    var delBtn = e.target.closest(".skip-del");
+    var ed = t.closest(".skip-edit");
+    if (ed) { startEdit(+ed.getAttribute("data-idx")); return; }
+    var delBtn = t.closest(".skip-del");
     if (delBtn) {
-      var idx = +delBtn.getAttribute("data-idx");
-      customSkips.splice(idx, 1);
-      syncSkipSet();
-      renderSkipList();
-      renderGroups();
-      writeSkip().then(skipDone);
+      customSkips.splice(+delBtn.getAttribute("data-idx"), 1);
+      afterListChange().then(skipDone);
       return;
     }
-    
-    var toggleBtn = e.target.closest(".skip-toggle");
+    var toggleBtn = t.closest(".skip-toggle");
     if (toggleBtn) {
-      var tidx = toggleBtn.getAttribute("data-idx");
+      var tidx = +toggleBtn.getAttribute("data-idx");
       customSkips[tidx].active = !customSkips[tidx].active;
-      syncSkipSet();
-      renderSkipList();
-      renderGroups();
-      writeSkip().then(skipDone);
+      afterListChange().then(skipDone);
+      return;
+    }
+    var sgn = t.closest(".sg-name");
+    if (sgn) {
+      var g = groupById(sgn.getAttribute("data-gid"));
+      if (g) askName("Rename group", g.name, function (name) { g.name = name; saveMeta(); renderSkipList(); });
+      return;
+    }
+    var sgu = t.closest(".sg-ungroup");
+    if (sgu) {
+      var gid = sgu.getAttribute("data-gid");
+      Object.keys(skipMeta.member).forEach(function (k) { if (skipMeta.member[k] === gid) delete skipMeta.member[k]; });
+      pruneMeta(); saveMeta(); renderSkipList();
+      return;
+    }
+    var sgt = t.closest(".sg-toggle");
+    if (sgt) {
+      var gid2 = sgt.getAttribute("data-gid");
+      var mem = customSkips.filter(function (cs) { var g2 = groupOf(cs.line); return g2 && g2.id === gid2; });
+      var allOn = mem.every(function (cs) { return cs.active; });
+      mem.forEach(function (cs) { cs.active = !allOn; });
+      afterListChange().then(skipDone);
     }
   });
+
+  /* ---------- drag a rule: move it, or drop it on another rule to group them ---------- */
+  var drag = null;
+  function dragClean() {
+    var els = $("skipList").querySelectorAll(".drop-before, .drop-after, .drop-group");
+    for (var i = 0; i < els.length; i++) els[i].classList.remove("drop-before", "drop-after", "drop-group");
+  }
+  function dragMark(el, y) {
+    dragClean();
+    drag.target = null;
+    if (!el || !el.closest) return;
+    var list = $("skipList");
+    var out = el.closest(".drop-out");
+    if (out && list.contains(out)) { out.classList.add("drop-group"); drag.target = { mode: "out" }; return; }
+    var head = el.closest(".sg-head");
+    if (head && list.contains(head)) { head.classList.add("drop-group"); drag.target = { mode: "join", gid: head.getAttribute("data-gid") }; return; }
+    var row = el.closest(".skip-item:not(.builtin)");
+    if (!row || !list.contains(row) || row.classList.contains("dragging")) return;
+    var r = row.getBoundingClientRect(), f = (y - r.top) / r.height;
+    var mode = f < 0.28 ? "before" : (f > 0.72 ? "after" : "group");
+    row.classList.add(mode === "before" ? "drop-before" : (mode === "after" ? "drop-after" : "drop-group"));
+    drag.target = { mode: mode, idx: +row.getAttribute("data-idx") };
+  }
+  $("skipList").addEventListener("pointerdown", function (e) {
+    var g = e.target.closest ? e.target.closest(".grip") : null;
+    if (!g || drag) return;
+    var row = g.closest(".skip-item");
+    if (!row) return;
+    e.preventDefault();
+    var r = row.getBoundingClientRect();
+    var ghost = row.cloneNode(true);
+    ghost.classList.add("ghost");
+    ghost.style.width = r.width + "px"; ghost.style.left = r.left + "px"; ghost.style.top = r.top + "px";
+    document.body.appendChild(ghost);
+    row.classList.add("dragging");
+    $("skipList").classList.add("dragging-now");
+    drag = { idx: +row.getAttribute("data-idx"), ghost: ghost, dy: e.clientY - r.top, target: null };
+    try { g.setPointerCapture(e.pointerId); } catch (x) {}
+  });
+  document.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    e.preventDefault();
+    drag.ghost.style.top = (e.clientY - drag.dy) + "px";
+    if (e.clientY < 90) window.scrollBy(0, -14);
+    else if (e.clientY > window.innerHeight - 160) window.scrollBy(0, 14);
+    dragMark(document.elementFromPoint(e.clientX, e.clientY), e.clientY);
+  }, { passive: false });
+  function dragEnd() {
+    if (!drag) return;
+    var d = drag; drag = null;
+    if (d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+    $("skipList").classList.remove("dragging-now");
+    dragClean();
+    var rows = $("skipList").querySelectorAll(".dragging");
+    for (var i = 0; i < rows.length; i++) rows[i].classList.remove("dragging");
+    if (!d.target) return;
+    applyDrop(d.idx, d.target);
+  }
+  document.addEventListener("pointerup", dragEnd);
+  document.addEventListener("pointercancel", dragEnd);
+  function applyDrop(idx, t) {
+    var moved = customSkips[idx];
+    if (!moved) return;
+    var mk = normLine(moved.line);
+    if (t.mode === "out") {
+      delete skipMeta.member[mk];
+      customSkips.splice(idx, 1); customSkips.push(moved);
+      afterListChange();
+      return;
+    }
+    if (t.mode === "join") { skipMeta.member[mk] = t.gid; afterListChange(); return; }
+    var target = customSkips[t.idx];
+    if (!target || target === moved) { renderSkipList(); return; }
+    var tk = normLine(target.line), tg = skipMeta.member[tk] || null;
+    if (t.mode === "group") {
+      if (tg) { skipMeta.member[mk] = tg; afterListChange(); return; }
+      askName("Name this group", "", function (name) {
+        var id = "g" + Date.now().toString(36);
+        skipMeta.groups.push({ id: id, name: name });
+        skipMeta.member[tk] = id; skipMeta.member[mk] = id;
+        afterListChange();
+      });
+      return;
+    }
+    customSkips.splice(idx, 1);
+    var ti = customSkips.indexOf(target);
+    customSkips.splice(t.mode === "before" ? ti : ti + 1, 0, moved);
+    if (tg) skipMeta.member[mk] = tg; else delete skipMeta.member[mk];
+    afterListChange();
+  }
+
+  /* ---------- quick fixes on Home: bound to the built-in rules ---------- */
+  function toggleFix(name) {
+    var f = fixInfo(name);
+    if (!f.n) return;
+    f.rules.forEach(function (r) { if (f.on) blOff[r] = 1; else delete blOff[r]; });
+    renderSkipList();
+    writeBl().then(skipDone);
+  }
+  $("fixScope").addEventListener("click", function () { toggleFix("scope"); });
+  $("fixMenu").addEventListener("click", function () { toggleFix("menu"); });
 
   /* Finds the game's files folder. Handles other Android users (dual apps / clone),
      the mirror path, and shells that need nsenter or su to see /data/data. */
@@ -1797,7 +2145,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.38'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.39'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -1965,26 +2313,79 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
   });
   paintSaveDef();
   var savew = $("savew");
-  var lockY = 0;
-  function openSave() {
-    if (demo) { toast("Demo mode — nothing was applied or stopped."); return; }
-    if (savew.classList.contains("open")) return;
+  var lockN = 0, lockY = 0;
+  function lockPage() {
+    if (lockN++ > 0) return;
     lockY = window.pageYOffset || document.documentElement.scrollTop || 0;
     document.body.style.top = "-" + lockY + "px";
     document.body.classList.add("modal-open");
+  }
+  function unlockPage() {
+    if (--lockN > 0) return;
+    lockN = 0;
+    document.body.classList.remove("modal-open");
+    document.body.style.top = "";
+    window.scrollTo(0, lockY);
+  }
+  function openSave() {
+    if (demo) { toast("Demo mode — nothing was applied or stopped."); return; }
+    if (savew.classList.contains("open")) return;
+    lockPage();
     savew.classList.add("open");
   }
   function closeSave() {
     if (!savew.classList.contains("open")) return;
     savew.classList.remove("open");
-    document.body.classList.remove("modal-open");
-    document.body.style.top = "";
-    window.scrollTo(0, lockY);
+    unlockPage();
   }
   savew.addEventListener("touchmove", function (e) { if (e.target === savew) e.preventDefault(); }, { passive: false });
+  var namew = $("namew"), nameOkCb = null;
+  namew.addEventListener("touchmove", function (e) { if (e.target === namew) e.preventDefault(); }, { passive: false });
+  function askName(title, init, ok) {
+    $("namet").textContent = title;
+    $("namein").value = init || "";
+    nameOkCb = ok;
+    lockPage();
+    namew.classList.add("open");
+    setTimeout(function () { $("namein").focus(); $("namein").select(); }, 80);
+  }
+  function nameClose() {
+    if (!namew.classList.contains("open")) return;
+    namew.classList.remove("open");
+    unlockPage();
+  }
+  function nameSubmit() {
+    var v = $("namein").value.trim().replace(/\s+/g, " ").slice(0, 24);
+    if (!v) { toast("Enter a name."); return; }
+    var cb = nameOkCb; nameOkCb = null;
+    nameClose();
+    if (cb) cb(v);
+  }
+  $("nameOk").addEventListener("click", nameSubmit);
+  $("nameNo").addEventListener("click", function () { nameOkCb = null; nameClose(); renderSkipList(); });
+  namew.addEventListener("click", function (e) { if (e.target === namew) { nameOkCb = null; nameClose(); renderSkipList(); } });
+  $("namein").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); nameSubmit(); } });
+  var density = "normal";
+  try { density = localStorage.getItem("ct_density") === "compact" ? "compact" : "normal"; } catch (e) {}
+  function paintDensity() {
+    document.documentElement.classList.toggle("compact", density === "compact");
+    var rows = $("densityOpts").querySelectorAll(".opt");
+    for (var i = 0; i < rows.length; i++) {
+      var on = rows[i].getAttribute("data-v") === density;
+      rows[i].classList.toggle("on", on);
+      rows[i].querySelector("input").checked = on;
+    }
+  }
+  $("densityOpts").addEventListener("change", function (e) {
+    if (!e.target || e.target.name !== "density") return;
+    density = e.target.value === "compact" ? "compact" : "normal";
+    try { localStorage.setItem("ct_density", density); } catch (e2) {}
+    paintDensity();
+  });
+  paintDensity();
   $("savex").addEventListener("click", closeSave);
   savew.addEventListener("click", function (e) { if (e.target === savew) closeSave(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSave(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeSave(); if (namew.classList.contains("open")) { nameOkCb = null; nameClose(); renderSkipList(); } } });
   $("saveOpen").addEventListener("click", function () { closeSave(); doApply(true); });
   $("saveOnly").addEventListener("click", function () { closeSave(); doApply(false); });
   function doApply(openAfter) {
@@ -2110,6 +2511,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
   arm("reset", "Tap again to reset", function () {
     save(REC, "Defaults").then(function () {
       customSkips = [];
+      skipMeta = { groups: [], member: {} }; saveMeta();
       syncSkipSet();
       blOff = {}; blDel = {};
       return writeSkip().then(writeBl);
