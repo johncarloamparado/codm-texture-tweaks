@@ -408,22 +408,54 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 .opt .ot { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .opt .t { font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--text); }
 .opt .d { font-size: 12px; line-height: 1.5; color: var(--mute); }
+#boot {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: radial-gradient(60% 40% at 50% 28%, rgba(129, 140, 248, 0.18), transparent 70%),
+              radial-gradient(50% 35% at 82% 88%, rgba(192, 132, 252, 0.13), transparent 70%), var(--ink);
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+#boot.done { opacity: 0; visibility: hidden; pointer-events: none; }
+.bootc { width: 100%; max-width: 300px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.bootlogo .logo { width: 78px; height: 78px; border-radius: 22px; animation: bootfloat 2.6s ease-in-out infinite; }
+#boot h2 { margin: 16px 0 0; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
+.bootby { margin: 2px 0 0; font-size: 13px; color: var(--mute); }
+.bootbar { width: 200px; height: 4px; margin-top: 26px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.bootbar i { display: block; width: 42%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--accent)); animation: bootslide 1.25s ease-in-out infinite; }
+.bootmsg { margin: 14px 0 0; font-size: 13px; font-weight: 600; color: var(--text); }
+.boothint { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: var(--mute); }
+#bootSkip { margin-top: 14px; min-height: 40px; padding: 0 18px; }
+@keyframes bootslide { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
+@keyframes bootfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .bootlogo .logo, .bootbar i { animation: none; } .bootbar i { width: 100%; } }
 #savew {
   position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center;
   padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
-  background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(12px); overscroll-behavior: contain;
+  background: rgba(9, 9, 11, 0.82); backdrop-filter: blur(14px); overscroll-behavior: contain; touch-action: none;
 }
 #savew.open { display: flex; }
+body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 .savebox {
-  width: 100%; max-width: 340px; max-height: 100%; overflow-y: auto; padding: 18px;
-  border-radius: 24px; border: 1px solid var(--card-border); background: rgba(24, 24, 27, 0.96);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  width: 100%; max-width: 350px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+  padding: 18px; border-radius: 26px; border: 1px solid var(--card-border);
+  background: linear-gradient(180deg, rgba(34, 34, 44, 0.98), rgba(22, 22, 28, 0.98));
+  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(129, 140, 248, 0.08);
 }
+.savebox .sh { display: flex; align-items: center; gap: 12px; }
+.savebox .sico { flex: none; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 6px 18px var(--primary-glow); }
+.savebox .sico svg { width: 20px; height: 20px; fill: #fff; stroke: none; }
+.savebox .stt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .savebox h3 { margin: 0; font-size: 17px; font-weight: 700; color: var(--text); }
-.savebox .cap { margin: 8px 0 14px; }
-.savebox .pnote { margin: 10px 2px 0; }
-.savebox .stack { display: grid; gap: 8px; }
-.savebox .btn { min-height: 46px; }
+.savebox .stt span { font-size: 12px; color: var(--mute); }
+.savebox .cap { margin: 14px 2px 4px; }
+.savebox .sopt { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.savebox .sopt p { margin: 9px 3px 0; font-size: 12px; line-height: 1.55; color: var(--mute); }
+.savebox .sopt p b { color: var(--text); }
+.sbtn { width: 100%; min-height: 48px; padding: 0 16px; border-radius: 16px; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; gap: 9px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease, filter 0.2s ease; }
+.sbtn:active { transform: scale(0.97); }
+.sbtn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sbtn.open { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 6px 20px var(--primary-glow); }
+.sbtn.open em { font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.22); }
+.sbtn.only { background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.45); color: var(--ok); }
 #logw {
   position: fixed; inset: 0; z-index: 60; display: none;
   padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px));
@@ -451,6 +483,17 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 </style>
 </head>
 <body>
+<div id="boot" role="status" aria-live="polite">
+  <div class="bootc">
+    <div class="bootlogo" id="bootLogo"></div>
+    <h2>Blocky Textures</h2>
+    <p class="bootby">by Q9 Papyrus</p>
+    <div class="bootbar"><i></i></div>
+    <p class="bootmsg" id="bootMsg">Starting…</p>
+    <p class="boothint" id="bootHint" hidden>Still waiting for your device. This can take a few seconds when the phone is busy.</p>
+    <button class="btn" id="bootSkip" type="button" hidden>Continue anyway</button>
+  </div>
+</div>
 <div id="bg-glow"></div>
 
 <main>
@@ -708,7 +751,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
           <button class="btn" id="logref" type="button">Refresh status</button>
         </div>
       </div>
-      <p class="pnote">Export report makes <b>one file</b> in <b>CODM Log</b> in internal storage, named <b>CODM_report_brand_model_name_time</b>. Inside are the log, device info, settings, settings folder, other modules and crash info. It is a .zip when the phone can make one, otherwise .tar.gz or .txt. Send that single file to the developer.</p>
+      <p class="pnote">Export report makes <b>one file</b> in <b>CODM Log</b> in internal storage, named <b>CODM_report_name</b> (a new export replaces the old one; the date, brand and model are inside the file). Inside are the log, device info, settings, settings folder, other modules and crash info. It is a .zip when the phone can make one, otherwise .tar.gz or .txt. Send that single file to the developer.</p>
     </section>
 
     <section class="card">
@@ -774,14 +817,26 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 </div>
 <div id="savew" role="dialog" aria-modal="true" aria-labelledby="savet">
   <div class="savebox">
-    <div class="ch"><h3 id="savet">Save settings</h3><button class="ib" id="savex" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
-    <p class="cap">CODM reads your settings and skip list only when it starts, so the game has to close for them to take effect. Choose how you want to apply them.</p>
-    <div class="stack">
-      <button class="btn" id="saveOpen" type="button">Apply and open CODM</button>
-      <button class="btn" id="saveOnly" type="button">Apply only</button>
+    <div class="sh">
+      <span class="sico"><svg viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></svg></span>
+      <div class="stt"><h3 id="savet">Save settings</h3><span>Choose how to apply your changes</span></div>
+      <button class="ib" id="savex" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
-    <p class="pnote"><b>Apply and open CODM</b> closes the game and starts it again right away, so the module reads your latest skip list and settings from a clean start. Recommended after changing skip rules.</p>
-    <p class="pnote"><b>Apply only</b> closes the game and leaves it closed. Your changes load the next time you open CODM. If the game is restarted by something else before it has fully closed, the new skip list may not load cleanly.</p>
+    <p class="cap">CODM reads your settings and skip list only when it starts, so the game has to close for them to take effect.</p>
+    <div class="sopt">
+      <button class="sbtn open" id="saveOpen" type="button">
+        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>
+        <span>Apply and open CODM</span><em>Recommended</em>
+      </button>
+      <p><b>Apply and open CODM</b> closes the game and starts it again right away, so the module reads your latest skip list and settings from a clean start. Best choice after changing skip rules.</p>
+    </div>
+    <div class="sopt">
+      <button class="sbtn only" id="saveOnly" type="button">
+        <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>Apply only</span>
+      </button>
+      <p><b>Apply only</b> closes the game and leaves it closed. Your changes load the next time you open CODM. If something else restarts the game before it has fully closed, the new skip list may not load cleanly.</p>
+    </div>
   </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -1494,24 +1549,22 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     groups.sort(function (a, b) { return b.sz - a.sz || b.n - a.n; });
   }
 
+  /* The rule list (customSkips) is the only source of truth. skipSet is just a view of it for the Texture groups
+     switches. (Before v0.38 the file was rebuilt from both, so a deleted or switched-off "fmt size" rule came back.) */
+  function keyOf(line) {
+    var m = /^\s*(\d+)\s+(\d+)\s*$/.exec(line);
+    return (m && m[2] !== "0") ? m[1] + "|" + m[2] : "";
+  }
+  function syncSkipSet() {
+    skipSet = {};
+    customSkips.forEach(function (cs) {
+      if (!cs.active) return;
+      var k = keyOf(cs.line);
+      if (k) skipSet[k] = 1;
+    });
+  }
   function skipLines() {
-    var lines = [];
-    var seen = {};
-    
-    customSkips.forEach(function(cs) {
-      var out = cs.active ? cs.line : ("# " + cs.line);
-      lines.push(out);
-      if (cs.active) seen[cs.line] = true;
-    });
-    
-    Object.keys(skipSet).forEach(function(k) {
-      var line = k.replace("|", " ");
-      if (!seen[line]) {
-        lines.push(line);
-        seen[line] = true;
-      }
-    });
-    return lines;
+    return customSkips.map(function (cs) { return cs.active ? cs.line : ("# " + cs.line); });
   }
 
   function writeSkip(linesIn) {
@@ -1618,8 +1671,15 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     var b = e.target.closest ? e.target.closest(".sw") : null;
     if (!b) return;
     var key = b.getAttribute("data-k");
-    if (skipSet[key]) delete skipSet[key];
-    else skipSet[key] = 1;
+    if (skipSet[key]) {
+      customSkips.forEach(function (cs) { if (keyOf(cs.line) === key) cs.active = false; });
+    } else {
+      var have = customSkips.filter(function (cs) { return keyOf(cs.line) === key; });
+      if (have.length) have.forEach(function (cs) { cs.active = true; });
+      else customSkips.push({ line: key.replace("|", " "), active: true });
+    }
+    syncSkipSet();
+    renderSkipList();
     b.setAttribute("aria-checked", skipSet[key] ? "false" : "true");
     var off = Object.keys(skipSet).length;
     $("gcount").textContent = groups.length + " group" + (groups.length === 1 ? "" : "s") + (off ? " · " + off + " off" : "");
@@ -1641,7 +1701,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     });
     if (added > 0) {
       $("skipt").value = "";
+      syncSkipSet();
       renderSkipList();
+      renderGroups();
       writeSkip().then(function(r) {
         if (r.ok) updatePend();
         toast("Added " + added + " rule(s). Tap Save to apply them.");
@@ -1680,7 +1742,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     if (delBtn) {
       var idx = +delBtn.getAttribute("data-idx");
       customSkips.splice(idx, 1);
+      syncSkipSet();
       renderSkipList();
+      renderGroups();
       writeSkip().then(skipDone);
       return;
     }
@@ -1689,7 +1753,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     if (toggleBtn) {
       var tidx = toggleBtn.getAttribute("data-idx");
       customSkips[tidx].active = !customSkips[tidx].active;
+      syncSkipSet();
       renderSkipList();
+      renderGroups();
       writeSkip().then(skipDone);
     }
   });
@@ -1839,7 +1905,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     refresh().then(function () { toast("Stats refreshed."); });
   });
   $("gall").addEventListener("click", function () {
-    skipSet = {};
+    customSkips.forEach(function (cs) { if (keyOf(cs.line)) cs.active = false; });
+    syncSkipSet();
+    renderSkipList();
     writeSkip().then(function (r) {
       renderGroups();
       skipDone(r);
@@ -1897,11 +1965,23 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   });
   paintSaveDef();
   var savew = $("savew");
+  var lockY = 0;
   function openSave() {
     if (demo) { toast("Demo mode — nothing was applied or stopped."); return; }
+    if (savew.classList.contains("open")) return;
+    lockY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    document.body.style.top = "-" + lockY + "px";
+    document.body.classList.add("modal-open");
     savew.classList.add("open");
   }
-  function closeSave() { savew.classList.remove("open"); }
+  function closeSave() {
+    if (!savew.classList.contains("open")) return;
+    savew.classList.remove("open");
+    document.body.classList.remove("modal-open");
+    document.body.style.top = "";
+    window.scrollTo(0, lockY);
+  }
+  savew.addEventListener("touchmove", function (e) { if (e.target === savew) e.preventDefault(); }, { passive: false });
   $("savex").addEventListener("click", closeSave);
   savew.addEventListener("click", function (e) { if (e.target === savew) closeSave(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSave(); });
@@ -2029,8 +2109,8 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   });
   arm("reset", "Tap again to reset", function () {
     save(REC, "Defaults").then(function () {
-      skipSet = {};
       customSkips = [];
+      syncSkipSet();
       blOff = {}; blDel = {};
       return writeSkip().then(writeBl);
     }).then(refresh);
@@ -2092,11 +2172,10 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     var cmd =
       "D=" + D + "; NM='" + nm + "'; if [ -d /sdcard ]; then O=\"/sdcard/CODM Log\"; else O=\"/storage/emulated/0/CODM Log\"; fi; " +
       "mkdir -p \"$O\" || { echo FAILDIR; exit 1; }; " +
-      "B=$(getprop ro.product.brand | tr -cd 'A-Za-z0-9._-'); M=$(getprop ro.product.model | tr ' ' '_' | tr -cd 'A-Za-z0-9._-'); " +
-      "N=\"CODM_report_${B}_${M}\"; [ -n \"$NM\" ] && N=\"${N}_${NM}\"; N=\"${N}_$(date +%Y%m%d-%H%M%S)\"; " +
+      "N=\"CODM_report\"; [ -n \"$NM\" ] && N=\"${N}_${NM}\"; rm -rf \"$O/$N\" \"$O/$N.zip\" \"$O/$N.tar.gz\" \"$O/$N.txt\"; " +
       "T=\"$O/$N\"; mkdir -p \"$T\" || { echo FAILDIR; exit 1; }; " +
       "if [ -f $D/codm_tex.log ]; then cp -f $D/codm_tex.log \"$T/codm_tex.log\"; else echo NOLOG; fi; " +
-      "( echo \"name: $NM\"; " + diagScript() + " ) > \"$T/codm_diag.txt\" 2>&1; " +
+      "( echo \"name: $NM\"; echo \"exported: $(date '+%Y-%m-%d %H:%M:%S')\"; " + diagScript() + " ) > \"$T/codm_diag.txt\" 2>&1; " +
       "cd \"$O\" || exit 1; OUT=\"\"; " +
       "if command -v zip >/dev/null 2>&1 && zip -q -r \"$N.zip\" \"$N\" 2>/dev/null; then OUT=\"$N.zip\"; " +
       "elif tar czf \"$N.tar.gz\" \"$N\" 2>/dev/null && tar tzf \"$N.tar.gz\" >/dev/null 2>&1; then OUT=\"$N.tar.gz\"; " +
@@ -2122,7 +2201,29 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   try { $("rptName").value = localStorage.getItem("ct_name") || ""; } catch (e) {}
   renderMin();
   renderHook();
-  refresh();
+  /* loading screen: stays up until the settings have really been read from the device */
+  var bootT0 = Date.now(), bootOver = false;
+  try { $("bootLogo").appendChild(document.querySelector(".logo").cloneNode(true)); } catch (e) {}
+  document.body.classList.add("lock");
+  function bootStep(t) { var e = $("bootMsg"); if (e) e.textContent = t; }
+  function bootDone() {
+    if (bootOver) return;
+    bootOver = true;
+    var wait = Math.max(0, 500 - (Date.now() - bootT0));
+    setTimeout(function () {
+      $("boot").classList.add("done");
+      document.body.classList.remove("lock");
+    }, wait);
+  }
+  var bootHintT = setTimeout(function () { if (!bootOver) $("bootHint").hidden = false; }, 6000);
+  var bootSkipT = setTimeout(function () { if (!bootOver) $("bootSkip").hidden = false; }, 18000);
+  $("bootSkip").addEventListener("click", bootDone);
+  bootStep("Finding the CODM folder…");
+  findDir()
+    .then(function (d) { bootStep("Reading your settings…"); return readState(d); })
+    .then(function (st) { bootStep("Almost ready…"); return render(st); })
+    .then(bootDone, bootDone)
+    .then(function () { clearTimeout(bootHintT); clearTimeout(bootSkipT); });
   refreshLogStat();
 })();
 </script>
