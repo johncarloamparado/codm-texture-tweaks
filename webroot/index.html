@@ -299,10 +299,7 @@ textarea:focus { outline: none; border-color: var(--primary); }
 .logstat .startline { opacity: 0.8; font-size: 12px; margin-top: 4px; }
 .logstat .expgap { margin-top: 8px; }
 
-/* "Reopen CODM after Apply": same font as the rest of the UI, normal-size checkbox */
-.rchk { display: flex; align-items: center; gap: 10px; margin: 6px 0 0; font-family: inherit; font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--text); cursor: pointer; }
-.rchk input { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--primary); }
-/* expandable "Ano ang gagawin nito?" under Quick test */
+/* expandable "What does this do?" under Quick test */
 .qt-more { margin: 0 0 14px; }
 .qt-more summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 2px; font-size: 13px; font-weight: 600; color: var(--primary); }
 .qt-more summary svg { width: 18px; height: 18px; stroke: var(--primary); }
@@ -403,6 +400,22 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 #toast.show { opacity: 1; transform: none; }
+#savew {
+  position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(12px); overscroll-behavior: contain;
+}
+#savew.open { display: flex; }
+.savebox {
+  width: 100%; max-width: 340px; max-height: 100%; overflow-y: auto; padding: 18px;
+  border-radius: 24px; border: 1px solid var(--card-border); background: rgba(24, 24, 27, 0.96);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+.savebox h3 { margin: 0; font-size: 17px; font-weight: 700; color: var(--text); }
+.savebox .cap { margin: 8px 0 14px; }
+.savebox .pnote { margin: 10px 2px 0; }
+.savebox .stack { display: grid; gap: 8px; }
+.savebox .btn { min-height: 46px; }
 #logw {
   position: fixed; inset: 0; z-index: 60; display: none;
   padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px));
@@ -463,7 +476,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     <div class="status" id="status" role="status" aria-live="polite"><span class="chip msg">Reading settings…</span></div>
   </header>
   <div class="banner" id="notice" hidden>
-    <div id="noticeText">Ang <b>APPLY</b> button ay pang-save mismo ng settings mo, getss? Yung <b>Export report</b> naman ay pang-send lang sa akin kapag may bug o irereport ka ngani, hindi siya save button. Kung wala pang epekto sa laro, buksan mo muna ang CODM isang beses, tapos balik ka rito at tingnan ulit.</div>
+    <div id="noticeText">Use <b>Save</b> to apply your settings. <b>Export report</b> only sends information to the developer when you report a bug; it does not save anything. If nothing seems to change in the game, open CODM once, then come back here and check again.</div>
     <button class="btn" id="noticeX" type="button" aria-label="Close notice">Sige, gets ko na ✕</button>
   </div>
   <div id="banner"></div>
@@ -472,10 +485,10 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   <div class="view active" id="v-home">
     <section class="card">
       <div class="ch"><h2>Quick test</h2></div>
-      <p class="cap" style="margin-bottom:6px">Di sure kung gumagana? Pindutin mo ito para ma-set ang pang-test, tapos Apply, buksan ang CODM, at maglaro ka ng mga 5 minuto.</p>
+      <p class="cap" style="margin-bottom:6px">Not sure it is working? Tap this to load a test setup, then tap Save, open CODM and play for about 5 minutes.</p>
       <details class="qt-more">
-        <summary><span>Ano ang gagawin nito?</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
-        <div class="body"><p class="cap">Ise-set nito: Pixel Blocks (Chunky, 8), walang start delay, off ang render scale, hook agad (hookdelay 0), min texture size 64. Ino-overwrite nito ang: Look (lahat ng modes), Start delay, Min size, Render scale, Hook delay, Module mode. HINDI nito ginagalaw: FPS cap, Freeze/Thread/Core logs, at skip lists.</p></div>
+        <summary><span>What does this do?</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="body"><p class="cap">This sets Pixel Blocks (Chunky, 8), no start delay, render scale off, early hook (hook delay 0) and a minimum texture size of 64. It overwrites: Look (all modes), Start delay, Min size, Render scale, Hook delay and Module mode. It does not touch: FPS cap, the Freeze/Thread/Core logs or the skip lists.</p></div>
       </details>
       <button class="btn primary" id="recTest" type="button">Set recommended settings (test)</button>
     </section>
@@ -618,8 +631,6 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
             <button class="btn" id="skipAdd" type="button">Add to List</button>
           </div>
           
-          <button class="btn" id="skipApply" type="button" style="margin:10px 0">Apply skip list &amp; reopen CODM</button>
-
           <div class="skip-list" id="skipList">
             <!-- rows are rendered by renderSkipList() -->
           </div>
@@ -650,11 +661,14 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   <!-- ========== TOOLS ========== -->
   <div class="view" id="v-tools">
     <section class="card">
-      <h2>Apply</h2>
-      <label class="rchk" for="reopen">
-        <input type="checkbox" id="reopen"><span>Reopen CODM after Apply</span>
-      </label>
-      <p class="pnote">Naka-off ito dati pa. Binabasa lang ang settings pag nag-start ang CODM, getss? Isinasara ng Apply ang laro. Kung naka-on ito, bubuksan ulit ang laro pagkatapos ma-save. Sa OpenGL ES lang gumagana ang texture looks, wala silang epekto sa Vulkan.</p>
+      <h2>Save action</h2>
+      <p class="cap">Pick the action that is highlighted when you tap Save. Both actions are always available in the Save window.</p>
+      <div class="steps" id="saveDef" role="radiogroup" aria-label="Default save action" style="--n:2">
+        <button class="step" type="button" role="radio" data-v="open" aria-checked="true"><b>Apply and open</b><small>Closes and relaunches CODM</small></button>
+        <button class="step" type="button" role="radio" data-v="only" aria-checked="false"><b>Apply only</b><small>Closes CODM</small></button>
+      </div>
+      <p class="pnote"><b>Apply and open</b> restarts the game for you, so the newest skip list and settings are read from a clean start.</p>
+      <p class="pnote"><b>Apply only</b> closes the game and leaves it closed. Changes load the next time you open CODM, and a skip list change may not load cleanly if the game is restarted by another app first.</p>
     </section>
 
     <section class="card">
@@ -667,7 +681,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
           <input id="rptName" type="text" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. Juan">
           <p class="pnote" style="margin-top:6px">Added to the file name so the developer knows whose report it is. Letters, numbers, - and _ only.</p>
         </div>
-        <p class="pnote"><b>Hindi ito save button</b> ngani. Pang-send lang ito sa akin kapag may bug o irereport ka. Ang <b>APPLY</b> ang pang-save ng settings mo, getss?</p>
+        <p class="pnote"><b>This is not a save button.</b> It only sends information to the developer when you report a bug. <b>Save</b> applies your settings.</p>
         <button class="btn primary" id="exp" type="button">Export report for support</button>
         <div class="grid2" style="margin-top:0">
           <button class="btn" id="vlog" type="button">View log</button>
@@ -706,11 +720,11 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       <p class="pnote">The module always runs in mode 4: it hooks the game's engine the moment it loads, with no background polling. If this value ever shows anything else, it is corrected automatically.</p>
     </section>
 
-    <p class="foot">Settings are read when CODM starts. Apply closes the game so your next launch uses them.</p>
+    <p class="foot">Settings are read when CODM starts. Tap Save to close the game so your next launch uses them.</p>
   </div>
 </main>
 
-<!-- dock: tabs + always-visible Apply -->
+<!-- dock: tabs + always-visible Save -->
 <div id="pendbar" role="region" aria-label="Unapplied changes">
   <span class="pt"><i></i>Changes not applied yet</span>
   <button type="button" id="cancelChg"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Cancel changes</button>
@@ -731,9 +745,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       Tools
     </button>
   </div>
-  <button class="apply" id="stop" type="button" aria-label="Apply for CODM">
+  <button class="apply" id="stop" type="button" aria-label="Save settings">
     <svg viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></svg>
-    Apply
+    Save
   </button>
 </nav>
 
@@ -741,6 +755,18 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   <h3>codm_tex.log · last 80 lines</h3>
   <pre id="logt"></pre>
   <button class="btn" id="logx" type="button">Close</button>
+</div>
+<div id="savew" role="dialog" aria-modal="true" aria-labelledby="savet">
+  <div class="savebox">
+    <div class="ch"><h3 id="savet">Save settings</h3><button class="ib" id="savex" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <p class="cap">CODM reads your settings and skip list only when it starts, so the game has to close for them to take effect. Choose how you want to apply them.</p>
+    <div class="stack">
+      <button class="btn" id="saveOpen" type="button">Apply and open CODM</button>
+      <button class="btn" id="saveOnly" type="button">Apply only</button>
+    </div>
+    <p class="pnote"><b>Apply and open CODM</b> closes the game and starts it again right away, so the module reads your latest skip list and settings from a clean start. Recommended after changing skip rules.</p>
+    <p class="pnote"><b>Apply only</b> closes the game and leaves it closed. Your changes load the next time you open CODM. If the game is restarted by something else before it has fully closed, the new skip list may not load cleanly.</p>
+  </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -813,7 +839,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 
   /* ---------- pending-change tracking ----------
      cur  = what the settings files hold right now
-     base = what they held when the page opened or at the last Apply */
+     base = what they held when the page opened or at the last Save */
   var KEYS = ["bias", "scale", "fps", "fz", "th", "core", "near", "blk", "minsz", "delay",
               "style", "sedge", "flat", "testtex", "ttsize", "ttsm", "mode", "hookdelay"];
   var cur = {}, base = null, baseSkipLines = [], baseBlOff = {}, baseBlDel = {};
@@ -991,7 +1017,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     return writeFiles(map).then(function (r) {
       if (r.ok) {
         toast(updatePend()
-          ? (label || "Settings") + " saved. Tap Apply for CODM."
+          ? (label || "Settings") + " saved. Tap Save to apply it."
           : "Back to original. Nothing to apply.");
       } else toast("Could not save" + (writeFail ? " (" + writeFail + ")" : "") + ". Is the game folder present and root allowed?");
       return r;
@@ -1173,7 +1199,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       if (!r.ok) { toast("Could not save" + (writeFail ? " (" + writeFail + ")" : "") + ". Is the game folder present and root allowed?"); return; }
       return refresh().then(function () {
         updatePend();
-        toast("Recommended test settings saved. Tap Apply, open CODM and play 5 minutes.");
+        toast("Test settings loaded. Tap Save, open CODM and play for 5 minutes.");
       });
     });
   }
@@ -1272,7 +1298,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       writeFiles({ mode: 4 }).then(function (r) {
         if (r.ok) {
           $("aMode").textContent = "4 · ready"; $("aMode").className = "ok";
-          toast("Module mode was " + (oldMode || "empty") + ". It is now 4. Tap Apply to restart CODM.");
+          toast("Module mode was " + (oldMode || "empty") + ". It is now 4. Tap Save to restart CODM.");
         } else {
           banner("warn", "Module mode is " + (oldMode || "empty") + " and could not be set to 4. Open CODM once, then check again.");
         }
@@ -1286,8 +1312,8 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     var glN = parseInt(s.gl, 10), vkN = parseInt(s.vk, 10) || 0, sbgN = parseInt(s.sbg, 10) || 0;
     if (!demo && glN === 0 && (vkN > 0 || sbgN >= 2)) {
       banner("warn", vkN > 0
-        ? "Mukhang Vulkan ang gamit ng CODM sa phone mo. Sa OpenGL ES lang gumagana ang texture looks, kaya wala silang mababago dito. Kung gusto mong makita kung bakit, Tools → Export report tapos ipadala mo."
-        : "Walang OpenGL na nakita sa huling laro. Kung nakalaro ka na ng buong match, malamang Vulkan ang gamit ng phone mo at hindi tatama ang texture looks. Tools → Export report kung gusto mong ipa-check.");
+        ? "CODM appears to be using Vulkan on this phone. Texture looks only work with OpenGL ES, so they cannot change anything here. To find out why, go to Tools → Export report and send it."
+        : "No OpenGL activity was seen in the last game. If you played a full match, your phone is probably using Vulkan and texture looks will not apply. Use Tools → Export report if you want it checked.");
     }
 
     /* Module status written by the game process (codm_tex.status), parsed into st{} */
@@ -1295,32 +1321,32 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     (s.st || "").split("|").forEach(function (l) { var i = l.indexOf("="); if (i > 0) st[l.slice(0, i)] = l.slice(i + 1); });
     function why0Text(w) {
       if (!w || w === "none") return "";
-      var m = { hook_not_active: "hindi pa active ang hook", look_off: "naka-OFF ang texture look", no_candidates: "walang nakitang texture na pwedeng baguhin",
-                delay: "start delay (ayaw galawin ang textures sa unang segundo)", minsz: "masyadong mataas ang min texture size", skip_rule: "may skip rule", unbound: "walang naka-bind na texture" };
+      var m = { hook_not_active: "the hook is not active yet", look_off: "the texture look is off", no_candidates: "no changeable textures were found",
+                delay: "the start delay is still holding textures back", minsz: "the minimum texture size is too high", skip_rule: "a skip rule matches", unbound: "no texture was bound" };
       return w.split(",").map(function (t) { var k = t.replace(/\(.*$/, ""), n = (/\((\d+)\)/.exec(t) || [0, ""])[1]; return (m[k] || k) + (n ? " (" + n + ")" : ""); }).join(", ");
     }
 
     /* Did the module ever run inside CODM? Any of: a start line in the log, the status file, or the logcat breadcrumb. */
     var injected = !!(s.st || s.nv || parseInt(s.inj, 10) > 0);
     if (!demo && !s.nodir && !injected) {
-      if (s.so === "0") banner("bad", "Wala ang zygisk/arm64-v8a.so sa module folder, kaya walang tatakbo sa CODM. I-reinstall ang zip ng module.");
-      else if (s.moddis === "1") banner("bad", "Naka-disable ang module sa manager. I-enable mo, tapos reboot.");
-      else if (s.pend === "1") banner("warn", "May naka-pending na update ng module. Mag-reboot muna ang phone, tapos buksan ang CODM.");
-      else if (!s.zyg) banner("bad", "Wala akong makitang Zygisk framework (ZygiskNext, ReZygisk, zygisksu, o Zygisk ng Magisk na naka-on), at wala pang bakas na tumakbo ang module sa CODM (walang log, walang status, walang logcat breadcrumb). Kung wala talaga kang Zygisk, hindi tatakbo ang module. Kung meron, buksan ang CODM hanggang lobby tapos balik ka rito.");
-      else banner("warn", "May Zygisk (" + s.zyg.replace(/,$/, "") + ") pero wala pang bakas na tumakbo ang module sa CODM. Reboot, buksan ang CODM hanggang lobby, tapos balik rito. Kung wala pa rin: alisin ang CODM sa DenyList / Enforce DenyList, at siguraduhing naka-on ang module sa Zygisk.");
+      if (s.so === "0") banner("bad", "The file zygisk/arm64-v8a.so is missing from the module folder, so nothing can run in CODM. Reinstall the module zip.");
+      else if (s.moddis === "1") banner("bad", "The module is disabled in your root manager. Enable it, then reboot.");
+      else if (s.pend === "1") banner("warn", "A module update is pending. Reboot the phone first, then open CODM.");
+      else if (!s.zyg) banner("bad", "No Zygisk framework was found (ZygiskNext, ReZygisk, zygisksu, or Magisk's built-in Zygisk turned on), and the module has not run in CODM yet (no log, no status, no logcat breadcrumb). Without Zygisk the module cannot run. If you do have it, open CODM until the lobby, then come back here.");
+      else banner("warn", "Zygisk is present (" + s.zyg.replace(/,$/, "") + ") but the module has not run in CODM yet. Reboot, open CODM until the lobby, then come back. If it still does not run, remove CODM from the DenyList (or turn off Enforce DenyList) and make sure the module is enabled in Zygisk.");
     }
     if (!demo && st.stage) {
-      if (st.dir_writable === "no") banner("bad", "Tumakbo ang module pero hindi masulatan ng CODM ang settings folder, kaya walang log. Tools → Export report tapos ipadala.");
-      else if (st.stage === "injected") banner("warn", "Naka-inject ang module sa CODM pero hindi pa umabot sa start. Buksan ulit ang CODM at hintayin ang lobby; kung ganito pa rin, Export report.");
+      if (st.dir_writable === "no") banner("bad", "The module ran, but CODM cannot write to the settings folder, so no log was created. Go to Tools → Export report and send it.");
+      else if (st.stage === "injected") banner("warn", "The module is injected into CODM but did not reach its start stage. Open CODM again and wait for the lobby. If it still happens, export a report.");
       var ssf = /^forced_off_prev_(\d+)$/.exec(st.scale_safety || "");
-      if (ssf) banner("warn", "Na-OFF ang Render scale (dating " + (ssf[1] === "1" ? "naka-on" : ssf[1] + "%") + ") kasi hindi umabot ng 120 frames ang nakaraang laro. Pwedeng crash, pwede ring maaga mo lang sinara ang laro. Ang scale lang ang binago, ang iba mong settings ay hindi ginalaw. Kung gusto mo ulit, i-set at i-Apply; kung mag-crash ulit, Export report agad.");
-      if (st.cfg_bad && st.cfg_bad !== "none") banner("warn", "May sirang settings file (" + st.cfg_bad.replace(/,/g, ", ") + "), kaya default ang ginamit ng module at inayos ang file. Hindi ito 'applied' na setting mo. I-Apply ulit ang gusto mo.");
+      if (ssf) banner("warn", "Render scale was switched off (it was " + (ssf[1] === "1" ? "on" : ssf[1] + "%") + ") because the previous launch ended before 20 frames were drawn. That may have been a crash or just an early exit. Only the scale was changed; your other settings were not touched. To use it again, set it and tap Save. If CODM crashes again, export a report right away.");
+      if (st.cfg_bad && st.cfg_bad !== "none") banner("warn", "The settings file was damaged (" + st.cfg_bad.replace(/,/g, ", ") + "), so the module used its defaults and repaired the file. Your own settings were not applied. Set them again and tap Save.");
     }
 
     /* Diagnostics/logging running does not prove the look is visible. Say what the last session really did. */
     var apN = parseInt(s.ap, 10);
     if (!demo && glN > 0 && lookModeFromFiles(s) > 0) {
-      if (apN === 0) banner("warn", "OpenGL was hooked, but 0 textures were changed in the last session. Logging works; the look did not apply." + (why0Text(st.why0) ? " Dahilan: " + why0Text(st.why0) + "." : " Check Start delay (should be Off), try Pixel Blocks.") + " Tools → Export report kung hindi pa rin.");
+      if (apN === 0) banner("warn", "OpenGL was hooked, but 0 textures were changed in the last session. Logging works; the look did not apply." + (why0Text(st.why0) ? " Reason: " + why0Text(st.why0) + "." : " Check Start delay (should be Off), try Pixel Blocks.") + " If it still does not work, use Tools → Export report.");
       else if (apN > 0) toast(apN + " textures were changed in the last session.");
     }
     if (!demo && s.nv && s.ver && s.nv !== s.ver) {
@@ -1515,7 +1541,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   function skipDone(r) {
     var p = r.ok && updatePend();
     toast(!r.ok ? "Could not save the list."
-      : (p ? "List saved. Tap Apply for CODM." : "Back to original. Nothing to apply."));
+      : (p ? "List saved. Tap Save to apply it." : "Back to original. Nothing to apply."));
   }
 
   function renderGroups() {
@@ -1602,7 +1628,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       renderSkipList();
       writeSkip().then(function(r) {
         if (r.ok) updatePend();
-        toast("Added " + added + " rule(s). Tap Apply for CODM.");
+        toast("Added " + added + " rule(s). Tap Save to apply them.");
       });
     } else {
       toast("No new valid rules found.");
@@ -1621,21 +1647,9 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     var bld = e.target.closest(".bl-del");
     if (bld) {
       var bk = bld.getAttribute("data-k");
-      if (bld.classList.contains("confirm")) {
-        blOff[bk] = 1; blDel[bk] = 1;
-        renderSkipList();
-        writeBl().then(skipDone);
-      } else {
-        bld.classList.add("confirm");
-        bld.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
-        toast("Tap the check again to delete this built-in.");
-        setTimeout(function () {
-          if (bld && $("skipList").contains(bld) && bld.classList.contains("confirm")) {
-            bld.classList.remove("confirm");
-            bld.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
-          }
-        }, 2500);
-      }
+      blOff[bk] = 1; blDel[bk] = 1;
+      renderSkipList();
+      writeBl().then(skipDone);
       return;
     }
     var blt = e.target.closest(".bl-toggle");
@@ -1648,21 +1662,10 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
     }
     var delBtn = e.target.closest(".skip-del");
     if (delBtn) {
-      var idx = delBtn.getAttribute("data-idx");
-      if (delBtn.classList.contains("confirm")) {
-        customSkips.splice(idx, 1);
-        renderSkipList();
-        writeSkip().then(skipDone);
-      } else {
-        delBtn.classList.add("confirm");
-        delBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
-        setTimeout(function() {
-          if (delBtn && $("skipList").contains(delBtn)) {
-            delBtn.classList.remove("confirm");
-            delBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
-          }
-        }, 2000);
-      }
+      var idx = +delBtn.getAttribute("data-idx");
+      customSkips.splice(idx, 1);
+      renderSkipList();
+      writeSkip().then(skipDone);
       return;
     }
     
@@ -1852,24 +1855,41 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
   arm("recTest", "Tap again to overwrite settings", setRecommended);
   $("cancelChg").addEventListener("click", function () { if (base) cancelChanges(); });
 
-  /* "Reopen CODM after Apply": opt-in, default OFF, remembered on this device */
+  /* first-run notice */
   var noticeEl = $("notice");
   try { if (localStorage.getItem("ct_hide_notice") !== "1") noticeEl.hidden = false; } catch (e) { noticeEl.hidden = false; }
   $("noticeX").addEventListener("click", function () {
     noticeEl.hidden = true;
     try { localStorage.setItem("ct_hide_notice", "1"); } catch (e) {}
   });
-  var reopen = false;
-  try { reopen = localStorage.getItem("ct_reopen") === "1"; } catch (e) {}
-  var reopenEl = $("reopen");
-  if (reopenEl) {
-    reopenEl.checked = reopen;
-    reopenEl.addEventListener("change", function () {
-      reopen = reopenEl.checked;
-      try { localStorage.setItem("ct_reopen", reopen ? "1" : "0"); } catch (e) {}
-    });
+  var saveDef = "open";
+  try { saveDef = localStorage.getItem("ct_savedef") === "only" ? "only" : "open"; } catch (e) {}
+  function paintSaveDef() {
+    var bs = $("saveDef").querySelectorAll(".step");
+    for (var i = 0; i < bs.length; i++) bs[i].setAttribute("aria-checked", bs[i].getAttribute("data-v") === saveDef ? "true" : "false");
+    $("saveOpen").className = "btn" + (saveDef === "open" ? " primary" : "");
+    $("saveOnly").className = "btn" + (saveDef === "only" ? " primary" : "");
   }
-  function doApply(forceReopen) {
+  $("saveDef").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".step") : null;
+    if (!b) return;
+    saveDef = b.getAttribute("data-v");
+    try { localStorage.setItem("ct_savedef", saveDef); } catch (e2) {}
+    paintSaveDef();
+  });
+  paintSaveDef();
+  var savew = $("savew");
+  function openSave() {
+    if (demo) { toast("Demo mode — nothing was applied or stopped."); return; }
+    savew.classList.add("open");
+  }
+  function closeSave() { savew.classList.remove("open"); }
+  $("savex").addEventListener("click", closeSave);
+  savew.addEventListener("click", function (e) { if (e.target === savew) closeSave(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSave(); });
+  $("saveOpen").addEventListener("click", function () { closeSave(); doApply(true); });
+  $("saveOnly").addEventListener("click", function () { closeSave(); doApply(false); });
+  function doApply(openAfter) {
     if (demo) { toast("Demo mode — nothing was applied or stopped."); return; }
     /* wait for every queued setting write, and refuse to continue if the last one failed */
     wq.then(function () {
@@ -1877,7 +1897,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
       return sh("am force-stop " + PKG).then(function (r) {
         if (r.errno !== 0) { toast("Could not stop CODM. Nothing was applied."); return; }
         setBaseline(); updatePend();
-        if (!reopen && !forceReopen) { toast("CODM stopped. Open it again to apply. Settings are read at game start."); return; }
+        if (!openAfter) { toast("Saved. CODM was closed; open it to use your settings."); return; }
         /* stop finished (am force-stop is synchronous); check the package, give the system a moment, then launch */
         sh("pm path " + PKG + " >/dev/null 2>&1 && echo HAVE || echo NOPKG").then(function (c) {
           if (c.stdout.indexOf("HAVE") < 0) { toast("CODM stopped, but package " + PKG + " was not found. Open it yourself."); return; }
@@ -1886,15 +1906,14 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
               "case \"$C\" in */*) am start -n \"$C\" >/dev/null 2>&1 && echo LAUNCHED || echo FAILSTART;; *) echo NOACT;; esac";
             sh(launch, 10000).then(function (l) {
               var ok = l.stdout.indexOf("LAUNCHED") >= 0;
-              toast(ok ? "Applied. Reopening CODM…" : "CODM stopped, but it could not be launched (" + (l.stdout.indexOf("NOACT") >= 0 ? "launcher activity not found" : (l.stderr || "start failed")).trim().slice(0, 80) + "). Open it yourself.");
+              toast(ok ? "Saved. Reopening CODM…" : "CODM stopped, but it could not be launched (" + (l.stdout.indexOf("NOACT") >= 0 ? "launcher activity not found" : (l.stderr || "start failed")).trim().slice(0, 80) + "). Open it yourself.");
             });
           }, 1200);
         });
       });
     });
   }
-  $("stop").addEventListener("click", function () { doApply(false); });
-  $("skipApply").addEventListener("click", function () { doApply(true); });
+  $("stop").addEventListener("click", openSave);
 
   function fmtBytes(n) {
     n = +n || 0;
