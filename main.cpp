@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.38"
+#define VERSION "v0.39"
 #define PKG "com.garena.game.codm"
 #define DIR "/data/data/" PKG "/files/"
 #define LOGF DIR "codm_tex.log"
@@ -324,7 +324,13 @@ static void grp_note(int fmt, int sz, bool applied) {
    37497 256x512                  scope / reticle atlas (Lava Remix)
    37493, 37492, 37497 128x128    small character-detail textures */
 static const Sk g_builtin[] = {
-    {37497, 256, 512},          /* scope. v0.38: the other built-in rules were removed on purpose; add your own in the Skip Manager */
+    /* Fix scope: scope frame and reticle (sizes change between sessions, so every size seen so far is listed) */
+    {37497, 256, 512},
+    {37497, 512, 1024},
+    {37497, 512, 256},
+    {37497, 512, 512},
+    /* Fix menu: lobby and menu buttons */
+    {37496, 512, 512},
 };
 
 static bool in_skip(int fmt, int w, int h) {
