@@ -33,7 +33,7 @@ jobs:
           git -C LSPlt checkout 7d609ac3c2d8faa0c830b0904024ef5c81a98e6e
 
       - name: Host tests
-        run: ./tests/run_host_tests.sh
+        run: sh tests/run_host_tests.sh
 
       - name: Configure + compile arm64-v8a
         run: |
