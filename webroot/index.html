@@ -246,6 +246,8 @@ input[type=text]:focus { outline: none; border-color: var(--primary); }
   border: 1px solid var(--line); background: var(--card); font-size: 13.5px; line-height: 1.5;
 }
 .banner.warn { border-color: rgba(251, 191, 36, 0.4); color: var(--warn); background: rgba(251, 191, 36, 0.05); }
+.banner.info { border-color: rgba(129, 140, 248, 0.4); color: #c7d2fe; background: rgba(129, 140, 248, 0.06); display: flex; align-items: center; gap: 12px; }
+.banner.info::before { content: ""; flex: none; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(129,140,248,0.3); border-top-color: var(--primary); animation: presp 0.7s linear infinite; }
 .banner.bad { border-color: rgba(248, 113, 113, 0.4); color: var(--bad); background: rgba(248, 113, 113, 0.05); }
 .banner .btn { margin-top: 12px; min-height: 42px; }
 
@@ -1115,7 +1117,7 @@ html.compact .sbtn { min-height: 42px; }
     blk: 0, bias: 0, near: 1, scale: 0, fps: 0, fz: 1, th: 1, core: 1, mode: 4,
     minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 1, ttsize: 0, ttsm: 0, hookdelay: 0
   };
-  var modeFixTried = false;
+  var modeFixTried = false, autoLeft = 3, autoT = 0;
 
   var demo = (typeof ksu === "undefined");
   var fake = {
@@ -1299,8 +1301,23 @@ html.compact .sbtn { min-height: 42px; }
         if (k === "skip" || k === "texg" || k === "bloff" || k === "bldel" || k === "ftall") v = v.replace(/\|/g, "\n").replace(/\n$/, "");
         s[k] = v.trim();
       });
+      /* If the first root route could not list /data/adb/modules, ask again through the other routes before anyone sees a warning */
+      if (!s.zyg && !(s.st || s.nv || parseInt(s.inj, 10) > 0)) return zygFallback(s);
       return s;
     });
+  }
+  function zygFallback(s) {
+    var saved = WR, routes = [0, 1, 2].filter(function (x) { return x !== saved; }), i = 0;
+    function next() {
+      if (i >= routes.length) { WR = saved; return Promise.resolve(s); }
+      WR = routes[i++];
+      return sh(ZYG_SCRIPT + "echo done", 5000).then(function (r) {
+        var m = /zyg=(\S*)/.exec(r.stdout);
+        if (m && m[1]) { s.zyg = m[1]; WR = saved; return s; }
+        return next();
+      });
+    }
+    return next();
   }
 
   var writeFail = "";   /* name of the last setting that failed to save, "" = last write was fine */
@@ -1648,7 +1665,7 @@ html.compact .sbtn { min-height: 42px; }
       $("status").innerHTML = '<span class="chip msg">Game folder not found.</span>';
       $("aDir").textContent = "not found";
       banner("bad", "Couldn't find the game's settings folder. Open CODM once, then check again. If it keeps happening, run diagnostics and send the result to the developer.", [
-        { label: "Check again", fn: function () { refresh().then(function () { toast("Checked again."); }); } },
+        { label: "Check again", fn: function () { autoLeft = 3; refresh().then(function () { toast("Checked again."); }); } },
         { label: "Run diagnostics", fn: runDiag }
       ]);
       return;
@@ -1702,11 +1719,18 @@ html.compact .sbtn { min-height: 42px; }
 
     /* Did the module ever run inside CODM? Any of: a start line in the log, the status file, or the logcat breadcrumb. */
     var injected = !!(s.st || s.nv || parseInt(s.inj, 10) > 0);
-    if (!demo && !s.nodir && !injected) {
+    if (!demo && !s.nodir && !injected && s.pend !== "1" && autoLeft > 0) {
+      /* Right after a flash the files and Zygisk can take a moment to show up. Look again by itself before warning anyone. */
+      var wait = [1200, 2500, 4000][3 - autoLeft];
+      autoLeft--;
+      banner("info", "Checking that the module is ready…");
+      clearTimeout(autoT);
+      autoT = setTimeout(function () { refresh(); }, wait);
+    } else if (!demo && !s.nodir && !injected) {
       if (s.so === "0") banner("bad", "The module folder has no zygisk library (arm64-v8a.so or armeabi-v7a.so), so nothing can run in CODM. Reinstall the module zip.");
       else if (s.moddis === "1") banner("bad", "The module is disabled in your root manager. Enable it, then reboot.");
       else if (s.pend === "1") banner("warn", "A module update is pending. Reboot the phone first, then open CODM.");
-      else if (!s.zyg) banner("bad", "No Zygisk framework was found (ZygiskNext, ReZygisk, zygisksu, or Magisk's built-in Zygisk turned on), and the module has not run in CODM yet (no log, no status, no logcat breadcrumb). Without Zygisk the module cannot run. If you do have it, open CODM until the lobby, then come back here.");
+      else if (!s.zyg) banner("warn", "The module has not run in CODM yet, and no Zygisk framework was detected (ZygiskNext, ReZygisk, zygisksu, or Magisk's built-in Zygisk). Make sure Zygisk is on and reboot once, then open CODM until the lobby and come back here.", [{ label: "Check again", fn: function () { autoLeft = 0; refresh().then(function () { toast("Checked again."); }); } }]);
       else banner("warn", "Zygisk is present (" + s.zyg.replace(/,$/, "") + ") but the module has not run in CODM yet. Reboot, open CODM until the lobby, then come back. If it still does not run, remove CODM from the DenyList (or turn off Enforce DenyList) and make sure the module is enabled in Zygisk.");
     }
     if (!demo && st.stage) {
@@ -1915,6 +1939,18 @@ html.compact .sbtn { min-height: 42px; }
     if (smRaw && smRaw.groups && smRaw.member) skipMeta = smRaw;
   } catch (e) {}
   if (!Array.isArray(skipMeta.order)) skipMeta.order = [];
+  /* First run of this version: the four Fix scope rules start in one group, "Scope and Reticle for Mythic". */
+  (function () {
+    var done = false;
+    try { done = localStorage.getItem("ct_skipdef1") === "1"; } catch (e) {}
+    if (done) return;
+    var scope = ["37497 256 512", "37497 512 1024", "37497 512 256", "37497 512 512"], gid = "gscope";
+    skipMeta.groups = skipMeta.groups.filter(function (g) { return g.id !== gid; });
+    skipMeta.groups.unshift({ id: gid, name: "Scope and Reticle for Mythic" });
+    scope.forEach(function (l) { skipMeta.member[l] = gid; });
+    skipMeta.order = scope.concat(skipMeta.order.filter(function (l) { return scope.indexOf(l) < 0; }));
+    try { localStorage.setItem("ct_skipmeta", JSON.stringify(skipMeta)); localStorage.setItem("ct_skipdef1", "1"); } catch (e) {}
+  })();
   function saveMeta() { try { localStorage.setItem("ct_skipmeta", JSON.stringify(skipMeta)); } catch (e) {} }
   function groupById(id) {
     for (var i = 0; i < skipMeta.groups.length; i++) if (skipMeta.groups[i].id === id) return skipMeta.groups[i];
@@ -1936,6 +1972,7 @@ html.compact .sbtn { min-height: 42px; }
   function pruneMeta() {
     var have = {}, used = {};
     ruleList().forEach(function (r) { have[r.line] = 1; });
+    builtins.forEach(function (b) { have[b] = 1; });
     Object.keys(skipMeta.member).forEach(function (k) { if (!have[k] || !groupById(skipMeta.member[k])) delete skipMeta.member[k]; });
     Object.keys(skipMeta.member).forEach(function (k) { used[skipMeta.member[k]] = 1; });
     skipMeta.groups = skipMeta.groups.filter(function (g) { return used[g.id]; });
