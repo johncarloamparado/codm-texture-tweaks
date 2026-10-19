@@ -79,7 +79,6 @@ h1 { margin: 2px 0 0; font-size: 26px; line-height: 1.1; font-weight: 800; lette
   padding: 6px 12px; border-radius: 999px;
   background: var(--fill); border: 1px solid var(--line);
   color: var(--text); font-size: 12.5px; font-weight: 600; line-height: 1.3;
-  backdrop-filter: blur(8px);
 }
 .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--mute); }
 .chip.on i { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
@@ -93,7 +92,7 @@ h1 { margin: 2px 0 0; font-size: 26px; line-height: 1.1; font-weight: 800; lette
 .card {
   margin-top: 16px; padding: 20px;
   border-radius: 24px; border: 1px solid var(--card-border);
-  background: var(--card); backdrop-filter: blur(20px);
+  background: var(--card);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 .ch { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -245,7 +244,6 @@ input[type=text]:focus { outline: none; border-color: var(--primary); }
 .banner {
   margin-top: 16px; padding: 14px 16px; border-radius: 16px;
   border: 1px solid var(--line); background: var(--card); font-size: 13.5px; line-height: 1.5;
-  backdrop-filter: blur(12px);
 }
 .banner.warn { border-color: rgba(251, 191, 36, 0.4); color: var(--warn); background: rgba(251, 191, 36, 0.05); }
 .banner.bad { border-color: rgba(248, 113, 113, 0.4); color: var(--bad); background: rgba(248, 113, 113, 0.05); }
@@ -328,7 +326,7 @@ details .body { margin-top: 16px; }
   max-width: 528px; margin: 0 auto; height: var(--dock-h);
   display: flex; align-items: center; gap: 8px; padding: 8px;
   border-radius: 28px; border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(24px);
+  background: rgba(9, 9, 11, 0.85);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 #pendbar {
@@ -337,8 +335,7 @@ details .body { margin-top: 16px; }
   bottom: calc(var(--dock-h) + 28px + env(safe-area-inset-bottom, 0px));
   align-items: center; justify-content: space-between; gap: 10px;
   padding: 8px 8px 8px 16px; border-radius: 22px;
-  border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(24, 24, 27, 0.96);
-  backdrop-filter: blur(16px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(24, 24, 27, 0.96); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 body.pend #pendbar { display: flex; animation: vin 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
 #pendbar .pt { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--warn); font-size: 13px; font-weight: 700; line-height: 1.2; }
@@ -365,14 +362,14 @@ body.pend #dockcover { height: calc(var(--dock-h) + 16px + env(safe-area-inset-b
 #dock .tabs button {
   flex: 1; height: 100%; padding: 0; border: 0; border-radius: 20px; background: transparent;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  color: var(--mute); font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+  color: var(--mute); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer;
   transition: all 0.2s ease;
 }
 #dock .tabs svg, .apply svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 #dock .tabs button:hover { color: var(--text); background: rgba(255,255,255,0.05); }
 #dock .tabs button.on { color: var(--primary); background: rgba(129, 140, 248, 0.15); }
 .apply {
-  flex: none; position: relative; height: 100%; padding: 0 20px;
+  flex: none; position: relative; height: 100%; padding: 0 16px;
   display: flex; align-items: center; gap: 8px;
   border: 0; border-radius: 20px;
   background: linear-gradient(135deg, var(--primary), var(--accent));
@@ -428,12 +425,12 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 @keyframes bootslide { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
 @keyframes bootfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { .bootlogo .logo, .bootbar i { animation: none; } .bootbar i { width: 100%; } }
-#savew, #namew {
+#savew, #namew, #codew {
   position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center;
   padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
-  background: rgba(9, 9, 11, 0.82); backdrop-filter: blur(14px); overscroll-behavior: contain; touch-action: none;
+  background: rgba(9, 9, 11, 0.82); overscroll-behavior: contain; touch-action: none;
 }
-#savew.open, #namew.open { display: flex; }
+#savew.open, #namew.open, #codew.open { display: flex; }
 body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 .savebox {
   width: 100%; max-width: 350px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
@@ -500,6 +497,41 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
 .skip-list.dragging-now .drop-out { display: flex; }
 .drop-out.drop-group { border-color: var(--ok); color: var(--ok); }
 
+/* presets */
+.pgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pre { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 0; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--fill); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: all 0.2s ease; }
+.pre b { font-size: 14px; font-weight: 700; line-height: 1.2; }
+.pre small { color: var(--mute); font-size: 11.5px; line-height: 1.3; }
+.pre:hover { background: var(--fill-hover); }
+.pre:active { transform: scale(0.97); }
+.pre.on { border-color: var(--primary); background: rgba(129, 140, 248, 0.1); box-shadow: 0 4px 20px var(--primary-glow); }
+.plist { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.prow { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--fill); }
+.prow.on { border-color: var(--primary); background: rgba(129, 140, 248, 0.1); }
+.prow .pa { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.prow .pa b { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prow .pa small { color: var(--mute); font-size: 11.5px; line-height: 1.3; }
+.prow .ib.confirm { color: var(--bad); border-color: var(--bad); background: rgba(248, 113, 113, 0.1); }
+#codet { margin-top: 14px; min-height: 96px; word-break: break-all; }
+.codemsg { margin: 8px 3px 0; min-height: 18px; font-size: 12px; color: var(--mute); }
+.codemsg.bad { color: var(--bad); }
+/* stats */
+.kv b small { color: var(--mute); font-weight: 500; }
+.tip { display: flex; gap: 10px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--fill); font-size: 13px; line-height: 1.5; }
+.tip + .tip { margin-top: 8px; }
+.tip i { flex: none; width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: var(--mute); }
+.tip.ok i { background: var(--ok); }
+.tip.warn i { background: var(--warn); }
+.tip.bad i { background: var(--bad); }
+.hrow { padding: 12px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.hrow:first-child { border-top: 0; padding-top: 4px; }
+.hrow .h1 { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; }
+.hrow .h1 em { font-style: normal; font-weight: 700; font-size: 11px; color: var(--primary); background: rgba(129, 140, 248, 0.15); padding: 2px 8px; border-radius: 99px; }
+.hrow .h2 { margin-top: 2px; color: var(--mute); font-size: 12px; }
+.hrow .h3 { margin-top: 4px; font-variant-numeric: tabular-nums; }
+.hrow .h4 { margin-top: 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.hrow .up { color: var(--ok); }
+.hrow .dn { color: var(--bad); }
 /* compact (Tools > Button size): tighter spacing across the whole menu */
 html.compact .card { margin-top: 10px; padding: 14px; border-radius: 20px; }
 html.compact h2 { font-size: 16px; }
@@ -516,6 +548,7 @@ html.compact .mode { padding: 7px 10px; border-radius: 14px; }
 html.compact .step { min-height: 40px; padding: 5px 4px; border-radius: 12px; }
 html.compact .sw { min-height: 42px; padding: 2px 0; }
 html.compact .sw .d { margin-top: 0; font-size: 12px; }
+html.compact .pre, html.compact .prow { padding: 7px 10px; border-radius: 14px; }
 html.compact .fix { padding: 10px 12px; gap: 6px; border-radius: 16px; }
 html.compact .fix .fst { top: 10px; right: 12px; }
 html.compact .opt { padding: 10px 12px; border-radius: 14px; }
@@ -530,7 +563,7 @@ html.compact .sbtn { min-height: 42px; }
 #logw {
   position: fixed; inset: 0; z-index: 60; display: none;
   padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px));
-  background: rgba(9, 9, 11, 0.95); backdrop-filter: blur(16px);
+  background: rgba(9, 9, 11, 0.95);
   overscroll-behavior: contain; touch-action: none;
 }
 #logw.open { display: flex; flex-direction: column; gap: 12px; }
@@ -591,7 +624,7 @@ html.compact .sbtn { min-height: 42px; }
       <div class="bt">
         <p class="eyebrow">CODM</p>
         <h1>Blocky Textures</h1>
-        <p class="by">by <b>Q9 Papyrus</b></p>
+        <p class="by">by <b>Q9 Papyrus</b> <span style="white-space:nowrap">· with <b>zynn</b> &amp; <b>Shari</b></span></p>
       </div>
       <span class="ver" id="ver" hidden></span>
     </div>
@@ -605,16 +638,22 @@ html.compact .sbtn { min-height: 42px; }
 
   <!-- ========== HOME ========== -->
   <div class="view active" id="v-home">
-    <section class="card">
-      <div class="ch"><h2>Quick test</h2></div>
-      <p class="cap" style="margin-bottom:6px">Not sure it is working? Tap this to load a test setup, then tap Save, open CODM and play for about 5 minutes.</p>
-      <details class="qt-more">
-        <summary><span>What does this do?</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
-        <div class="body"><p class="cap">This sets Pixel Blocks (Chunky, 8), no start delay, render scale off, early hook (hook delay 0) and a minimum texture size of 64. It overwrites: Look (all modes), Start delay, Min size, Render scale, Hook delay and Module mode. It does not touch: FPS cap, the Freeze/Thread/Core logs or the skip lists.</p></div>
+        <section class="card" id="presetCard">
+      <details id="presetd">
+      <summary class="ch"><h2>Presets</h2><span class="tag n" id="preActive" style="margin-left:auto" hidden></span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
+      <div class="body">
+      <p class="cap">Tap a preset to load its look, display and filter settings, then tap Save to apply.</p>
+      <div class="pgrid" id="preBuilt"></div>
+      <div class="rh" style="margin-top:18px"><span class="lb">My presets</span></div>
+      <div class="plist" id="preMine"></div>
+      <div class="grid2">
+        <button class="btn" id="preSave" type="button">Save current…</button>
+        <button class="btn" id="preImp" type="button">Import code</button>
+      </div>
+      <p class="pnote">A preset holds 10 values: look and strength, pixel size, edge blend, render scale, frame-rate cap, smallest texture and start delay. Skip rules and logging are not touched. My presets stay in this app only; use the share button to get a code for a friend.</p>
+      </div>
       </details>
-      <button class="btn primary" id="recTest" type="button">Set recommended settings (test)</button>
     </section>
-
 
     <section class="card">
       <div class="ch"><h2>Look</h2></div>
@@ -675,7 +714,7 @@ html.compact .sbtn { min-height: 42px; }
     </section>
 
     <section class="card">
-      <h2>Display</h2>
+      <div class="ch"><h2>Display</h2></div>
       <p class="cap">Lower values ease the load on the phone but make the picture less sharp.</p>
       <div class="row">
         <div class="rh"><label for="scale">Render scale</label><span class="val" id="scaleV">100%</span></div>
@@ -689,6 +728,45 @@ html.compact .sbtn { min-height: 42px; }
       </div>
     </section>
 
+          </div>
+
+  <!-- ========== STATS ========== -->
+  <div class="view" id="v-stats">
+    <section class="card">
+      <div class="ch"><h2>Session summary</h2>
+        <button class="ib" id="sref" type="button" aria-label="Refresh stats"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+      </div>
+      <p class="cap" id="sstat">No frame data yet. Play a match to fill this in.</p>
+      <div class="tiles">
+        <div class="tile"><b id="tFps">—</b><span>FPS</span></div>
+        <div class="tile"><b id="tAvg">—</b><span>Avg ms</span></div>
+        <div class="tile"><b id="tP99">—</b><span>99th ms</span></div>
+        <div class="tile" id="tFzT"><b id="tFz">—</b><span>Freezes</span></div>
+      </div>
+      <div id="sKv" style="margin-top:14px"></div>
+      <ul class="legend">
+        <li><b>FPS</b> — frames drawn per second over the whole session. Higher is smoother.</li>
+        <li><b>Avg ms</b> — average time per frame. 16.7 ms is 60 FPS and 33 ms is 30 FPS. Lower is better.</li>
+        <li><b>99th ms</b> — 99 out of 100 frames were faster than this (typical over the session). If it is far above Avg, the game stutters.</li>
+        <li><b>Freezes</b> — frames that took longer than 100 ms. Ideally 0.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <div class="ch"><h2>Advice</h2></div>
+      <div id="advice" style="margin-top:8px"></div>
+    </section>
+
+    <section class="card">
+      <div class="ch"><h2>History</h2></div>
+      <p class="cap">Your last sessions (about a minute or longer) with the settings they ran on, so you can see what a change did. Kept in this app only.</p>
+      <div id="hist"></div>
+      <button class="btn warn" id="histClr" type="button" style="margin-top:12px">Clear history</button>
+    </section>
+  </div>
+
+  <!-- ========== ADVANCED ========== -->
+  <div class="view" id="v-adv">
     <section class="card">
       <h2>Startup</h2>
       <p class="cap">Gives the game time to finish loading menus and UI before textures are changed.</p>
@@ -700,29 +778,7 @@ html.compact .sbtn { min-height: 42px; }
     </section>
 
     <section class="card">
-      <div class="ch"><h2>Last session</h2>
-        <button class="ib" id="sref" type="button" aria-label="Refresh stats"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
-      </div>
-      <p class="cap" id="sstat">No frame data yet. Play a match to fill this in.</p>
-      <div class="tiles">
-        <div class="tile"><b id="tFps">—</b><span>FPS</span></div>
-        <div class="tile"><b id="tAvg">—</b><span>Avg ms</span></div>
-        <div class="tile"><b id="tP99">—</b><span>99th ms</span></div>
-        <div class="tile" id="tFzT"><b id="tFz">—</b><span>Freezes</span></div>
-      </div>
-      <ul class="legend">
-        <li><b>FPS</b> — frames drawn per second. Higher is smoother.</li>
-        <li><b>Avg ms</b> — average time per frame. 16.7 ms is 60 FPS and 33 ms is 30 FPS. Lower is better.</li>
-        <li><b>99th ms</b> — 99 out of 100 frames were faster than this. If it is far above Avg, the game stutters.</li>
-        <li><b>Freezes</b> — frames that took longer than 100 ms in this window. Ideally 0.</li>
-      </ul>
-    </section>
-  </div>
-
-  <!-- ========== ADVANCED ========== -->
-  <div class="view" id="v-adv">
-    <section class="card">
-      <h2>Fine tuning</h2>
+      <div class="ch"><h2>Fine tuning</h2></div>
       <p class="cap">Leave very small textures alone so icons, scopes and UI stay clear.</p>
       <div class="row">
         <div class="rh"><span class="lb" id="minL">Smallest texture to change</span><span class="val" id="minszV">64 px</span></div>
@@ -732,7 +788,7 @@ html.compact .sbtn { min-height: 42px; }
     </section>
 
     <section class="card">
-      <h2>Compatibility</h2>
+      <div class="ch"><h2>Compatibility</h2></div>
       <p class="cap">Use this if CODM crashes or goes back to the lobby when another loader or mod runs together with this module.</p>
       <div class="row">
         <div class="rh"><span class="lb" id="hookL">Hook timing</span><span class="val" id="hookV">Early</span></div>
@@ -778,7 +834,7 @@ html.compact .sbtn { min-height: 42px; }
     </section>
 
     <section class="card">
-      <h2>Logging</h2>
+      <div class="ch"><h2>Logging</h2></div>
       <p class="cap">Writes codm_tex.log so freezes can be examined later.</p>
       <button class="sw" id="fz" role="switch" aria-checked="true" type="button">
         <span><span class="t">Freeze log</span><span class="d">Records every frame that takes longer than 100 ms</span></span>
@@ -798,6 +854,23 @@ html.compact .sbtn { min-height: 42px; }
   <!-- ========== TOOLS ========== -->
   <div class="view" id="v-tools">
     <section class="card">
+      <div class="ch"><h2>Quick test</h2></div>
+      <p class="cap" style="margin-bottom:6px">Not sure it is working? Tap this to load a test setup, then tap Save, open CODM and play for about 5 minutes.</p>
+      <details class="qt-more">
+        <summary><span>What does this do?</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="body"><p class="cap">This sets Pixel Blocks (Chunky, 8), no start delay, render scale off, early hook (hook delay 0) and a minimum texture size of 64. It overwrites: Look (all modes), Start delay, Min size, Render scale, Hook delay and Module mode. It does not touch: FPS cap, the Freeze/Thread/Core logs or the skip lists.</p></div>
+      </details>
+      <button class="btn primary" id="recTest" type="button">Set recommended settings (test)</button>
+    </section>
+
+    <section class="card">
+      <div class="ch"><h2>Game copy</h2></div>
+      <p class="cap">If you use Dual Apps or a second user, pick which copy of CODM these settings belong to. Auto uses the copy that ran most recently.</p>
+      <div class="opts" id="copyOpts" role="radiogroup" aria-label="Game copy"></div>
+      <button class="btn" id="copyScan" type="button" style="margin-top:10px">Scan again</button>
+    </section>
+
+        <section class="card">
       <details id="prefd">
         <summary class="ch"><h2>Save action &amp; button size</h2><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary>
         <div class="body">
@@ -834,7 +907,7 @@ html.compact .sbtn { min-height: 42px; }
     </section>
 
     <section class="card">
-      <h2>Log</h2>
+      <div class="ch"><h2>Log</h2></div>
       <p class="cap">View, export or clear the frame log (codm_tex.log).</p>
       <div id="logStat" class="logstat">Checking log…</div>
       <div class="stack" style="margin-top:12px">
@@ -858,7 +931,7 @@ html.compact .sbtn { min-height: 42px; }
     </section>
 
     <section class="card">
-      <h2>Reset</h2>
+      <div class="ch"><h2>Reset</h2></div>
       <p class="cap">Two ways to start over. Each one asks you to tap twice to confirm.</p>
       <div class="stack">
         <div>
@@ -873,7 +946,7 @@ html.compact .sbtn { min-height: 42px; }
     </section>
 
     <section class="card">
-      <h2>About</h2>
+      <div class="ch"><h2>About</h2></div>
       <div class="kv" style="margin-top:8px"><span>Module</span><b>CODM Blocky Textures</b></div>
       <div class="kv"><span>Version</span><b id="aVer">—</b></div>
       <div class="kv"><span>Author</span><b>Q9 Papyrus</b></div>
@@ -898,6 +971,10 @@ html.compact .sbtn { min-height: 42px; }
     <button type="button" data-v="home" class="on" aria-current="page">
       <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
       Home
+    </button>
+    <button type="button" data-v="stats">
+      <svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>
+      Stats
     </button>
     <button type="button" data-v="adv">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
@@ -957,12 +1034,30 @@ html.compact .sbtn { min-height: 42px; }
     </div>
   </div>
 </div>
+<div id="codew" role="dialog" aria-modal="true" aria-labelledby="codet2">
+  <div class="savebox">
+    <div class="sh">
+      <span class="sico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+      <div class="stt"><h3 id="codet2">Preset code</h3><span id="codesub">Share this code</span></div>
+      <button class="ib" id="codex" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <textarea id="codet" rows="4" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="CT1;name;1,0,0,0,0,0,0,0,64,0;checksum"></textarea>
+    <p class="codemsg" id="codemsg"></p>
+    <div class="nrow">
+      <button class="btn" id="codeCopy" type="button">Copy</button>
+      <button class="btn primary" id="codeGo" type="button">Import</button>
+    </div>
+  </div>
+</div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function () {
   var PKG = "com.garena.game.codm";
   var D = "/data/data/" + PKG + "/files";   /* replaced by findDir() when the folder lives elsewhere */
+  var USER = 0;                             /* Android user id of the game copy in D (0 = main, 999 = Dual Apps, ...) */
+  var COPIES = [], dirPick = "auto";
+  try { dirPick = localStorage.getItem("ct_dir") || "auto"; } catch (e) {}
   var WR = 0;                               /* 0 = run directly, 1 = via nsenter, 2 = via su -c */
   var PROP = "/data/adb/modules/codm_tex_logger/module.prop";
 
@@ -991,7 +1086,7 @@ html.compact .sbtn { min-height: 42px; }
   /* what a missing settings file counts as (mirrors how the page reads it) */
   var FALLBACK = {
     blk: 0, bias: 0, near: 1, scale: 0, fps: 0, fz: 1, th: 1, core: 1, mode: 4,
-    minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 0, ttsize: 0, ttsm: 0, hookdelay: 0
+    minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 1, ttsize: 0, ttsm: 0, hookdelay: 0
   };
   var modeFixTried = false;
 
@@ -1000,7 +1095,11 @@ html.compact .sbtn { min-height: 42px; }
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
-    hookdelay: "0", skip: "", bloff: "", bldel: "", ver: "v0.39",
+    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", ver: "v0.40",
+    st: "ver=v0.40|stage=gfx|hook=committed|gfx=gles|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
+    startline: "=== start v0.40 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 builtin=5 ===",
+    ftall: "FT fps=57.1 avg=17.5ms p50=16.9 p99=36.2 max=48.0 >33ms=2 >50ms=0 n=285 cap=0 bias=0 scale=100 t=60.0 fz=0\nFT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=65.0 fz=1\nFT fps=58.4 avg=17.1ms p50=16.8 p99=30.2 max=41.0 >33ms=1 >50ms=0 n=292 cap=0 bias=0 scale=100 t=70.0 fz=0\nFT fps=56.0 avg=17.9ms p50=17.2 p99=38.9 max=52.0 >33ms=2 >50ms=1 n=280 cap=0 bias=0 scale=100 t=75.0 fz=0",
+    ftn: "4",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
     ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
   };
@@ -1135,7 +1234,7 @@ html.compact .sbtn { min-height: 42px; }
     var cmd =
       "D=" + D + "; " + ZYG_SCRIPT +
       "[ -d $D ] || { echo NODIR; exit 0; }; " +
-      "for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay; do " +
+      "for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay hooksafe; do " +
       "  if [ -f $D/$f.txt ]; then printf '%s=' $f; cat $D/$f.txt; else printf '%s=\\n' $f; fi; " +
       "done; " +
       "echo -n 'skip='; [ -f $D/skip.txt ] && cat $D/skip.txt | tr '\\n' '|' || true; echo; " +
@@ -1147,6 +1246,9 @@ html.compact .sbtn { min-height: 42px; }
       "echo gl=$(tail -n +$S $L | grep -c -E '^(TEXN|FT |GLINFO|GFX api=gles)'); " +
       "echo vk=$(tail -n +$S $L | grep -c '^GFX vk-symbol'); " +
       "echo sbg=$(tail -n +$S $L | grep -c '^SBG'); " +
+      "echo -n 'ftall='; tail -n +$S $L | grep -E '^FT ' | tail -n 360 | tr '\\n' '|'; echo; " +
+      "echo ftn=$(tail -n +$S $L | grep -c -E '^FT '); " +
+      "echo -n 'startline='; sed -n \"${S}p\" $L; " +
       "echo ap=$(tail -n +$S $L | grep '^TEXSKIP applied=' | tail -n 1 | sed -n 's/^TEXSKIP applied=\\([0-9]*\\).*/\\1/p'); " +
       "echo nv=$(grep '^=== start' $L | tail -n 1 | sed -n 's/^=== start \\(v[0-9.]*\\).*/\\1/p'); fi; " +
       "echo -n 'ver='; sed -n 's/^version=//p' " + PROP + " 2>/dev/null | head -n 1; echo; " +
@@ -1154,7 +1256,7 @@ html.compact .sbtn { min-height: 42px; }
       "M=/data/adb/modules/codm_tex_logger; " +
       "echo -n 'st='; [ -f $D/codm_tex.status ] && tr '\\n' '|' < $D/codm_tex.status; echo; " +
       "echo inj=$(timeout 5 logcat -d -s codm_tex 2>/dev/null | grep -c postAppSpecialize); " +
-      "echo so=$([ -f $M/zygisk/arm64-v8a.so ] && echo 1 || echo 0); " +
+      "echo so=$({ [ -f $M/zygisk/arm64-v8a.so ] || [ -f $M/zygisk/armeabi-v7a.so ]; } && echo 1 || echo 0); " +
       "echo moddis=$([ -f $M/disable ] && echo 1 || echo 0); " +
       "echo pend=$([ -d /data/adb/modules_update/codm_tex_logger ] && echo 1 || echo 0)";
     return sh(cmd).then(function (r) {
@@ -1167,7 +1269,7 @@ html.compact .sbtn { min-height: 42px; }
         var i = ln.indexOf("=");
         if (i < 0) return;
         var k = ln.slice(0, i), v = ln.slice(i + 1);
-        if (k === "skip" || k === "texg" || k === "bloff" || k === "bldel") v = v.replace(/\|/g, "\n").replace(/\n$/, "");
+        if (k === "skip" || k === "texg" || k === "bloff" || k === "bldel" || k === "ftall") v = v.replace(/\|/g, "\n").replace(/\n$/, "");
         s[k] = v.trim();
       });
       return s;
@@ -1216,7 +1318,7 @@ html.compact .sbtn { min-height: 42px; }
 
   /* ---------- navigation ---------- */
   function showView(name) {
-    ["home", "adv", "tools"].forEach(function (v) {
+    ["home", "stats", "adv", "tools"].forEach(function (v) {
       $("v-" + v).classList.toggle("active", v === name);
     });
     Array.prototype.forEach.call(document.querySelectorAll("#dock .tabs button"), function (b) {
@@ -1227,6 +1329,7 @@ html.compact .sbtn { min-height: 42px; }
     });
     window.scrollTo(0, 0);
     if (name === "tools") refreshLogStat();
+    if (name === "stats") refreshStats();
   }
   Array.prototype.forEach.call(document.querySelectorAll("#dock .tabs button"), function (b) {
     b.addEventListener("click", function () { showView(b.getAttribute("data-v")); });
@@ -1366,7 +1469,7 @@ html.compact .sbtn { min-height: 42px; }
   }
 
   function lookModeFromFiles(s) {
-    return (parseInt(s.testtex, 10) > 0 || parseInt(s.flat, 10) > 0 || parseInt(s.style, 10) > 0 || parseInt(s.blk, 10) > 0) ? 1 : 0;
+    return ((isNaN(parseInt(s.testtex, 10)) ? 1 : parseInt(s.testtex, 10)) > 0 || parseInt(s.flat, 10) > 0 || parseInt(s.style, 10) > 0 || parseInt(s.blk, 10) > 0) ? 1 : 0;
   }
   function updateStatus() {
     var sc = parseInt($("scale").value, 10);
@@ -1433,18 +1536,6 @@ html.compact .sbtn { min-height: 42px; }
     s = Math.round(s);
     return s >= 60 ? Math.floor(s / 60) + "m " + (s % 60) + "s" : s + "s";
   }
-  function renderStats(line) {
-    var o = kv(line || ""), has = o.fps !== undefined;
-    $("tFps").textContent = has ? num(o.fps) : "—";
-    $("tAvg").textContent = has ? num(o.avg, 1) : "—";
-    $("tP99").textContent = has ? num(o.p99) : "—";
-    $("tFz").textContent = has && o.fz !== undefined ? o.fz : "—";
-    $("tFzT").className = "tile" + (has && o.fz !== undefined ? (+o.fz > 0 ? " warn" : " ok") : "");
-    $("sstat").textContent = has
-      ? "Last 5-second window" + (o.t ? " · " + fmtT(parseFloat(o.t)) + " into the session" : "")
-      : "No frame data yet. Play a match to fill this in.";
-  }
-
   /* ---------- render state ---------- */
   function render(s) {
     var ban = $("banner");
@@ -1469,7 +1560,7 @@ html.compact .sbtn { min-height: 42px; }
     $("ver").hidden = !s.ver;
     $("ver").textContent = s.ver || "";
     $("aVer").textContent = s.ver || "—";
-    $("aDir").textContent = D;
+    $("aDir").textContent = D + (USER ? "  (user " + USER + ")" : "");
     if (s.nodir) {
       $("status").innerHTML = '<span class="chip msg">Game folder not found.</span>';
       $("aDir").textContent = "not found";
@@ -1508,8 +1599,17 @@ html.compact .sbtn { min-height: 42px; }
     }
 
     /* Module status written by the game process (codm_tex.status), parsed into st{} */
-    var st = {};
-    (s.st || "").split("|").forEach(function (l) { var i = l.indexOf("="); if (i > 0) st[l.slice(0, i)] = l.slice(i + 1); });
+    var st = parseSt(s.st);
+    if (!demo && s.hooksafe === "1") {
+      banner("bad", "Safe mode: the last launch ended while the module was installing its hooks, so hooks are switched off to let CODM start normally." + (st.safe_why && st.safe_why !== "no" ? " (" + st.safe_why.replace(/_/g, " ") + ")" : "") + " Textures, render scale and the frame cap do nothing until you retry. If CODM crashes again after retrying, export a report from Tools.", [
+        { label: "Retry hooks", fn: function () {
+          writeFiles({ hooksafe: 0 }).then(function (r) {
+            if (r.ok) { toast("Hooks will be tried again. Tap Save to restart CODM."); refresh(); }
+            else toast("Could not leave safe mode. Is the game folder present and root allowed?");
+          });
+        } }
+      ]);
+    }
     function why0Text(w) {
       if (!w || w === "none") return "";
       var m = { hook_not_active: "the hook is not active yet", look_off: "the texture look is off", no_candidates: "no changeable textures were found",
@@ -1520,7 +1620,7 @@ html.compact .sbtn { min-height: 42px; }
     /* Did the module ever run inside CODM? Any of: a start line in the log, the status file, or the logcat breadcrumb. */
     var injected = !!(s.st || s.nv || parseInt(s.inj, 10) > 0);
     if (!demo && !s.nodir && !injected) {
-      if (s.so === "0") banner("bad", "The file zygisk/arm64-v8a.so is missing from the module folder, so nothing can run in CODM. Reinstall the module zip.");
+      if (s.so === "0") banner("bad", "The module folder has no zygisk library (arm64-v8a.so or armeabi-v7a.so), so nothing can run in CODM. Reinstall the module zip.");
       else if (s.moddis === "1") banner("bad", "The module is disabled in your root manager. Enable it, then reboot.");
       else if (s.pend === "1") banner("warn", "A module update is pending. Reboot the phone first, then open CODM.");
       else if (!s.zyg) banner("bad", "No Zygisk framework was found (ZygiskNext, ReZygisk, zygisksu, or Magisk's built-in Zygisk turned on), and the module has not run in CODM yet (no log, no status, no logcat breadcrumb). Without Zygisk the module cannot run. If you do have it, open CODM until the lobby, then come back here.");
@@ -1548,7 +1648,7 @@ html.compact .sbtn { min-height: 42px; }
     var sty = parseInt(s.style, 10) || 0;
     var blk = parseInt(s.blk, 10) || 0;
     var flt = parseInt(s.flat, 10) || 0;
-    var ttx = parseInt(s.testtex, 10) || 0;
+    var ttx = isNaN(parseInt(s.testtex, 10)) ? 1 : parseInt(s.testtex, 10);   /* a missing file counts as 1, like the module */
     ttSize = Math.max(-2, Math.min(3, parseInt(s.ttsize, 10) || 0));
     ttSm = Math.max(0, Math.min(1, parseInt(s.ttsm, 10) || 0));
     if (ttx > 0) {
@@ -1616,7 +1716,9 @@ html.compact .sbtn { min-height: 42px; }
     renderGroups();
     renderSkipList();
     updateLookUI();
-    renderStats(s.ft);
+    renderPresets();
+    paintCopies();
+    renderSession(s, st);
   }
 
   /* ---------- texture groups & skip manager ---------- */
@@ -2111,15 +2213,29 @@ html.compact .sbtn { min-height: 42px; }
   /* Finds the game's files folder. Handles other Android users (dual apps / clone),
      the mirror path, and shells that need nsenter or su to see /data/data. */
   var PROBE = "P=" + PKG + "; for d in /data/data/$P/files /data/user/*/$P/files /data_mirror/data_ce/null/*/$P/files; do " +
-    "[ -d \"$d\" ] && echo \"C|$d|$(stat -c %Y \"$d/codm_tex.log\" 2>/dev/null || echo 0)\"; done";
-  function pickDir(out) {
-    var best = null;
+    "[ -d \"$d\" ] && echo \"C|$d|$(stat -c %Y \"$d/codm_tex.log\" 2>/dev/null || echo 0)|$(stat -c %Y \"$d/codm_tex.status\" 2>/dev/null || echo 0)\"; done";
+  function userOf(p) {
+    var m = /\/data\/user\/(\d+)\//.exec(p) || /\/data_mirror\/data_ce\/null\/(\d+)\//.exec(p);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+  /* one entry per Android user (/data/data and /data/user/0 are the same folder) */
+  function parseCopies(out) {
+    var by = {};
     out.split("\n").forEach(function (l) {
       var a = l.split("|");
       if (a[0] !== "C" || !a[1]) return;
-      var t = parseInt(a[2], 10) || 0;
-      if (!best || t > best.t) best = { p: a[1], t: t };
+      var t = Math.max(parseInt(a[2], 10) || 0, parseInt(a[3], 10) || 0), u = userOf(a[1]);
+      if (!by[u] || t > by[u].t) by[u] = { p: a[1], t: t, u: u };
     });
+    return Object.keys(by).map(function (k) { return by[k]; }).sort(function (x, y) { return x.u - y.u; });
+  }
+  function chooseCopy(list) {
+    if (!list.length) return null;
+    if (dirPick !== "auto") {
+      for (var i = 0; i < list.length; i++) if (String(list[i].u) === dirPick) return list[i];
+    }
+    var best = list[0];
+    list.forEach(function (c) { if (c.t > best.t) best = c; });
     return best;
   }
   function findDir() {
@@ -2129,8 +2245,8 @@ html.compact .sbtn { min-height: 42px; }
       if (i >= tries.length) { WR = 0; return Promise.resolve(false); }
       WR = tries[i++];
       return sh(PROBE).then(function (r) {
-        var b = pickDir(r.stdout);
-        if (b) { D = b.p; return true; }
+        var list = parseCopies(r.stdout), b = chooseCopy(list);
+        if (b) { COPIES = list; D = b.p; USER = b.u; return true; }
         return next();
       });
     }
@@ -2145,7 +2261,7 @@ html.compact .sbtn { min-height: 42px; }
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.39'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.40'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -2154,15 +2270,15 @@ html.compact .sbtn { min-height: 42px; }
       "echo '== game'; timeout 6 dumpsys package $P 2>/dev/null | grep -m4 -E 'versionName|versionCode|lastUpdateTime'; " +
       "echo '== users'; ls /data/user 2>&1; " +
       "echo '== status summary (each step separate)'; M=/data/adb/modules/codm_tex_logger; " +
-      "echo \"installed=$(sed -n 's/^version=//p' $M/module.prop 2>/dev/null | head -n 1) zygisk_so=$([ -f $M/zygisk/arm64-v8a.so ] && echo yes || echo NO) module_disabled=$([ -f $M/disable ] && echo yes || echo no) pending_update=$([ -d /data/adb/modules_update/codm_tex_logger ] && echo yes || echo no)\"; " +
+      "echo \"installed=$(sed -n 's/^version=//p' $M/module.prop 2>/dev/null | head -n 1) so_arm64=$([ -f $M/zygisk/arm64-v8a.so ] && echo yes || echo NO) so_arm32=$([ -f $M/zygisk/armeabi-v7a.so ] && echo yes || echo NO) game_user=" + USER + " module_disabled=$([ -f $M/disable ] && echo yes || echo no) pending_update=$([ -d /data/adb/modules_update/codm_tex_logger ] && echo yes || echo no)\"; " +
       ZYG_SCRIPT +
       "echo \"injection_breadcrumb_in_logcat=$(timeout 5 logcat -d -s codm_tex 2>/dev/null | grep -c postAppSpecialize)\"; " +
       "ls -ln $D/codm_tex.status 2>&1 | head -n 1; " +
-      "if [ -f $D/codm_tex.status ]; then for k in ver stage dir_writable lib hook gfx cand skip_rule skip_minsz skip_delay applied why0 cfg_bad cfg_missing injected started updated nl_hook adle_first first_cws first_sbg chain_foreign maps_nonsys maps_anon_exec; do echo \"status.$k=$(sed -n 's/^'$k'=//p' $D/codm_tex.status)\"; done; else echo 'status file: none (module has not run in CODM since install/update)'; fi; " +
+      "if [ -f $D/codm_tex.status ]; then for k in ver stage dir dir_writable hooksafe safe_why live live_fps abi lib hook gfx cand skip_rule skip_minsz skip_delay applied why0 cfg_bad cfg_missing injected started updated nl_hook adle_first first_cws first_sbg chain_foreign maps_nonsys maps_anon_exec; do echo \"status.$k=$(sed -n 's/^'$k'=//p' $D/codm_tex.status)\"; done; else echo 'status file: none (module has not run in CODM since install/update)'; fi; " +
       "echo \"settings_files_owned_by_game=$(ls -ln $D/*.txt 2>/dev/null | awk '$3!=0' | wc -l) (0 = only root wrote them: the game process never created or repaired any)\"; " +
       "echo '== game dir'; ls -ldZ /data/data/$P /data/data/$P/files 2>&1; ls -ldZ /data/user/*/$P 2>&1; " +
       "echo '== settings folder'; echo \"$D\"; ls -la $D 2>&1 | grep -v -i -E 'login|token|jwt|ticket|passwd|account' | head -n 60; " +
-      "echo '== settings'; for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay; do echo \"$f=$(cat $D/$f.txt 2>/dev/null)\"; done; " +
+      "echo '== settings'; for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay hooksafe; do echo \"$f=$(cat $D/$f.txt 2>/dev/null)\"; done; " +
       "for f in skip bltoff bltdel; do echo \"-- $f.txt\"; cat $D/$f.txt 2>/dev/null; done; " +
       "echo '== modules'; for m in /data/adb/modules/*; do [ -d \"$m\" ] || continue; if [ -f \"$m/disable\" ]; then s=disabled; else s=on; fi; echo \"${m##*/} ($s) $(sed -n 's/^version=//p' $m/module.prop 2>/dev/null | head -n 1)\"; done; " +
       "echo '== log'; if [ -f $L ]; then echo \"size=$(wc -c < $L) lines=$(wc -l < $L)\"; grep '^=== start' $L | tail -n 3; grep -E '^(GFX|HOOK|GLINFO)' $L | tail -n 8; echo '-- last 40 lines'; tail -n 40 $L; else echo 'no log'; fi; " +
@@ -2216,7 +2332,7 @@ html.compact .sbtn { min-height: 42px; }
     fpsVal = v;
     renderFps();
     updateStatus();
-    save({ fps: v }, "Frame rate cap");
+    save({ fps: v }, "Frame rate cap").then(function (r) { if (r && r.ok) liveFpsConfirm(v); });
   });
   onPick("ttszBox", function (v) {
     ttSize = v; renderTT();
@@ -2393,16 +2509,17 @@ html.compact .sbtn { min-height: 42px; }
     /* wait for every queued setting write, and refuse to continue if the last one failed */
     wq.then(function () {
       if (writeFail) { toast("Not applied: setting \"" + writeFail + "\" did not save. Nothing was stopped."); return; }
-      return sh("am force-stop " + PKG).then(function (r) {
+      var UF = USER ? " --user " + USER : "";
+      return sh("am force-stop" + UF + " " + PKG).then(function (r) {
         if (r.errno !== 0) { toast("Could not stop CODM. Nothing was applied."); return; }
         setBaseline(); updatePend();
         if (!openAfter) { toast("Saved. CODM was closed; open it to use your settings."); return; }
         /* stop finished (am force-stop is synchronous); check the package, give the system a moment, then launch */
-        sh("pm path " + PKG + " >/dev/null 2>&1 && echo HAVE || echo NOPKG").then(function (c) {
+        sh("pm path" + UF + " " + PKG + " >/dev/null 2>&1 && echo HAVE || echo NOPKG").then(function (c) {
           if (c.stdout.indexOf("HAVE") < 0) { toast("CODM stopped, but package " + PKG + " was not found. Open it yourself."); return; }
           setTimeout(function () {
-            var launch = "C=$(cmd package resolve-activity --brief -c android.intent.category.LAUNCHER " + PKG + " 2>/dev/null | tail -n 1); " +
-              "case \"$C\" in */*) am start -n \"$C\" >/dev/null 2>&1 && echo LAUNCHED || echo FAILSTART;; *) echo NOACT;; esac";
+            var launch = "C=$(cmd package resolve-activity --brief" + UF + " -c android.intent.category.LAUNCHER " + PKG + " 2>/dev/null | tail -n 1); " +
+              "case \"$C\" in */*) am start" + UF + " -n \"$C\" >/dev/null 2>&1 && echo LAUNCHED || echo FAILSTART;; *) echo NOACT;; esac";
             sh(launch, 10000).then(function (l) {
               var ok = l.stdout.indexOf("LAUNCHED") >= 0;
               toast(ok ? "Saved. Reopening CODM…" : "CODM stopped, but it could not be launched (" + (l.stdout.indexOf("NOACT") >= 0 ? "launcher activity not found" : (l.stderr || "start failed")).trim().slice(0, 80) + "). Open it yourself.");
@@ -2597,9 +2714,350 @@ html.compact .sbtn { min-height: 42px; }
     });
   });
 
+
+  /* ---------- live FPS cap (v0.40) ----------
+     The module looks at fps.txt about once a second while the game runs. After a change, ask the status file
+     (live_fps) whether the running game took it. */
+  var liveTok = 0;
+  function liveFpsConfirm(v) {
+    if (demo) return;
+    var tok = ++liveTok, n = 0;
+    function tick() {
+      if (tok !== liveTok) return;
+      sh("S=" + D + "/codm_tex.status; p=$(sed -n 's/^pid=//p' $S 2>/dev/null); if [ -n \"$p\" ] && [ -d /proc/$p ]; then echo RUN; else echo STOP; fi; " +
+         "echo live=$(sed -n 's/^live=//p' $S 2>/dev/null); echo lf=$(sed -n 's/^live_fps=//p' $S 2>/dev/null)").then(function (r) {
+        if (tok !== liveTok) return;
+        var run = r.stdout.indexOf("RUN") >= 0, live = /live=1/.test(r.stdout), m = /lf=(\d+)/.exec(r.stdout);
+        if (!run || !live) return;                       /* game closed, or an older module: the normal Save flow applies */
+        if (m && +m[1] === v) {
+          if (base) base.fps = String(v);
+          updatePend();
+          toast(v ? "Frame rate cap " + v + " is live in the running game." : "Frame rate cap is off in the running game.");
+          return;
+        }
+        if (++n < 6) setTimeout(tick, 1200);
+        else toast("Saved, but the running game has not picked up the new cap yet. Tap Save to restart CODM.");
+      });
+    }
+    setTimeout(tick, 1300);
+  }
+
+  /* ---------- presets (v0.40) ---------- */
+  var PK = ["testtex", "blk", "style", "flat", "ttsize", "ttsm", "scale", "fps", "minsz", "delay"];
+  var BUILTIN_PRE = [
+    { n: "Recommended", d: "True Pixelated, Normal size", v: [1, 0, 0, 0, 0, 0, 0, 0, 64, 0] },
+    { n: "Chunky blocks", d: "Pixel Blocks, 8 px", v: [0, 8, 0, 0, 0, 0, 0, 0, 64, 0] },
+    { n: "Sharp pixels", d: "True Pixelated, Fine size", v: [1, 0, 0, 0, -1, 0, 0, 0, 64, 0] },
+    { n: "Solid color", d: "Flat +4, near-solid surfaces", v: [0, 0, 0, 4, 0, 0, 0, 0, 64, 0] },
+    { n: "Original", d: "All effects off", v: [0, 0, 0, 0, 0, 0, 0, 0, 64, 0] }
+  ];
+  var myPre = [];
+  try { var mp = JSON.parse(localStorage.getItem("ct_presets") || "[]"); if (Array.isArray(mp)) myPre = mp.filter(function (x) { return x && typeof x.n === "string" && Array.isArray(x.v) && x.v.length === 10; }).slice(0, 12); } catch (e) {}
+  function saveMine() { try { localStorage.setItem("ct_presets", JSON.stringify(myPre)); } catch (e) {} }
+  function cleanName(n) { return String(n || "").replace(/[;,|<>"']/g, " ").replace(/\s+/g, " ").trim().slice(0, 24); }
+  function clamp(x, a, b) { x = parseInt(x, 10); if (isNaN(x)) return null; return Math.max(a, Math.min(b, x)); }
+  /* returns a clean 10-value vector, or null when a value is not a number */
+  function normVec(v) {
+    var r = [clamp(v[0], 0, 1), 0, clamp(v[2], 0, 4), clamp(v[3], 0, 4), clamp(v[4], -2, 3), clamp(v[5], 0, 1), 0, 0, clamp(v[8], 64, 2048), clamp(v[9], 0, 120)];
+    var b = parseInt(v[1], 10), sc = parseInt(v[6], 10), fp = parseInt(v[7], 10);
+    if (isNaN(b) || isNaN(sc) || isNaN(fp)) return null;
+    r[1] = b <= 0 ? 0 : Math.max(4, Math.min(256, b));
+    r[6] = (sc >= 20 && sc <= 99) ? sc : 0;
+    r[7] = (fp >= 20 && fp <= 120) ? fp : 0;
+    for (var i = 0; i < 10; i++) if (r[i] === null) return null;
+    if (r[0]) { r[1] = 0; r[2] = 0; r[3] = 0; }          /* one look at a time: True Pixelated > Flat > Detail Cut > Pixel Blocks */
+    else if (r[3]) { r[1] = 0; r[2] = 0; }
+    else if (r[2]) { r[1] = 0; }
+    return r;
+  }
+  function curVec() { return PK.map(function (k) { return parseInt(cur[k], 10) || 0; }); }
+  function sameVec(a, b) { for (var i = 0; i < 10; i++) if (a[i] !== b[i]) return false; return true; }
+  function vecText(v) {
+    var look = v[0] ? "True Pixelated" : (v[3] ? "Flat +" + v[3] : (v[2] ? "Detail Cut +" + v[2] : (v[1] ? "Pixel Blocks " + v[1] + " px" : "Look off")));
+    return look + " · " + (v[6] ? v[6] + "%" : "100%") + " · " + (v[7] ? v[7] + " fps" : "no cap");
+  }
+  function csum(t) {
+    var h = 2166136261;
+    for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return (h >>> 0).toString(36);
+  }
+  function makeCode(name, v) {
+    var body = "CT1;" + cleanName(name) + ";" + v.join(",");
+    return body + ";" + csum(body);
+  }
+  /* returns { n, v } or { err } */
+  function parseCode(txt) {
+    var t = String(txt || "").trim().replace(/\s+/g, " ");
+    var parts = t.split(";");
+    if (parts.length !== 4 || parts[0] !== "CT1") return { err: "This is not a CT1 preset code." };
+    if (csum(parts[0] + ";" + parts[1] + ";" + parts[2]) !== parts[3].trim()) return { err: "The checksum does not match. The code was changed or copied incompletely." };
+    var raw = parts[2].split(",");
+    if (raw.length !== 10) return { err: "The code must hold 10 values." };
+    for (var i = 0; i < 10; i++) if (!/^-?\d+$/.test(raw[i].trim())) return { err: "Value " + (i + 1) + " is not a number." };
+    var v = normVec(raw.map(function (x) { return parseInt(x, 10); }));
+    var n = cleanName(parts[1]);
+    if (!v) return { err: "A value is out of range." };
+    if (!n) return { err: "The code has no name." };
+    return { n: n, v: v };
+  }
+  function applyVec(v, name) {
+    var vv = normVec(v);
+    if (!vv) { toast("That preset has a value out of range."); return; }
+    var map = { near: 1, bias: 0, sedge: 1 };
+    PK.forEach(function (k, i) { map[k] = vv[i]; });
+    writeFiles(map).then(function (r) {
+      if (!r.ok) { toast("Could not save" + (writeFail ? " (" + writeFail + ")" : "") + ". Is the game folder present and root allowed?"); return; }
+      return refresh().then(function () { updatePend(); toast("“" + name + "” loaded. Tap Save to apply."); });
+    });
+  }
+  function renderPresets() {
+    var cv = cur && cur.testtex !== undefined ? curVec() : null, active = "";
+    var h = "";
+    BUILTIN_PRE.forEach(function (p, i) {
+      var on = cv && sameVec(cv, normVec(p.v));
+      if (on) active = p.n;
+      h += '<button type="button" class="pre' + (on ? " on" : "") + '" data-b="' + i + '"><b>' + esc(p.n) + "</b><small>" + esc(p.d) + "</small></button>";
+    });
+    $("preBuilt").innerHTML = h;
+    h = "";
+    myPre.forEach(function (p, i) {
+      var vv = normVec(p.v) || p.v, on = cv && sameVec(cv, vv);
+      if (on && !active) active = p.n;
+      h += '<div class="prow' + (on ? " on" : "") + '"><button type="button" class="pa" data-a="' + i + '"><b>' + esc(p.n) + "</b><small>" + esc(vecText(vv)) + "</small></button>" +
+        '<button type="button" class="ib" data-s="' + i + '" aria-label="Share code"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>' +
+        '<button type="button" class="ib" data-d="' + i + '" aria-label="Delete preset">' + TRASH + "</button></div>";
+    });
+    if (!myPre.length) h = '<p class="desc" style="margin:4px 0 0">None yet. Set things up, then tap Save current.</p>';
+    $("preMine").innerHTML = h;
+    $("preActive").hidden = !active;
+    $("preActive").textContent = active ? "Active: " + active : "";
+  }
+  $("preBuilt").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".pre") : null;
+    if (!b) return;
+    var p = BUILTIN_PRE[+b.getAttribute("data-b")];
+    if (p) applyVec(p.v, p.n);
+  });
+  $("preMine").addEventListener("click", function (e) {
+    var t = e.target, b;
+    if ((b = t.closest(".pa"))) { var p = myPre[+b.getAttribute("data-a")]; if (p) applyVec(p.v, p.n); return; }
+    if ((b = t.closest("[data-s]"))) { var q = myPre[+b.getAttribute("data-s")]; if (q) openCode("show", makeCode(q.n, normVec(q.v) || q.v)); return; }
+    if ((b = t.closest("[data-d]"))) {
+      if (b.classList.contains("confirm")) { myPre.splice(+b.getAttribute("data-d"), 1); saveMine(); renderPresets(); toast("Preset deleted."); return; }
+      b.classList.add("confirm"); toast("Tap the bin again to delete.");
+      setTimeout(function () { b.classList.remove("confirm"); }, 3000);
+    }
+  });
+  $("preSave").addEventListener("click", function () {
+    if (myPre.length >= 12) { toast("12 presets is the limit. Delete one first."); return; }
+    var v = normVec(curVec());
+    if (!v) { toast("Current settings could not be read."); return; }
+    askName("Name this preset", "", function (name) {
+      name = cleanName(name);
+      if (!name) { toast("Enter a name."); return; }
+      myPre = myPre.filter(function (x) { return x.n !== name; });
+      myPre.unshift({ n: name, v: v });
+      saveMine(); renderPresets();
+      toast("Preset “" + name + "” saved.");
+    });
+  });
+  $("preImp").addEventListener("click", function () { openCode("import", ""); });
+
+  var codew = $("codew"), codeMode = "show";
+  codew.addEventListener("touchmove", function (e) { if (e.target === codew) e.preventDefault(); }, { passive: false });
+  function openCode(mode, text) {
+    codeMode = mode;
+    $("codet").value = text;
+    $("codet").readOnly = mode === "show";
+    $("codet2").textContent = mode === "show" ? "Preset code" : "Import a preset";
+    $("codesub").textContent = mode === "show" ? "Send this code to a friend" : "Paste a CT1 code";
+    $("codeGo").hidden = mode === "show";
+    $("codeCopy").hidden = mode !== "show";
+    $("codemsg").textContent = ""; $("codemsg").className = "codemsg";
+    $("codeCopy").parentNode.style.gridTemplateColumns = "1fr";
+    lockPage();
+    codew.classList.add("open");
+    setTimeout(function () { var t = $("codet"); t.focus(); if (mode === "show") t.select(); }, 80);
+  }
+  function closeCode() { if (!codew.classList.contains("open")) return; codew.classList.remove("open"); unlockPage(); }
+  $("codex").addEventListener("click", closeCode);
+  codew.addEventListener("click", function (e) { if (e.target === codew) closeCode(); });
+  $("codeCopy").addEventListener("click", function () {
+    var t = $("codet").value, ta = $("codet");
+    function fb() {
+      try { ta.focus(); ta.select(); ta.setSelectionRange(0, t.length); toast(document.execCommand("copy") ? "Code copied." : "Select the code and copy it by hand."); }
+      catch (e) { toast("Select the code and copy it by hand."); }
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(function () { toast("Code copied."); }, fb); return; }
+    } catch (e) {}
+    fb();
+  });
+  $("codeGo").addEventListener("click", function () {
+    var r = parseCode($("codet").value);
+    if (r.err) { $("codemsg").textContent = r.err; $("codemsg").className = "codemsg bad"; return; }
+    if (myPre.length >= 12 && !myPre.some(function (x) { return x.n === r.n; })) { $("codemsg").textContent = "12 presets is the limit. Delete one first."; $("codemsg").className = "codemsg bad"; return; }
+    myPre = myPre.filter(function (x) { return x.n !== r.n; });
+    myPre.unshift({ n: r.n, v: r.v });
+    saveMine(); renderPresets(); closeCode();
+    toast("Imported “" + r.n + "”. Tap it to load.");
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeCode(); });
+
+  /* ---------- stats (v0.40): whole session, advice, history ---------- */
+  function parseSt(txt) {
+    var st = {};
+    (txt || "").split("|").forEach(function (l) { var i = l.indexOf("="); if (i > 0) st[l.slice(0, i)] = l.slice(i + 1); });
+    return st;
+  }
+  function summarize(text) {
+    var ws = (text || "").split("\n").map(function (l) { return l.indexOf("FT ") === 0 ? kv(l) : null; }).filter(function (o) { return o && +o.n > 0; });
+    if (!ws.length) return null;
+    var S = { n: 0, w: ws.length, sumMs: 0, sumP99: 0, slow: 0, slow50: 0, fz: 0, max: 0, t: 0, cap: 0, scale: 100 };
+    ws.forEach(function (o) {
+      var c = +o.n;
+      S.n += c;
+      S.sumMs += c * (parseFloat(o.avg) || 0);
+      S.sumP99 += c * (parseFloat(o.p99) || 0);
+      S.slow += +o[">33ms"] || 0;
+      S.slow50 += +o[">50ms"] || 0;
+      S.fz += +o.fz || 0;
+      S.max = Math.max(S.max, parseFloat(o.max) || 0);
+      S.t = Math.max(S.t, parseFloat(o.t) || 0);
+    });
+    var last = ws[ws.length - 1];
+    S.cap = parseInt(last.cap, 10) || 0;
+    S.scale = parseInt(last.scale, 10) || 100;
+    S.avg = S.sumMs / S.n;
+    S.fps = S.avg > 0 ? 1000 / S.avg : 0;
+    S.p99 = S.sumP99 / S.n;
+    return S;
+  }
+  function lookLabel(o) {
+    if (parseInt(o.testtex, 10) > 0) return "True Pixelated";
+    if (parseInt(o.flat, 10) > 0) return "Flat +" + parseInt(o.flat, 10);
+    if (parseInt(o.style, 10) > 0) return "Detail Cut +" + parseInt(o.style, 10);
+    if (parseInt(o.blk, 10) > 0) return "Pixel Blocks " + parseInt(o.blk, 10) + " px";
+    return "Look off";
+  }
+  function cfgLabel(o, S) {
+    var sc = parseInt(o.scale, 10) || 0, cp = parseInt(o.fpscap, 10) || (S ? S.cap : 0);
+    return lookLabel(o) + " · " + (sc ? sc + "%" : "100%") + " · " + (cp ? cp + " fps cap" : "no cap");
+  }
+  function advise(S, st, look) {
+    var tips = [];
+    if (!S) return [{ c: "", x: "Play a match with the module active, then tap Refresh. Advice appears here once there is frame data." }];
+    if (S.n < 600) tips.push({ c: "", x: "This is a short session (" + fmtT(S.t) + "). Play a full match for advice you can rely on." });
+    if (S.fz > 0 || (S.slow50 / S.n) > 0.01) {
+      tips.push({ c: "warn", x: S.fz + " freeze" + (S.fz === 1 ? "" : "s") + " (a frame over 100 ms). If they happen right after launch, try a Start delay of 10–20 s in Advanced. If they happen in fights, a lower render scale or a coarser look helps." });
+    } else {
+      tips.push({ c: "ok", x: "No freezes in this session." });
+    }
+    var ratio = S.avg > 0 ? S.p99 / S.avg : 0;
+    if (ratio > 2.2) tips.push({ c: "warn", x: "The 99th-percentile frame is " + ratio.toFixed(1) + "× the average, so frame pacing is uneven. A frame-rate cap a little below what the phone sustains (for example 60) usually feels smoother than uncapped." });
+    if (S.cap > 0 && S.fps < S.cap * 0.9) tips.push({ c: "warn", x: "The phone averaged " + S.fps.toFixed(0) + " fps but the cap is " + S.cap + ". The cap is not what limits you; lower the render scale or pick a lighter look." });
+    else if (S.cap > 0) tips.push({ c: "ok", x: "The " + S.cap + " fps cap is being reached (" + S.fps.toFixed(0) + " fps average)." });
+    else if (S.fps > 65) tips.push({ c: "", x: "Running uncapped at " + S.fps.toFixed(0) + " fps. A cap of 60 would cut heat and battery use with little visible change." });
+    if (S.fps < 30 && S.cap === 0) tips.push({ c: "bad", x: "Under 30 fps on average. Lower the render scale (Home → Display) first; it saves the most." });
+    var ap = parseInt(st.applied, 10);
+    if (look !== "Look off" && !isNaN(ap)) {
+      if (ap === 0) tips.push({ c: "warn", x: "A look is set but 0 textures were changed" + (st.why0 && st.why0 !== "none" ? " (" + st.why0.replace(/_/g, " ") + ")" : "") + ". Check Advanced → Startup delay and the skip rules." });
+      else tips.push({ c: "ok", x: ap + " textures were changed in the last launch." });
+    }
+    return tips;
+  }
+  function histLoad() { try { var h = JSON.parse(localStorage.getItem("ct_hist") || "[]"); return Array.isArray(h) ? h : []; } catch (e) { return []; } }
+  function histSave(h) { try { localStorage.setItem("ct_hist", JSON.stringify(h)); } catch (e) {} }
+  function fmtDate(ms) { try { var d = new Date(ms); return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; } }
+  function dlt(now, was, hi, unit, d) {
+    var diff = now - was;
+    if (Math.abs(diff) < (d ? 0.05 : 0.5)) return "about the same";
+    var good = hi ? diff > 0 : diff < 0;
+    return '<span class="' + (good ? "up" : "dn") + '">' + (diff > 0 ? "+" : "−") + Math.abs(diff).toFixed(d || 0) + unit + "</span>";
+  }
+  function renderSession(s, st) {
+    var S = summarize(s.ftall);
+    if (!S && s.ft) S = summarize(s.ft);          /* older log without the full list */
+    var sl = kv(s.startline || ""), cfg = cfgLabel(sl, S), look = lookLabel(sl);
+    $("tFps").textContent = S ? S.fps.toFixed(0) : "—";
+    $("tAvg").textContent = S ? S.avg.toFixed(1) : "—";
+    $("tP99").textContent = S ? S.p99.toFixed(0) : "—";
+    $("tFz").textContent = S ? S.fz : "—";
+    $("tFzT").className = "tile" + (S ? (S.fz > 0 ? " warn" : " ok") : "");
+    var ftn = parseInt(s.ftn, 10) || 0;
+    $("sstat").textContent = S
+      ? "Whole last session · " + fmtT(S.t) + " played" + (ftn > S.w ? " (the latest " + S.w + " of " + ftn + " five-second windows)" : "")
+      : "No frame data yet. Play a match to fill this in.";
+    $("sKv").innerHTML = S
+      ? '<div class="kv"><span>Settings in use</span><b>' + esc(cfg) + "</b></div>" +
+        '<div class="kv"><span>Frames counted</span><b>' + S.n.toLocaleString() + "</b></div>" +
+        '<div class="kv"><span>Slow frames</span><b>' + (S.slow / S.n * 100).toFixed(1) + "% over 33 ms <small>· " + (S.slow50 / S.n * 100).toFixed(1) + "% over 50 ms</small></b></div>" +
+        '<div class="kv"><span>Worst frame</span><b>' + S.max.toFixed(0) + " ms</b></div>"
+      : "";
+    var h = "", tips = advise(S, st || {}, look);
+    tips.forEach(function (t) { h += '<div class="tip ' + t.c + '"><i></i><span>' + esc(t.x) + "</span></div>"; });
+    $("advice").innerHTML = h;
+
+    /* history: one entry per game launch, updated while the session grows */
+    var hist = histLoad(), key = String((st && st.started) || s.startline || "");
+    if (S && key && S.t >= 60) {
+      var ent = { k: key, ts: ((parseInt(st && st.started, 10) || 0) * 1000) || Date.now(), fps: S.fps, avg: S.avg, p99: S.p99, fz: S.fz, t: S.t, cfg: cfg };
+      var at = -1;
+      hist.forEach(function (x, i) { if (x.k === key) at = i; });
+      if (at >= 0) hist[at] = ent; else hist.unshift(ent);
+      hist.sort(function (a, b) { return b.ts - a.ts; });
+      hist = hist.slice(0, 8);
+      histSave(hist);
+    }
+    var cur0 = null;
+    hist.forEach(function (x) { if (x.k === key) cur0 = x; });
+    if (!hist.length) { $("hist").innerHTML = '<p class="desc">No sessions of a minute or longer yet.</p>'; return; }
+    h = "";
+    hist.forEach(function (x) {
+      var me = x === cur0;
+      h += '<div class="hrow"><div class="h1"><span>' + esc(fmtDate(x.ts)) + "</span>" + (me ? "<em>Last session</em>" : "") + "</div>" +
+        '<div class="h2">' + esc(x.cfg) + " · " + esc(fmtT(x.t)) + "</div>" +
+        '<div class="h3">' + x.fps.toFixed(0) + " fps · " + x.avg.toFixed(1) + " ms avg · " + x.p99.toFixed(0) + " ms 99th · " + x.fz + " freeze" + (x.fz === 1 ? "" : "s") + "</div>" +
+        (cur0 && !me ? '<div class="h4">Last session vs this: ' + dlt(cur0.fps, x.fps, true, " fps", 1) + " fps · " + dlt(cur0.p99, x.p99, false, " ms", 0) + " 99th · " + dlt(cur0.fz, x.fz, false, "", 0) + " freezes</div>" : "") + "</div>";
+    });
+    $("hist").innerHTML = h;
+  }
+  function refreshStats() {
+    if (demo) { renderSession(fake, parseSt(fake.st)); return; }
+    findDir().then(readState).then(function (s) { if (!s.nodir) renderSession(s, parseSt(s.st)); });
+  }
+  arm("histClr", "Tap again to clear history", function () { histSave([]); refreshStats(); toast("History cleared."); });
+
+  /* ---------- game copy chooser (v0.40) ---------- */
+  function paintCopies() {
+    var box = $("copyOpts");
+    if (!box) return;
+    var rows = [{ v: "auto", t: "Auto", d: "The copy that ran most recently." }];
+    COPIES.forEach(function (c) {
+      rows.push({ v: String(c.u), t: c.u === 0 ? "Main (user 0)" : "Copy · user " + c.u,
+        d: (c.t > 0 ? "Last ran " + fmtDate(c.t * 1000) : "Never ran") + " · " + c.p });
+    });
+    var h = "";
+    rows.forEach(function (r) {
+      var on = r.v === dirPick || (r.v === "auto" && !COPIES.some(function (c) { return String(c.u) === dirPick; }));
+      h += '<label class="opt' + (on ? " on" : "") + '" data-v="' + esc(r.v) + '"><input type="radio" name="gcopy" value="' + esc(r.v) + '"' + (on ? " checked" : "") +
+        '><span class="ot"><span class="t">' + esc(r.t) + '</span><span class="d">' + esc(r.d) + "</span></span></label>";
+    });
+    box.innerHTML = h;
+  }
+  $("copyOpts").addEventListener("change", function (e) {
+    if (!e.target || e.target.name !== "gcopy") return;
+    dirPick = e.target.value;
+    try { localStorage.setItem("ct_dir", dirPick); } catch (e2) {}
+    base = null;
+    refresh().then(function () { toast(dirPick === "auto" ? "Using the copy that ran most recently." : "Using game copy: user " + dirPick + "."); });
+  });
+  $("copyScan").addEventListener("click", function () { refresh().then(function () { toast(COPIES.length + " game cop" + (COPIES.length === 1 ? "y" : "ies") + " found."); }); });
+
   /* paint once with defaults, then load the real settings */
   updateLookUI();
   renderFps();
+  renderPresets();
   try { $("rptName").value = localStorage.getItem("ct_name") || ""; } catch (e) {}
   renderMin();
   renderHook();
