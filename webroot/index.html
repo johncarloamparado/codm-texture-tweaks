@@ -473,6 +473,26 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
 .fix:disabled { opacity: 0.5; cursor: not-allowed; }
 .fix:active { transform: scale(0.97); }
 
+/* reticle / grass picker (Home, under Quick fixes) */
+.rg-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 16px 2px 0; }
+.rg-head b { font-size: 13px; font-weight: 700; letter-spacing: 0.01em; }
+.rg-head .rg-now { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); padding: 3px 9px; border-radius: 99px; background: var(--fill); border: 1px solid var(--line); transition: all 0.2s ease; }
+.rg-head .rg-now.on { color: #c7d2fe; background: rgba(129, 140, 248, 0.14); border-color: rgba(129, 140, 248, 0.45); }
+.rg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.rg-btn { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: var(--fill); color: var(--text); font: inherit; text-align: left; cursor: pointer; overflow: hidden; transition: all 0.2s ease; }
+.rg-btn .rg-ic { width: 40px; height: 40px; margin-bottom: 8px; display: grid; place-items: center; border-radius: 13px; background: rgba(255, 255, 255, 0.06); color: var(--mute); transition: all 0.2s ease; }
+.rg-btn .rg-ic svg { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.rg-btn b { font-size: 14.5px; font-weight: 700; line-height: 1.2; }
+.rg-btn small { color: var(--mute); font-size: 11.5px; line-height: 1.35; }
+.rg-btn .rg-tick { position: absolute; top: 12px; right: 12px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid var(--line); color: transparent; transition: all 0.2s ease; }
+.rg-btn .rg-tick svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.rg-btn:hover { background: var(--fill-hover); }
+.rg-btn:active { transform: scale(0.97); }
+.rg-btn[aria-checked="true"] { border-color: var(--primary); background: linear-gradient(145deg, rgba(129, 140, 248, 0.2), rgba(192, 132, 252, 0.07)); box-shadow: 0 6px 22px var(--primary-glow); }
+.rg-btn[aria-checked="true"] .rg-ic { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 4px 14px var(--primary-glow); }
+.rg-btn[aria-checked="true"] .rg-tick { background: var(--primary); border-color: var(--primary); color: #fff; }
+.rg-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* skip rows: drag, edit, groups */
 .grip { flex: none; width: 34px; height: 40px; margin: -6px 0 -6px -8px; display: grid; place-items: center; border: 0; background: none; color: var(--mute); cursor: grab; touch-action: none; }
 .grip svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
@@ -561,6 +581,11 @@ html.compact .sw .d { margin-top: 0; font-size: 12px; }
 html.compact .pre, html.compact .prow { padding: 7px 10px; border-radius: 14px; }
 html.compact .fix { padding: 10px 12px; gap: 6px; border-radius: 16px; }
 html.compact .fix .fst { top: 10px; right: 12px; }
+html.compact .rg-grid { gap: 6px; }
+html.compact .rg-head { margin-top: 12px; }
+html.compact .rg-btn { padding: 10px 12px; border-radius: 16px; }
+html.compact .rg-btn .rg-ic { width: 34px; height: 34px; margin-bottom: 4px; }
+html.compact .rg-btn .rg-tick { top: 10px; right: 12px; }
 html.compact .opt { padding: 10px 12px; border-radius: 14px; }
 html.compact .skip-list { gap: 6px; }
 html.compact .skip-item { padding: 6px 12px; border-radius: 14px; }
@@ -679,7 +704,7 @@ html.compact .sbtn { min-height: 42px; }
         <button class="btn" id="preSave" type="button">Save current…</button>
         <button class="btn" id="preImp" type="button">Import code</button>
       </div>
-      <p class="pnote">A preset holds 10 values: look and strength, pixel size, edge blend, render scale, frame-rate cap, smallest texture and start delay. Skip rules and logging are not touched. My presets stay in this app only; use the share button to get a code for a friend.</p>
+      <p class="pnote">A preset holds the look and strength, pixel size, edge blend, render scale, frame-rate cap, smallest texture, start delay and your Fix reticle / Fix grass choice. Other skip rules and logging are not touched. My presets stay in this app only; use the share button to get a code for a friend.</p>
       </div>
       </details>
     </section>
@@ -738,7 +763,21 @@ html.compact .sbtn { min-height: 42px; }
             <span>Fix menu</span><span class="fst">On</span>
           </button>
         </div>
-        <p class="pnote">While on, a very small number of textures stay original.</p>
+        <div class="rg-head"><b id="rgL">Scope texture</b><span class="rg-now" id="rgNow">Custom</span></div>
+        <div class="rg-grid" id="rgBox" role="radiogroup" aria-labelledby="rgL">
+          <button type="button" class="rg-btn" id="fixReticle" role="radio" aria-checked="false">
+            <span class="rg-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/></svg></span>
+            <span class="rg-tick"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+            <b>Fix reticle</b><small>Reticle stays clear. Grass is not blocky.</small>
+          </button>
+          <button type="button" class="rg-btn" id="fixGrass" role="radio" aria-checked="false">
+            <span class="rg-ic"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21c0-5 .5-9 3-13 .5 3 1 6 0 13M11 21c-.5-6 1-11 5-16 0 5-1 11-2.5 16M16 21c.5-3 1.5-6 4-8"/></svg></span>
+            <span class="rg-tick"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+            <b>Fix grass</b><small>Grass gets the blocky look. Reticle may look blocky too.</small>
+          </button>
+        </div>
+        <p class="pnote" id="rgNote">While on, a very small number of textures stay original.</p>
+        <p class="pnote">Why only one? The reticle and the grass use the same texture. Keeping it original keeps the reticle clear, but grass stays smooth. Changing it makes grass blocky, but the reticle turns blocky too. There is no setting where both look good at the same time.</p>
       </div>
     </section>
 
@@ -1193,7 +1232,11 @@ html.compact .sbtn { min-height: 42px; }
     baseBlDel = Object.assign({}, blDel);
   }
   var builtins = ["37497 256 512", "37497 512 1024", "37497 512 256", "37497 512 512", "37496 512 512"];
-  var FIXES = { scope: ["37497 256 512", "37497 512 1024", "37497 512 256", "37497 512 512"], menu: ["37496 512 512"] };
+  var FIXES = { scope: ["37497 256 512", "37497 512 1024", "37497 512 256"], menu: ["37496 512 512"] };
+  /* Reticle / Grass picker. One rule, 37497 512 512, decides it:
+     on = reticle stays original (Fix reticle), off = that texture is changed, which is what grass needs (Fix grass).
+     Fix reticle also makes sure 37497 512 256 is on. */
+  var RG = { rule: "37497 512 512", extra: "37497 512 256" };
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -2017,8 +2060,42 @@ html.compact .sbtn { min-height: 42px; }
       b.disabled = f.n === 0;
       b.querySelector(".fst").textContent = f.n === 0 ? "Deleted" : (f.on ? "On" : "Off");
     });
+    paintRG();
+  }
+  function ruleActive(r) { return !blDel[r] && !blOff[r]; }
+  function rgMode() {
+    if (!ruleActive(RG.rule)) return "grass";
+    return ruleActive(RG.extra) ? "reticle" : "";
+  }
+  function paintRG() {
+    var m = rgMode(), a = $("fixReticle"), g = $("fixGrass"), n = $("rgNow"), t = $("rgNote");
+    if (!a || !g) return;
+    a.setAttribute("aria-checked", m === "reticle" ? "true" : "false");
+    g.setAttribute("aria-checked", m === "grass" ? "true" : "false");
+    n.textContent = m === "reticle" ? "Reticle" : (m === "grass" ? "Grass" : "Custom");
+    n.classList.toggle("on", !!m);
+    t.textContent = m === "grass"
+      ? "Grass mode: 37497 512 512 is off so grass can be changed. The reticle may look blocky."
+      : (m === "reticle"
+        ? "Reticle mode: 37497 512 256 and 37497 512 512 are on, so the reticle stays original."
+        : "Custom: you set these rules by hand in Advanced. Pick one above to set them for you.");
+  }
+  function rgApply(mode) {
+    if (mode === "reticle") {
+      [RG.extra, RG.rule].forEach(function (r) { delete blDel[r]; delete blOff[r]; });
+    } else {
+      delete blDel[RG.rule];
+      blOff[RG.rule] = 1;
+    }
+  }
+  function setRG(mode) {
+    if (rgMode() === mode) return;
+    rgApply(mode);
+    renderSkipList();
+    writeBl().then(skipDone);
   }
   function fixOf(rule) {
+    if (rule === RG.rule) return blOff[rule] ? "Fix grass" : "Fix reticle";
     for (var k in FIXES) if (FIXES[k].indexOf(rule) >= 0) return k === "scope" ? "Fix scope" : "Fix menu";
     return "";
   }
@@ -2027,7 +2104,7 @@ html.compact .sbtn { min-height: 42px; }
       var on = !blOff[r.line];
       return '<div class="skip-item builtin' + (on ? '' : ' off') + '" data-line="' + esc(r.line) + '">' +
         '<button class="grip" type="button" aria-label="Drag to move or group">' + GRIP + '</button>' +
-        '<div class="skip-info"><span>' + esc(r.line) + '</span><small>Built-in · ' + fixOf(r.line) + (on ? '' : ' (off)') + '</small></div>' +
+        '<div class="skip-info"><span>' + esc(r.line) + '</span><small>Built-in · ' + fixOf(r.line) + (on || r.line === RG.rule ? '' : ' (off)') + '</small></div>' +
         '<div class="skip-actions">' +
           '<button class="sw bl-toggle" data-k="' + esc(r.line) + '" aria-checked="' + (on ? "true" : "false") + '"><span class="knob"></span></button>' +
           '<button class="ib skip-del bl-del" data-k="' + esc(r.line) + '" aria-label="Delete">' + TRASH + '</button>' +
@@ -2318,6 +2395,8 @@ html.compact .sbtn { min-height: 42px; }
   }
   $("fixScope").addEventListener("click", function () { toggleFix("scope"); });
   $("fixMenu").addEventListener("click", function () { toggleFix("menu"); });
+  $("fixReticle").addEventListener("click", function () { setRG("reticle"); });
+  $("fixGrass").addEventListener("click", function () { setRG("grass"); });
 
   /* Finds the game's files folder. Handles other Android users (dual apps / clone),
      the mirror path, and shells that need nsenter or su to see /data/data. */
@@ -2892,31 +2971,33 @@ html.compact .sbtn { min-height: 42px; }
     { n: "Original", d: "All effects off", v: [0, 0, 0, 0, 0, 0, 0, 0, 64, 0] }
   ];
   var myPre = [];
-  try { var mp = JSON.parse(localStorage.getItem("ct_presets") || "[]"); if (Array.isArray(mp)) myPre = mp.filter(function (x) { return x && typeof x.n === "string" && Array.isArray(x.v) && x.v.length === 10; }).slice(0, 12); } catch (e) {}
+  try { var mp = JSON.parse(localStorage.getItem("ct_presets") || "[]"); if (Array.isArray(mp)) myPre = mp.filter(function (x) { return x && typeof x.n === "string" && Array.isArray(x.v) && (x.v.length === 10 || x.v.length === 11); }).slice(0, 12); } catch (e) {}
   function saveMine() { try { localStorage.setItem("ct_presets", JSON.stringify(myPre)); } catch (e) {} }
   function cleanName(n) { return String(n || "").replace(/[;,|<>"']/g, " ").replace(/\s+/g, " ").trim().slice(0, 24); }
   function clamp(x, a, b) { x = parseInt(x, 10); if (isNaN(x)) return null; return Math.max(a, Math.min(b, x)); }
-  /* returns a clean 10-value vector, or null when a value is not a number */
+  /* returns a clean 11-value vector, or null when a value is not a number */
   function normVec(v) {
-    var r = [clamp(v[0], 0, 1), 0, clamp(v[2], 0, 4), clamp(v[3], 0, 4), clamp(v[4], -2, 3), clamp(v[5], 0, 1), 0, 0, clamp(v[8], 64, 2048), clamp(v[9], 0, 120)];
+    var r = [clamp(v[0], 0, 1), 0, clamp(v[2], 0, 4), clamp(v[3], 0, 4), clamp(v[4], -2, 3), clamp(v[5], 0, 1), 0, 0, clamp(v[8], 64, 2048), clamp(v[9], 0, 120), 0];
+    if (v.length > 10) { r[10] = clamp(v[10], 0, 2); }      /* 0 = leave reticle/grass alone, 1 = Fix reticle, 2 = Fix grass; 10-value presets have no 11th */
     var b = parseInt(v[1], 10), sc = parseInt(v[6], 10), fp = parseInt(v[7], 10);
     if (isNaN(b) || isNaN(sc) || isNaN(fp)) return null;
     r[1] = b <= 0 ? 0 : Math.max(4, Math.min(256, b));
     r[6] = (sc >= 20 && sc <= 99) ? sc : 0;
     r[7] = (fp >= 20 && fp <= 120) ? fp : 0;
-    for (var i = 0; i < 10; i++) if (r[i] === null) return null;
+    for (var i = 0; i < 11; i++) if (r[i] === null) return null;
     if (r[0]) { r[1] = 0; r[2] = 0; r[3] = 0; }          /* one look at a time: True Pixelated > Flat > Detail Cut > Pixel Blocks */
     else if (r[3]) { r[1] = 0; r[2] = 0; }
     else if (r[2]) { r[1] = 0; }
     return r;
   }
-  function curVec() { return PK.map(function (k) { return parseInt(cur[k], 10) || 0; }); }
+  function rgCode() { var m = rgMode(); return m === "reticle" ? 1 : (m === "grass" ? 2 : 0); }
+  function curVec() { return PK.map(function (k) { return parseInt(cur[k], 10) || 0; }).concat([rgCode()]); }
   function sameVec(a, b) { for (var i = 0; i < 10; i++) if (a[i] !== b[i]) return false; return true; }
   /* highlight follows the Look card only (look, strength, pixel size, edge blend). Display, filter and quick fixes are separate. */
   function sameLook(a, b) { for (var i = 0; i < 6; i++) if (a[i] !== b[i]) return false; return true; }
   function vecText(v) {
     var look = v[0] ? "True Pixelated" : (v[3] ? "Flat +" + v[3] : (v[2] ? "Detail Cut +" + v[2] : (v[1] ? "Pixel Blocks " + v[1] + " px" : "Look off")));
-    return look + " · " + (v[6] ? v[6] + "%" : "100%") + " · " + (v[7] ? v[7] + " fps" : "no cap");
+    return look + " · " + (v[6] ? v[6] + "%" : "100%") + " · " + (v[7] ? v[7] + " fps" : "no cap") + (v[10] === 1 ? " · Fix reticle" : (v[10] === 2 ? " · Fix grass" : ""));
   }
   function csum(t) {
     var h = 2166136261;
@@ -2924,7 +3005,8 @@ html.compact .sbtn { min-height: 42px; }
     return (h >>> 0).toString(36);
   }
   function makeCode(name, v) {
-    var body = "CT1;" + cleanName(name) + ";" + v.join(",");
+    var vv = v.slice(); if (vv.length > 10 && !vv[10]) vv.length = 10;
+    var body = "CT1;" + cleanName(name) + ";" + vv.join(",");
     return body + ";" + csum(body);
   }
   /* returns { n, v } or { err } */
@@ -2934,8 +3016,8 @@ html.compact .sbtn { min-height: 42px; }
     if (parts.length !== 4 || parts[0] !== "CT1") return { err: "This is not a CT1 preset code." };
     if (csum(parts[0] + ";" + parts[1] + ";" + parts[2]) !== parts[3].trim()) return { err: "The checksum does not match. The code was changed or copied incompletely." };
     var raw = parts[2].split(",");
-    if (raw.length !== 10) return { err: "The code must hold 10 values." };
-    for (var i = 0; i < 10; i++) if (!/^-?\d+$/.test(raw[i].trim())) return { err: "Value " + (i + 1) + " is not a number." };
+    if (raw.length !== 10 && raw.length !== 11) return { err: "The code must hold 10 or 11 values." };
+    for (var i = 0; i < raw.length; i++) if (!/^-?\d+$/.test(raw[i].trim())) return { err: "Value " + (i + 1) + " is not a number." };
     var v = normVec(raw.map(function (x) { return parseInt(x, 10); }));
     var n = cleanName(parts[1]);
     if (!v) return { err: "A value is out of range." };
@@ -2954,14 +3036,28 @@ html.compact .sbtn { min-height: 42px; }
     Object.keys(map).forEach(function (k) { prev[k] = cur[k]; });
     activePre = { k: kind, n: name };
     preBusy = preKey(kind, name);
+    var prevOff = Object.assign({}, blOff), prevDel = Object.assign({}, blDel);
     var job = writeFiles(map);          /* cur is updated right away, the shell write runs in the background */
+    if (vv[10]) {                       /* Fix reticle / Fix grass is part of the preset */
+      rgApply(vv[10] === 2 ? "grass" : "reticle");
+      renderSkipList();
+      job = Promise.all([job, writeBl()]).then(function (rs) { return { ok: !!(rs[0].ok && rs[1].ok) }; });
+    }
     paintFromCur();                     /* so the screen follows at once: no game-folder rescan */
+    paintFixes();
     job.then(function (r) {
       preBusy = "";
       if (!r.ok) {
         Object.keys(prev).forEach(function (k) { cur[k] = prev[k]; });
+        if (vv[10]) {
+          Object.keys(blOff).forEach(function (k) { delete blOff[k]; }); Object.assign(blOff, prevOff);
+          Object.keys(blDel).forEach(function (k) { delete blDel[k]; }); Object.assign(blDel, prevDel);
+          cur.bloff = nk(blOff); cur.bldel = nk(blDel);
+          renderSkipList(); writeBl();
+        }
         activePre = null;
         paintFromCur();
+        paintFixes();
         toast("Could not save" + (writeFail ? " (" + writeFail + ")" : "") + ". Is the game folder present and root allowed?");
         return;
       }
