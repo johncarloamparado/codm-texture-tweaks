@@ -13,7 +13,9 @@ env:
 jobs:
   build-module:
     name: Build module (arm64-v8a + armeabi-v7a)
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest starts moving to Ubuntu 26.04 on 2026-10-19, and the
+    # NDK / toolchain setup here is known-good on 24.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
@@ -75,4 +77,6 @@ jobs:
           name: codm-blocky-textures-${{ steps.meta.outputs.version }}
           path: out/
           if-no-files-found: error
-          retention-days: 30
+          # No retention-days here on purpose: this repo caps artifact retention
+          # at 1 day, and asking for more (it was 30) only triggers a warning.
+          # Retention now follows the repository setting.
