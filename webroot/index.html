@@ -584,6 +584,25 @@ html.compact .sbtn { min-height: 42px; }
   .view.active, body.pend .apply::after, #toast.show { animation: none; transition: none; }
   .knob, .knob::after, .mode, .step, summary svg, .btn, .ib { transition: none; }
 }
+
+/* v0.41 fixes */
+.opts { grid-template-columns: minmax(0, 1fr); }
+.opt { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.opt .ot { flex: 1; min-width: 0; }
+.opt .d { overflow-wrap: anywhere; word-break: break-word; }
+.modes > *, .steps > *, .pgrid > * { min-width: 0; }
+.savebox .sico.fine { width: 46px; height: 46px; border-radius: 15px; position: relative; background: linear-gradient(145deg, #8b93ff 0%, #a78bfa 55%, #d08bff 100%); box-shadow: 0 8px 22px var(--primary-glow), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -6px 10px rgba(80,60,170,0.35); }
+.savebox .sico.fine::after { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 1px solid rgba(255,255,255,0.22); pointer-events: none; }
+.savebox .sico.fine svg { width: 24px; height: 24px; fill: rgba(255,255,255,0.18); stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 2px rgba(40,20,120,0.45)); }
+.pre, .prow { position: relative; }
+.pre.busy::after, .prow.busy::after { content: ""; position: absolute; top: 12px; right: 12px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(129,140,248,0.3); border-top-color: var(--primary); animation: presp 0.7s linear infinite; }
+.prow.busy::after { right: auto; left: 8px; top: 8px; width: 10px; height: 10px; }
+@keyframes presp { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pre.busy::after, .prow.busy::after { animation: none; } }
+.skip-item.builtin .skip-info { padding: 4px 0; }
+.skip-item.builtin .skip-info span { word-break: normal; white-space: nowrap; }
+.skip-group .skip-actions { gap: 6px; }
+.skip-item.builtin .grip { margin-left: -8px; }
 </style>
 </head>
 <body>
@@ -1024,7 +1043,7 @@ html.compact .sbtn { min-height: 42px; }
 <div id="namew" role="dialog" aria-modal="true" aria-labelledby="namet">
   <div class="savebox">
     <div class="sh">
-      <span class="sico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+      <span class="sico fine" id="namei"></span>
       <div class="stt"><h3 id="namet">Name this group</h3><span>Up to 24 characters</span></div>
     </div>
     <input class="nin" id="namein" type="text" maxlength="24" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="Group name">
@@ -1146,7 +1165,7 @@ html.compact .sbtn { min-height: 42px; }
     for (var i = 0; i < KEYS.length; i++) if (cur[KEYS[i]] !== base[KEYS[i]]) return true;
     return cur.skip !== base.skip || cur.bloff !== base.bloff || cur.bldel !== base.bldel;
   }
-  function updatePend() { var p = isPending(); setPend(p); return p; }
+  function updatePend() { var p = isPending(); setPend(p); if (typeof renderPresets === "function" && myPre) renderPresets(); return p; }
   function setBaseline() {
     base = Object.assign({}, cur);
     baseSkipLines = skipLines();
@@ -1536,6 +1555,62 @@ html.compact .sbtn { min-height: 42px; }
     s = Math.round(s);
     return s >= 60 ? Math.floor(s / 60) + "m " + (s % 60) + "s" : s + "s";
   }
+  /* paints Look, Display, smallest texture and start delay from an s-like map (files or cur) */
+  function paintSettings(s) {
+    /* determine look mode from files */
+    var sty = parseInt(s.style, 10) || 0;
+    var blk = parseInt(s.blk, 10) || 0;
+    var flt = parseInt(s.flat, 10) || 0;
+    var ttx = isNaN(parseInt(s.testtex, 10)) ? 1 : parseInt(s.testtex, 10);   /* a missing file counts as 1, like the module */
+    ttSize = Math.max(-2, Math.min(3, parseInt(s.ttsize, 10) || 0));
+    ttSm = Math.max(0, Math.min(1, parseInt(s.ttsm, 10) || 0));
+    if (ttx > 0) {
+      lookMode = 4;
+      strVal = 1;
+    } else if (flt > 0) {
+      lookMode = 3;
+      strVal = Math.max(1, Math.min(4, flt));
+    } else if (sty > 0) {
+      lookMode = 2;
+      strVal = Math.max(1, Math.min(4, sty));
+    } else if (blk > 0) {
+      lookMode = 1;
+      strVal = blkIdx(blk);
+    } else {
+      lookMode = 0;
+      strVal = 3;
+    }
+
+    /* display */
+    var sc = parseInt(s.scale, 10) || 0;
+    $("scale").value = sc >= 20 && sc <= 99 ? Math.max(40, sc) : 100;
+    $("scaleV").textContent = $("scale").value + "%";
+    fill($("scale"));
+
+    fpsVal = parseInt(s.fps, 10) || 0;
+    if (fpsVal < 20 || fpsVal > 120) fpsVal = 0;
+    renderFps();
+
+    var ms = parseInt(s.minsz, 10) || 64, mi = 0;
+    MINS.forEach(function (v, i) {
+      if (Math.abs(v - ms) < Math.abs(MINS[mi] - ms)) mi = i;
+    });
+    minVal = MINS[mi];
+    renderMin();
+
+    var di = Math.max(0, Math.min(12, Math.round((parseInt(s.delay, 10) || 0) / 5)));
+    $("delay").value = di;
+    $("delayV").textContent = di ? (di * 5) + " s" : "Off";
+    fill($("delay"));
+
+  }
+  function paintFromCur() {
+    var s = Object.assign({}, cur);
+    paintSettings(s);
+    updateLookUI();
+    updatePend();
+  }
+
   /* ---------- render state ---------- */
   function render(s) {
     var ban = $("banner");
@@ -1644,61 +1719,17 @@ html.compact .sbtn { min-height: 42px; }
       banner("warn", "Installed module is " + s.ver + " but the log still shows " + s.nv + " from before the update. Open CODM once, then check again. If this stays, reboot the phone.");
     }
 
-    /* determine look mode from files */
-    var sty = parseInt(s.style, 10) || 0;
-    var blk = parseInt(s.blk, 10) || 0;
-    var flt = parseInt(s.flat, 10) || 0;
-    var ttx = isNaN(parseInt(s.testtex, 10)) ? 1 : parseInt(s.testtex, 10);   /* a missing file counts as 1, like the module */
-    ttSize = Math.max(-2, Math.min(3, parseInt(s.ttsize, 10) || 0));
-    ttSm = Math.max(0, Math.min(1, parseInt(s.ttsm, 10) || 0));
-    if (ttx > 0) {
-      lookMode = 4;
-      strVal = 1;
-    } else if (flt > 0) {
-      lookMode = 3;
-      strVal = Math.max(1, Math.min(4, flt));
-    } else if (sty > 0) {
-      lookMode = 2;
-      strVal = Math.max(1, Math.min(4, sty));
-    } else if (blk > 0) {
-      lookMode = 1;
-      strVal = blkIdx(blk);
-    } else {
-      lookMode = 0;
-      strVal = 3;
-    }
-
-    /* display */
-    var sc = parseInt(s.scale, 10) || 0;
-    $("scale").value = sc >= 20 && sc <= 99 ? Math.max(40, sc) : 100;
-    $("scaleV").textContent = $("scale").value + "%";
-    fill($("scale"));
-
-    fpsVal = parseInt(s.fps, 10) || 0;
-    if (fpsVal < 20 || fpsVal > 120) fpsVal = 0;
-    renderFps();
+    paintSettings(s);
 
     setSw("fz", s.fz !== "0");
     setSw("th", s.th !== "0");
     setSw("core", s.core !== "0");
     updateLogDeps();
 
-    var ms = parseInt(s.minsz, 10) || 64, mi = 0;
-    MINS.forEach(function (v, i) {
-      if (Math.abs(v - ms) < Math.abs(MINS[mi] - ms)) mi = i;
-    });
-    minVal = MINS[mi];
-    renderMin();
-
     var hk = parseInt(s.hookdelay, 10) || 0, hi = 0;
     HOOKS.forEach(function (v, i) { if (Math.abs(v - hk) < Math.abs(HOOKS[hi] - hk)) hi = i; });
     hookVal = HOOKS[hi];
     renderHook();
-
-    var di = Math.max(0, Math.min(12, Math.round((parseInt(s.delay, 10) || 0) / 5)));
-    $("delay").value = di;
-    $("delayV").textContent = di ? (di * 5) + " s" : "Off";
-    fill($("delay"));
 
     cur = fromState(s);
     if (fixing) cur.mode = "4";
@@ -1875,29 +1906,44 @@ html.compact .sbtn { min-height: 42px; }
     var smRaw = JSON.parse(localStorage.getItem("ct_skipmeta") || "null");
     if (smRaw && smRaw.groups && smRaw.member) skipMeta = smRaw;
   } catch (e) {}
+  if (!Array.isArray(skipMeta.order)) skipMeta.order = [];
   function saveMeta() { try { localStorage.setItem("ct_skipmeta", JSON.stringify(skipMeta)); } catch (e) {} }
   function groupById(id) {
     for (var i = 0; i < skipMeta.groups.length; i++) if (skipMeta.groups[i].id === id) return skipMeta.groups[i];
     return null;
   }
   function groupOf(line) { var id = skipMeta.member[normLine(line)]; return id ? groupById(id) : null; }
+  /* One ordered list holds the built-in rules and the custom ones. Order and groups live in skipMeta (this browser only);
+     only the custom rules are written to skip.txt, built-ins keep using bltoff.txt / bltdel.txt. */
+  function ruleList() {
+    var map = {}, list = [], seen = {};
+    builtins.forEach(function (b) { if (!blDel[b]) map[b] = { line: b, b: true, ci: -1 }; });
+    customSkips.forEach(function (cs, i) { map[normLine(cs.line)] = { line: normLine(cs.line), b: false, ci: i }; });
+    function take(l) { if (map[l] && !seen[l]) { seen[l] = 1; list.push(map[l]); } }
+    skipMeta.order.forEach(take);
+    builtins.forEach(take);
+    customSkips.forEach(function (cs) { take(normLine(cs.line)); });
+    return list;
+  }
   function pruneMeta() {
     var have = {}, used = {};
-    customSkips.forEach(function (cs) { have[normLine(cs.line)] = 1; });
+    ruleList().forEach(function (r) { have[r.line] = 1; });
     Object.keys(skipMeta.member).forEach(function (k) { if (!have[k] || !groupById(skipMeta.member[k])) delete skipMeta.member[k]; });
     Object.keys(skipMeta.member).forEach(function (k) { used[skipMeta.member[k]] = 1; });
     skipMeta.groups = skipMeta.groups.filter(function (g) { return used[g.id]; });
   }
   function normalizeOrder() {                       /* each group stays together, at the place of its first rule */
-    var out = [], done = {};
-    customSkips.forEach(function (cs) {
-      var g = groupOf(cs.line);
-      if (!g) { out.push(cs); return; }
+    var list = ruleList(), out = [], done = {};
+    list.forEach(function (r) {
+      var g = groupOf(r.line);
+      if (!g) { out.push(r); return; }
       if (done[g.id]) return;
       done[g.id] = 1;
-      customSkips.forEach(function (c2) { var g2 = groupOf(c2.line); if (g2 && g2.id === g.id) out.push(c2); });
+      list.forEach(function (r2) { var g2 = groupOf(r2.line); if (g2 && g2.id === g.id) out.push(r2); });
     });
-    customSkips = out;
+    var oldC = customSkips;
+    customSkips = out.filter(function (r) { return !r.b; }).map(function (r) { return oldC[r.ci]; });
+    skipMeta.order = out.map(function (r) { return r.line; });
   }
   function fixInfo(name) {
     var rules = FIXES[name].filter(function (r) { return !blDel[r]; });
@@ -1917,40 +1963,39 @@ html.compact .sbtn { min-height: 42px; }
     for (var k in FIXES) if (FIXES[k].indexOf(rule) >= 0) return k === "scope" ? "Fix scope" : "Fix menu";
     return "";
   }
-  function ruleRow(cs, i) {
-    return '<div class="skip-item' + (cs.active ? '' : ' off') + '" data-idx="' + i + '">' +
-      '<button class="grip" type="button" data-idx="' + i + '" aria-label="Drag to move or group">' + GRIP + '</button>' +
+  function ruleRow(r) {
+    if (r.b) {
+      var on = !blOff[r.line];
+      return '<div class="skip-item builtin' + (on ? '' : ' off') + '" data-line="' + esc(r.line) + '">' +
+        '<button class="grip" type="button" aria-label="Drag to move or group">' + GRIP + '</button>' +
+        '<div class="skip-info"><span>' + esc(r.line) + '</span><small>Built-in · ' + fixOf(r.line) + (on ? '' : ' (off)') + '</small></div>' +
+        '<div class="skip-actions">' +
+          '<button class="sw bl-toggle" data-k="' + esc(r.line) + '" aria-checked="' + (on ? "true" : "false") + '"><span class="knob"></span></button>' +
+          '<button class="ib skip-del bl-del" data-k="' + esc(r.line) + '" aria-label="Delete">' + TRASH + '</button>' +
+        '</div></div>';
+    }
+    var cs = customSkips[r.ci], i = r.ci;
+    return '<div class="skip-item' + (cs.active ? '' : ' off') + '" data-idx="' + i + '" data-line="' + esc(r.line) + '">' +
+      '<button class="grip" type="button" aria-label="Drag to move or group">' + GRIP + '</button>' +
       '<button class="skip-edit" type="button" data-idx="' + i + '" aria-label="Edit rule"><span>' + esc(cs.line) + '</span>' + PENCIL + '</button>' +
       '<div class="skip-actions">' +
         '<button class="sw skip-toggle" data-idx="' + i + '" aria-checked="' + (cs.active ? "true" : "false") + '"><span class="knob"></span></button>' +
         '<button class="ib skip-del" data-idx="' + i + '" aria-label="Delete">' + TRASH + '</button>' +
       '</div></div>';
   }
+  function ruleOn(r) { return r.b ? !blOff[r.line] : customSkips[r.ci].active; }
   function renderSkipList() {
     pruneMeta();
     normalizeOrder();
-    var html = "", nDel = 0;
-    builtins.forEach(function (b) {
-      if (blDel[b]) { nDel++; return; }
-      var on = !blOff[b];
-      html += '<div class="skip-item builtin' + (on ? '' : ' off') + '">' +
-        '<div class="skip-info"><span>' + b + '</span><small>Built-in · ' + fixOf(b) + (on ? '' : ' (off)') + '</small></div>' +
-        '<div class="skip-actions">' +
-          '<button class="sw bl-toggle" data-k="' + b + '" aria-checked="' + (on ? "true" : "false") + '"><span class="knob"></span></button>' +
-          '<button class="ib skip-del bl-del" data-k="' + b + '" aria-label="Delete">' + TRASH + '</button>' +
-        '</div></div>';
-    });
-    if (nDel) html += '<button class="btn bl-restore" type="button" style="margin-top:4px">Restore deleted built-ins (' + nDel + ')</button>';
-
-    var emitted = {};
-    customSkips.forEach(function (cs, i) {
-      var g = groupOf(cs.line);
-      if (!g) { html += ruleRow(cs, i); return; }
+    var list = ruleList(), html = "", nDel = 0, emitted = {};
+    builtins.forEach(function (b) { if (blDel[b]) nDel++; });
+    list.forEach(function (r) {
+      var g = groupOf(r.line);
+      if (!g) { html += ruleRow(r); return; }
       if (emitted[g.id]) return;
       emitted[g.id] = 1;
-      var items = [];
-      customSkips.forEach(function (c2, j) { var g2 = groupOf(c2.line); if (g2 && g2.id === g.id) items.push([c2, j]); });
-      var allOn = items.every(function (x) { return x[0].active; });
+      var items = list.filter(function (r2) { var g2 = groupOf(r2.line); return g2 && g2.id === g.id; });
+      var allOn = items.every(ruleOn);
       html += '<div class="skip-group" data-gid="' + g.id + '">' +
         '<div class="sg-head" data-gid="' + g.id + '">' +
           '<button class="sg-name" type="button" data-gid="' + g.id + '" aria-label="Rename group"><span>' + esc(g.name) + '</span>' + PENCIL + '</button>' +
@@ -1958,8 +2003,9 @@ html.compact .sbtn { min-height: 42px; }
           '<button class="sw sg-toggle" data-gid="' + g.id + '" aria-checked="' + (allOn ? "true" : "false") + '"><span class="knob"></span></button>' +
           '<button class="ib sg-ungroup" data-gid="' + g.id + '" aria-label="Ungroup">' + CROSS + '</button>' +
         '</div>' +
-        '<div class="sg-body">' + items.map(function (x) { return ruleRow(x[0], x[1]); }).join("") + '</div></div>';
+        '<div class="sg-body">' + items.map(ruleRow).join("") + '</div></div>';
     });
+    if (nDel) html += '<button class="btn bl-restore" type="button" style="margin-top:4px">Restore deleted built-ins (' + nDel + ')</button>';
     if (customSkips.length === 0) html += '<p class="desc" style="text-align:center; margin-top:8px;">No custom rules added yet.</p>';
     if (skipMeta.groups.length) html += '<div class="drop-out">Drop here to take a rule out of its group</div>';
     $("skipList").innerHTML = html;
@@ -2036,6 +2082,7 @@ html.compact .sbtn { min-height: 42px; }
       delete skipMeta.member[old];
       if (gid) skipMeta.member[c] = gid;
       customSkips[i].line = c;
+      skipMeta.order = skipMeta.order.map(function (l) { return l === old ? c : l; });
       afterListChange().then(function (r) { if (r.ok) toast("Rule updated. Tap Save to apply."); });
     }
     inp.addEventListener("keydown", function (e) {
@@ -2102,10 +2149,14 @@ html.compact .sbtn { min-height: 42px; }
     var sgt = t.closest(".sg-toggle");
     if (sgt) {
       var gid2 = sgt.getAttribute("data-gid");
-      var mem = customSkips.filter(function (cs) { var g2 = groupOf(cs.line); return g2 && g2.id === gid2; });
-      var allOn = mem.every(function (cs) { return cs.active; });
-      mem.forEach(function (cs) { cs.active = !allOn; });
-      afterListChange().then(skipDone);
+      var mem = ruleList().filter(function (r) { var g2 = groupOf(r.line); return g2 && g2.id === gid2; });
+      var allOn = mem.every(ruleOn);
+      mem.forEach(function (r) {
+        if (r.b) { if (allOn) blOff[r.line] = 1; else delete blOff[r.line]; }
+        else customSkips[r.ci].active = !allOn;
+      });
+      var wb = writeBl();
+      afterListChange().then(function (r) { wb.then(function (r2) { skipDone(r.ok ? r2 : r); }); });
     }
   });
 
@@ -2124,12 +2175,12 @@ html.compact .sbtn { min-height: 42px; }
     if (out && list.contains(out)) { out.classList.add("drop-group"); drag.target = { mode: "out" }; return; }
     var head = el.closest(".sg-head");
     if (head && list.contains(head)) { head.classList.add("drop-group"); drag.target = { mode: "join", gid: head.getAttribute("data-gid") }; return; }
-    var row = el.closest(".skip-item:not(.builtin)");
+    var row = el.closest(".skip-item");
     if (!row || !list.contains(row) || row.classList.contains("dragging")) return;
     var r = row.getBoundingClientRect(), f = (y - r.top) / r.height;
     var mode = f < 0.28 ? "before" : (f > 0.72 ? "after" : "group");
     row.classList.add(mode === "before" ? "drop-before" : (mode === "after" ? "drop-after" : "drop-group"));
-    drag.target = { mode: mode, idx: +row.getAttribute("data-idx") };
+    drag.target = { mode: mode, line: row.getAttribute("data-line") };
   }
   $("skipList").addEventListener("pointerdown", function (e) {
     var g = e.target.closest ? e.target.closest(".grip") : null;
@@ -2144,7 +2195,7 @@ html.compact .sbtn { min-height: 42px; }
     document.body.appendChild(ghost);
     row.classList.add("dragging");
     $("skipList").classList.add("dragging-now");
-    drag = { idx: +row.getAttribute("data-idx"), ghost: ghost, dy: e.clientY - r.top, target: null };
+    drag = { line: row.getAttribute("data-line"), ghost: ghost, dy: e.clientY - r.top, target: null };
     try { g.setPointerCapture(e.pointerId); } catch (x) {}
   });
   document.addEventListener("pointermove", function (e) {
@@ -2164,39 +2215,38 @@ html.compact .sbtn { min-height: 42px; }
     var rows = $("skipList").querySelectorAll(".dragging");
     for (var i = 0; i < rows.length; i++) rows[i].classList.remove("dragging");
     if (!d.target) return;
-    applyDrop(d.idx, d.target);
+    applyDrop(d.line, d.target);
   }
   document.addEventListener("pointerup", dragEnd);
   document.addEventListener("pointercancel", dragEnd);
-  function applyDrop(idx, t) {
-    var moved = customSkips[idx];
-    if (!moved) return;
-    var mk = normLine(moved.line);
+  function applyDrop(mk, t) {
+    var order = ruleList().map(function (r) { return r.line; });
+    if (order.indexOf(mk) < 0) return;
+    function commit() { skipMeta.order = order; afterListChange(); }
     if (t.mode === "out") {
       delete skipMeta.member[mk];
-      customSkips.splice(idx, 1); customSkips.push(moved);
-      afterListChange();
-      return;
+      order = order.filter(function (l) { return l !== mk; }); order.push(mk);
+      commit(); return;
     }
-    if (t.mode === "join") { skipMeta.member[mk] = t.gid; afterListChange(); return; }
-    var target = customSkips[t.idx];
-    if (!target || target === moved) { renderSkipList(); return; }
-    var tk = normLine(target.line), tg = skipMeta.member[tk] || null;
+    if (t.mode === "join") { skipMeta.member[mk] = t.gid; commit(); return; }
+    var tk = t.line;
+    if (!tk || tk === mk || order.indexOf(tk) < 0) { renderSkipList(); return; }
+    var tg = skipMeta.member[tk] || null;
     if (t.mode === "group") {
-      if (tg) { skipMeta.member[mk] = tg; afterListChange(); return; }
+      if (tg) { skipMeta.member[mk] = tg; commit(); return; }
       askName("Name this group", "", function (name) {
         var id = "g" + Date.now().toString(36);
         skipMeta.groups.push({ id: id, name: name });
         skipMeta.member[tk] = id; skipMeta.member[mk] = id;
-        afterListChange();
+        commit();
       });
       return;
     }
-    customSkips.splice(idx, 1);
-    var ti = customSkips.indexOf(target);
-    customSkips.splice(t.mode === "before" ? ti : ti + 1, 0, moved);
+    order = order.filter(function (l) { return l !== mk; });
+    var ti = order.indexOf(tk);
+    order.splice(t.mode === "before" ? ti : ti + 1, 0, mk);
     if (tg) skipMeta.member[mk] = tg; else delete skipMeta.member[mk];
-    afterListChange();
+    commit();
   }
 
   /* ---------- quick fixes on Home: bound to the built-in rules ---------- */
@@ -2457,7 +2507,14 @@ html.compact .sbtn { min-height: 42px; }
   savew.addEventListener("touchmove", function (e) { if (e.target === savew) e.preventDefault(); }, { passive: false });
   var namew = $("namew"), nameOkCb = null;
   namew.addEventListener("touchmove", function (e) { if (e.target === namew) e.preventDefault(); }, { passive: false });
+  var NAME_ICONS = {
+    preset: '<svg viewBox="0 0 24 24"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4L12 3z"/><path d="M18.5 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9.9-2.1z"/></svg>',
+    group: '<svg viewBox="0 0 24 24"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.5h7.5A2.5 2.5 0 0 1 21 10v7.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5v-10z"/><path d="M8 13h8"/></svg>'
+  };
   function askName(title, init, ok) {
+    var isPre = /preset/i.test(title);
+    $("namei").innerHTML = isPre ? NAME_ICONS.preset : NAME_ICONS.group;
+    $("namein").placeholder = isPre ? "Preset name" : "Group name";
     $("namet").textContent = title;
     $("namein").value = init || "";
     nameOkCb = ok;
@@ -2772,6 +2829,8 @@ html.compact .sbtn { min-height: 42px; }
   }
   function curVec() { return PK.map(function (k) { return parseInt(cur[k], 10) || 0; }); }
   function sameVec(a, b) { for (var i = 0; i < 10; i++) if (a[i] !== b[i]) return false; return true; }
+  /* highlight follows the Look card only (look, strength, pixel size, edge blend). Display, filter and quick fixes are separate. */
+  function sameLook(a, b) { for (var i = 0; i < 6; i++) if (a[i] !== b[i]) return false; return true; }
   function vecText(v) {
     var look = v[0] ? "True Pixelated" : (v[3] ? "Flat +" + v[3] : (v[2] ? "Detail Cut +" + v[2] : (v[1] ? "Pixel Blocks " + v[1] + " px" : "Look off")));
     return look + " · " + (v[6] ? v[6] + "%" : "100%") + " · " + (v[7] ? v[7] + " fps" : "no cap");
@@ -2800,30 +2859,60 @@ html.compact .sbtn { min-height: 42px; }
     if (!n) return { err: "The code has no name." };
     return { n: n, v: v };
   }
-  function applyVec(v, name) {
+  /* Presets and the Look buttons are linked through cur (what the files hold). Exactly one preset is lit at a time:
+     the one you tapped while it still matches, otherwise the first one that matches. Any manual change lights none. */
+  var activePre = null, preBusy = "";
+  function preKey(k, n) { return k + ":" + n; }
+  function applyVec(v, name, kind) {
     var vv = normVec(v);
     if (!vv) { toast("That preset has a value out of range."); return; }
-    var map = { near: 1, bias: 0, sedge: 1 };
+    var map = { near: 1, bias: 0, sedge: 1 }, prev = {};
     PK.forEach(function (k, i) { map[k] = vv[i]; });
-    writeFiles(map).then(function (r) {
-      if (!r.ok) { toast("Could not save" + (writeFail ? " (" + writeFail + ")" : "") + ". Is the game folder present and root allowed?"); return; }
-      return refresh().then(function () { updatePend(); toast("“" + name + "” loaded. Tap Save to apply."); });
+    Object.keys(map).forEach(function (k) { prev[k] = cur[k]; });
+    activePre = { k: kind, n: name };
+    preBusy = preKey(kind, name);
+    var job = writeFiles(map);          /* cur is updated right away, the shell write runs in the background */
+    paintFromCur();                     /* so the screen follows at once: no game-folder rescan */
+    job.then(function (r) {
+      preBusy = "";
+      if (!r.ok) {
+        Object.keys(prev).forEach(function (k) { cur[k] = prev[k]; });
+        activePre = null;
+        paintFromCur();
+        toast("Could not save" + (writeFail ? " (" + writeFail + ")" : "") + ". Is the game folder present and root allowed?");
+        return;
+      }
+      renderPresets();
+      toast("“" + name + "” loaded. Tap Save to apply.");
     });
   }
   function renderPresets() {
     var cv = cur && cur.testtex !== undefined ? curVec() : null, active = "";
+    var cands = [];
+    BUILTIN_PRE.forEach(function (p, i) { cands.push({ k: "b", n: p.n, i: i, vv: normVec(p.v) }); });
+    myPre.forEach(function (p, i) { cands.push({ k: "m", n: p.n, i: i, vv: normVec(p.v) || p.v }); });
+    var chosen = null;
+    if (cv) {
+      cands.forEach(function (c) {
+        if (!sameLook(cv, c.vv)) { c.match = false; return; }
+        c.match = true;
+        if (activePre && activePre.k === c.k && activePre.n === c.n) chosen = c;
+      });
+      if (!chosen) for (var q = 0; q < cands.length; q++) if (cands[q].match) { chosen = cands[q]; break; }
+    }
+    activePre = chosen ? { k: chosen.k, n: chosen.n } : null;
+    if (chosen) active = chosen.n;
+    function isOn(c) { return chosen === c; }
     var h = "";
     BUILTIN_PRE.forEach(function (p, i) {
-      var on = cv && sameVec(cv, normVec(p.v));
-      if (on) active = p.n;
-      h += '<button type="button" class="pre' + (on ? " on" : "") + '" data-b="' + i + '"><b>' + esc(p.n) + "</b><small>" + esc(p.d) + "</small></button>";
+      var on = isOn(cands[i]), busy = on && preBusy === preKey("b", p.n);
+      h += '<button type="button" class="pre' + (on ? " on" : "") + (busy ? " busy" : "") + '" data-b="' + i + '" aria-pressed="' + (on ? "true" : "false") + '"><b>' + esc(p.n) + "</b><small>" + esc(p.d) + "</small></button>";
     });
     $("preBuilt").innerHTML = h;
     h = "";
     myPre.forEach(function (p, i) {
-      var vv = normVec(p.v) || p.v, on = cv && sameVec(cv, vv);
-      if (on && !active) active = p.n;
-      h += '<div class="prow' + (on ? " on" : "") + '"><button type="button" class="pa" data-a="' + i + '"><b>' + esc(p.n) + "</b><small>" + esc(vecText(vv)) + "</small></button>" +
+      var c = cands[BUILTIN_PRE.length + i], vv = c.vv, on = isOn(c), busy = on && preBusy === preKey("m", p.n);
+      h += '<div class="prow' + (on ? " on" : "") + (busy ? " busy" : "") + '"><button type="button" class="pa" data-a="' + i + '"><b>' + esc(p.n) + "</b><small>" + esc(vecText(vv)) + "</small></button>" +
         '<button type="button" class="ib" data-s="' + i + '" aria-label="Share code"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>' +
         '<button type="button" class="ib" data-d="' + i + '" aria-label="Delete preset">' + TRASH + "</button></div>";
     });
@@ -2836,14 +2925,14 @@ html.compact .sbtn { min-height: 42px; }
     var b = e.target.closest ? e.target.closest(".pre") : null;
     if (!b) return;
     var p = BUILTIN_PRE[+b.getAttribute("data-b")];
-    if (p) applyVec(p.v, p.n);
+    if (p) applyVec(p.v, p.n, "b");
   });
   $("preMine").addEventListener("click", function (e) {
     var t = e.target, b;
-    if ((b = t.closest(".pa"))) { var p = myPre[+b.getAttribute("data-a")]; if (p) applyVec(p.v, p.n); return; }
+    if ((b = t.closest(".pa"))) { var p = myPre[+b.getAttribute("data-a")]; if (p) applyVec(p.v, p.n, "m"); return; }
     if ((b = t.closest("[data-s]"))) { var q = myPre[+b.getAttribute("data-s")]; if (q) openCode("show", makeCode(q.n, normVec(q.v) || q.v)); return; }
     if ((b = t.closest("[data-d]"))) {
-      if (b.classList.contains("confirm")) { myPre.splice(+b.getAttribute("data-d"), 1); saveMine(); renderPresets(); toast("Preset deleted."); return; }
+      if (b.classList.contains("confirm")) { myPre.splice(+b.getAttribute("data-d"), 1); activePre = null; saveMine(); renderPresets(); toast("Preset deleted."); return; }
       b.classList.add("confirm"); toast("Tap the bin again to delete.");
       setTimeout(function () { b.classList.remove("confirm"); }, 3000);
     }
@@ -2857,6 +2946,7 @@ html.compact .sbtn { min-height: 42px; }
       if (!name) { toast("Enter a name."); return; }
       myPre = myPre.filter(function (x) { return x.n !== name; });
       myPre.unshift({ n: name, v: v });
+      activePre = { k: "m", n: name };
       saveMine(); renderPresets();
       toast("Preset “" + name + "” saved.");
     });
