@@ -49,7 +49,7 @@ int main(){
 
   /* st_set recovers from an unwritable .tmp (only meaningful as a normal user) */
   if (geteuid() != 0) {
-    unlink(STATF ".tmp"); FILE *t = fopen(STATF ".tmp", "w"); if (t) fclose(t); chmod(STATF ".tmp", 0444);
+    std::string tp = std::string(STATF) + ".tmp"; unlink(tp.c_str()); FILE *t = fopen(tp.c_str(), "w"); if (t) fclose(t); chmod(tp.c_str(), 0444);
     st_set("probe", "1"); CHECK(rd(STATF).find("probe=1") != std::string::npos);
   }
   printf(fails?"TESTS FAILED %d\n":"ALL TESTS PASSED\n",fails); return fails!=0;
