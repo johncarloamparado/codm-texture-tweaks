@@ -863,6 +863,16 @@ html.compact .sbtn { min-height: 42px; }
     </section>
 
     <section class="card">
+      <div class="ch"><h2>Renderer</h2></div>
+      <p class="cap">Every effect here only works on OpenGL ES. With this on, CODM cannot use Vulkan and starts on OpenGL ES instead. Takes effect the next time CODM starts. This does not add Vulkan support.</p>
+      <button class="sw" id="forcegl" role="switch" aria-checked="true" type="button">
+        <span><span class="t">Force OpenGL ES</span><span class="d">Hides Vulkan from the game's renderer only</span></span>
+        <span class="knob"></span>
+      </button>
+      <p class="pnote" id="glNote"></p>
+    </section>
+
+    <section class="card">
       <div class="ch"><h2>Logging</h2></div>
       <p class="cap">Writes codm_tex.log so freezes can be examined later.</p>
       <button class="sw" id="fz" role="switch" aria-checked="true" type="button">
@@ -1104,7 +1114,7 @@ html.compact .sbtn { min-height: 42px; }
   /* values written by "Reset defaults" */
   var REC = {
     blk: 0, bias: 0, near: 1, scale: 0, fps: 0,
-    fz: 1, th: 1, core: 1, mode: 4,
+    fz: 1, th: 1, core: 1, mode: 4, forcegl: 1,
     minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 1, ttsize: 0, ttsm: 0, hookdelay: 0
   };
   /* "Back to normal CODM": every effect off (logging, mode and skip lists are left alone) */
@@ -1114,7 +1124,7 @@ html.compact .sbtn { min-height: 42px; }
   };
   /* what a missing settings file counts as (mirrors how the page reads it) */
   var FALLBACK = {
-    blk: 0, bias: 0, near: 1, scale: 0, fps: 0, fz: 1, th: 1, core: 1, mode: 4,
+    blk: 0, bias: 0, near: 1, scale: 0, fps: 0, fz: 1, th: 1, core: 1, mode: 4, forcegl: 1,
     minsz: 64, delay: 0, style: 0, sedge: 1, flat: 0, testtex: 1, ttsize: 0, ttsm: 0, hookdelay: 0
   };
   var modeFixTried = false, autoLeft = 3, autoT = 0;
@@ -1122,11 +1132,11 @@ html.compact .sbtn { min-height: 42px; }
   var demo = (typeof ksu === "undefined");
   var fake = {
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
-    fz: "1", th: "1", core: "1", mode: "4",
+    fz: "1", th: "1", core: "1", mode: "4", forcegl: "1",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0",
-    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", ver: "v0.40",
-    st: "ver=v0.40|stage=gfx|hook=committed|gfx=gles|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
-    startline: "=== start v0.40 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 builtin=5 ===",
+    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", ver: "v0.41",
+    st: "ver=v0.41|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
+    startline: "=== start v0.41 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
     ftall: "FT fps=57.1 avg=17.5ms p50=16.9 p99=36.2 max=48.0 >33ms=2 >50ms=0 n=285 cap=0 bias=0 scale=100 t=60.0 fz=0\nFT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=65.0 fz=1\nFT fps=58.4 avg=17.1ms p50=16.8 p99=30.2 max=41.0 >33ms=1 >50ms=0 n=292 cap=0 bias=0 scale=100 t=70.0 fz=0\nFT fps=56.0 avg=17.9ms p50=17.2 p99=38.9 max=52.0 >33ms=2 >50ms=1 n=280 cap=0 bias=0 scale=100 t=75.0 fz=0",
     ftn: "4",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
@@ -1158,7 +1168,7 @@ html.compact .sbtn { min-height: 42px; }
      cur  = what the settings files hold right now
      base = what they held when the page opened or at the last Save */
   var KEYS = ["bias", "scale", "fps", "fz", "th", "core", "near", "blk", "minsz", "delay",
-              "style", "sedge", "flat", "testtex", "ttsize", "ttsm", "mode", "hookdelay"];
+              "style", "sedge", "flat", "testtex", "ttsize", "ttsm", "mode", "hookdelay", "forcegl"];
   var cur = {}, base = null, baseSkipLines = [], baseBlOff = {}, baseBlDel = {};
   function nl(lines) { return lines.slice().sort().join("\n"); }
   function nk(o) { return Object.keys(o).sort().join("|"); }
@@ -1263,7 +1273,7 @@ html.compact .sbtn { min-height: 42px; }
     var cmd =
       "D=" + D + "; " + ZYG_SCRIPT +
       "[ -d $D ] || { echo NODIR; exit 0; }; " +
-      "for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay hooksafe; do " +
+      "for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay hooksafe forcegl; do " +
       "  if [ -f $D/$f.txt ]; then printf '%s=' $f; cat $D/$f.txt; else printf '%s=\\n' $f; fi; " +
       "done; " +
       "echo -n 'skip='; [ -f $D/skip.txt ] && cat $D/skip.txt | tr '\\n' '|' || true; echo; " +
@@ -1693,7 +1703,9 @@ html.compact .sbtn { min-height: 42px; }
     /* Texture looks only work with OpenGL ES. If the last session logged no GL activity, say so. */
     var glN = parseInt(s.gl, 10), vkN = parseInt(s.vk, 10) || 0, sbgN = parseInt(s.sbg, 10) || 0;
     if (!demo && glN === 0 && (vkN > 0 || sbgN >= 2)) {
-      banner("warn", vkN > 0
+      banner("warn", s.forcegl !== "0" && vkN === 0
+        ? "Force OpenGL ES is on, but no OpenGL activity was seen in the last game. Close CODM fully and open it again after saving. If this stays, use Tools → Export report."
+        : vkN > 0
         ? "CODM appears to be using Vulkan on this phone. Texture looks only work with OpenGL ES, so they cannot change anything here. To find out why, go to Tools → Export report and send it."
         : "No OpenGL activity was seen in the last game. If you played a full match, your phone is probably using Vulkan and texture looks will not apply. Use Tools → Export report if you want it checked.");
     }
@@ -1756,6 +1768,8 @@ html.compact .sbtn { min-height: 42px; }
     setSw("fz", s.fz !== "0");
     setSw("th", s.th !== "0");
     setSw("core", s.core !== "0");
+    setSw("forcegl", s.forcegl !== "0");
+    paintGlNote(s);
     updateLogDeps();
 
     var hk = parseInt(s.hookdelay, 10) || 0, hi = 0;
@@ -2356,7 +2370,7 @@ html.compact .sbtn { min-height: 42px; }
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.40'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.41'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -2369,11 +2383,11 @@ html.compact .sbtn { min-height: 42px; }
       ZYG_SCRIPT +
       "echo \"injection_breadcrumb_in_logcat=$(timeout 5 logcat -d -s codm_tex 2>/dev/null | grep -c postAppSpecialize)\"; " +
       "ls -ln $D/codm_tex.status 2>&1 | head -n 1; " +
-      "if [ -f $D/codm_tex.status ]; then for k in ver stage dir dir_writable hooksafe safe_why live live_fps abi lib hook gfx cand skip_rule skip_minsz skip_delay applied why0 cfg_bad cfg_missing injected started updated nl_hook adle_first first_cws first_sbg chain_foreign maps_nonsys maps_anon_exec; do echo \"status.$k=$(sed -n 's/^'$k'=//p' $D/codm_tex.status)\"; done; else echo 'status file: none (module has not run in CODM since install/update)'; fi; " +
+      "if [ -f $D/codm_tex.status ]; then for k in ver stage dir dir_writable hooksafe safe_why live live_fps abi lib hook gfx forcegl vk_blocked cand skip_rule skip_minsz skip_delay applied why0 cfg_bad cfg_missing injected started updated nl_hook adle_first first_cws first_sbg chain_foreign maps_nonsys maps_anon_exec; do echo \"status.$k=$(sed -n 's/^'$k'=//p' $D/codm_tex.status)\"; done; else echo 'status file: none (module has not run in CODM since install/update)'; fi; " +
       "echo \"settings_files_owned_by_game=$(ls -ln $D/*.txt 2>/dev/null | awk '$3!=0' | wc -l) (0 = only root wrote them: the game process never created or repaired any)\"; " +
       "echo '== game dir'; ls -ldZ /data/data/$P /data/data/$P/files 2>&1; ls -ldZ /data/user/*/$P 2>&1; " +
       "echo '== settings folder'; echo \"$D\"; ls -la $D 2>&1 | grep -v -i -E 'login|token|jwt|ticket|passwd|account' | head -n 60; " +
-      "echo '== settings'; for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay hooksafe; do echo \"$f=$(cat $D/$f.txt 2>/dev/null)\"; done; " +
+      "echo '== settings'; for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm mode hookdelay hooksafe forcegl; do echo \"$f=$(cat $D/$f.txt 2>/dev/null)\"; done; " +
       "for f in skip bltoff bltdel; do echo \"-- $f.txt\"; cat $D/$f.txt 2>/dev/null; done; " +
       "echo '== modules'; for m in /data/adb/modules/*; do [ -d \"$m\" ] || continue; if [ -f \"$m/disable\" ]; then s=disabled; else s=on; fi; echo \"${m##*/} ($s) $(sed -n 's/^version=//p' $m/module.prop 2>/dev/null | head -n 1)\"; done; " +
       "echo '== log'; if [ -f $L ]; then echo \"size=$(wc -c < $L) lines=$(wc -l < $L)\"; grep '^=== start' $L | tail -n 3; grep -E '^(GFX|HOOK|GLINFO)' $L | tail -n 8; echo '-- last 40 lines'; tail -n 40 $L; else echo 'no log'; fi; " +
@@ -2482,6 +2496,29 @@ html.compact .sbtn { min-height: 42px; }
       m[k] = on ? 1 : 0;
       save(m, k === "fz" ? "Freeze log" : (k === "th" ? "Thread log" : "Core log"));
     });
+  });
+
+  /* Force OpenGL ES (v0.41): small status line under the switch */
+  var glSt = "";
+  function paintGlNote(s) {
+    var el = $("glNote");
+    if (!el) return;
+    glSt = s.st;
+    var stg = parseSt(s.st) || {}, on = s.forcegl !== "0", g = stg.gfx || "", t = "";
+    if (!on) t = g === "vulkan" ? "Off. The last game ran on Vulkan, so texture looks did not apply."
+                                : "Off. CODM may choose Vulkan on its own.";
+    else if (g === "gles_forced") t = "On. In the last game, Vulkan was refused and CODM ran on OpenGL ES.";
+    else if (g === "gles") t = "On. The last game ran on OpenGL ES.";
+    else if (g === "vulkan") t = "On, but the last game still used Vulkan. Use Tools → Export report.";
+    else t = "On. It applies the next time CODM starts.";
+    el.textContent = t;
+  }
+
+  $("forcegl").addEventListener("click", function () {
+    var on = !getSw("forcegl");
+    setSw("forcegl", on);
+    paintGlNote({ forcegl: on ? "1" : "0", st: glSt });
+    save({ forcegl: on ? 1 : 0 }, "Force OpenGL ES");
   });
 
   function cancelChanges() {
