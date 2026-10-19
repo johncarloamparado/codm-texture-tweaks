@@ -14,3 +14,7 @@ target_include_directories(codm_tex PRIVATE
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/LSPlt/lsplt/src/main/jni/include)
 target_link_libraries(codm_tex lsplt_static log android)
+
+# v0.40: 16 KB page-size phones (Android 15+) need segments aligned to 16 KB. NDK r28+ does this by default; older
+# NDKs on the runner need the flag. Harmless on r28+.
+target_link_options(codm_tex PRIVATE -Wl,-z,max-page-size=16384)

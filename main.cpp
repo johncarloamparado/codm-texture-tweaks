@@ -47,33 +47,58 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.39"
+#define VERSION "v0.40"
 #define PKG "com.garena.game.codm"
-#define DIR "/data/data/" PKG "/files/"
-#define LOGF DIR "codm_tex.log"
-#define CFGF DIR "bias.txt"
-#define FPSF DIR "fps.txt"
-#define SCLF DIR "scale.txt"
-#define MODEF DIR "mode.txt"
-#define FZF DIR "fz.txt"
-#define THF DIR "th.txt"
-#define COREF DIR "core.txt"
-#define NEARF DIR "near.txt"
-#define BLKF DIR "blk.txt"
-#define MINF DIR "minsz.txt"
-#define DLYF DIR "delay.txt"
-#define SKIPF DIR "skip.txt"
-#define BLOFFF DIR "bltoff.txt"
-#define STYF DIR "style.txt"
-#define SEDF DIR "sedge.txt"
-#define FLATF DIR "flat.txt"
-#define TTEXF DIR "testtex.txt"
-#define TTSZF DIR "ttsize.txt"
-#define TTSMF DIR "ttsm.txt"
-#define HDLYF DIR "hookdelay.txt"
-#define STATF DIR "codm_tex.status"   /* small key=value file the WebUI reads: how far the module got (written by the game process) */
-#define FULLF DIR "fullsize.txt"      /* largest landscape window size ever seen (so a window shrunk by something else is never taken as "native") */
-#define SCRASHF DIR "scale_crash.txt"   /* marker: written before render scale is applied, cleared after 120 good frames */
+/* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
+   under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
+#define DEFAULT_DIR "/data/data/" PKG "/files/"
+static char g_dir[320] = DEFAULT_DIR;
+static char g_app_dir[256] = "";            /* app_data_dir given by Zygisk in preAppSpecialize (without trailing slash) */
+static const char *P(const char *name) {    /* ring of buffers so rename(P(a), P(b)) is safe */
+    static thread_local char buf[8][400];
+    static thread_local unsigned idx = 0;
+    char *b = buf[idx++ & 7];
+    snprintf(b, 400, "%s%s", g_dir, name);
+    return b;
+}
+static void set_dir(const char *app_data_dir) {
+    if (app_data_dir && app_data_dir[0] == '/' && strlen(app_data_dir) < 240) {
+        char cand[320];
+        size_t n = strlen(app_data_dir);
+        while (n > 1 && app_data_dir[n - 1] == '/') n--;
+        snprintf(cand, sizeof cand, "%.*s/files/", (int)n, app_data_dir);
+        if (access(cand, W_OK) == 0) { snprintf(g_dir, sizeof g_dir, "%s", cand); return; }
+        if (access(DEFAULT_DIR, W_OK) == 0) { snprintf(g_dir, sizeof g_dir, "%s", DEFAULT_DIR); return; }
+        snprintf(g_dir, sizeof g_dir, "%s", cand);      /* neither is writable: report the one the game really owns */
+        return;
+    }
+    snprintf(g_dir, sizeof g_dir, "%s", DEFAULT_DIR);
+}
+#define LOGF P("codm_tex.log")
+#define CFGF P("bias.txt")
+#define FPSF P("fps.txt")
+#define SCLF P("scale.txt")
+#define MODEF P("mode.txt")
+#define FZF P("fz.txt")
+#define THF P("th.txt")
+#define COREF P("core.txt")
+#define NEARF P("near.txt")
+#define BLKF P("blk.txt")
+#define MINF P("minsz.txt")
+#define DLYF P("delay.txt")
+#define SKIPF P("skip.txt")
+#define BLOFFF P("bltoff.txt")
+#define STYF P("style.txt")
+#define SEDF P("sedge.txt")
+#define FLATF P("flat.txt")
+#define TTEXF P("testtex.txt")
+#define TTSZF P("ttsize.txt")
+#define TTSMF P("ttsm.txt")
+#define HDLYF P("hookdelay.txt")
+#define HSAFEF P("hooksafe.txt")      /* v0.40: 1 = hooks skipped (the previous launch died while hooking); the WebUI resets it to 0 */
+#define STATF P("codm_tex.status")   /* small key=value file the WebUI reads: how far the module got (written by the game process) */
+#define FULLF P("fullsize.txt")      /* largest landscape window size ever seen (so a window shrunk by something else is never taken as "native") */
+#define SCRASHF P("scale_crash.txt")   /* marker: written before render scale is applied, cleared after 120 good frames */
 
 static std::mutex mu;
 static FILE *lf = nullptr;
@@ -113,8 +138,9 @@ static void st_set(const char *k, const std::string &v) {
     std::lock_guard<std::mutex> g(st_mu);
     st_kv[k] = v;
     st_kv["updated"] = std::to_string((long long)time(nullptr));
-    FILE *f = fopen(STATF ".tmp", "w");
-    if (!f) { unlink(STATF ".tmp"); f = fopen(STATF ".tmp", "w"); }   /* leftover root-owned .tmp: the folder is the game's, replace it */
+    const std::string tmp = std::string(STATF) + ".tmp";
+    FILE *f = fopen(tmp.c_str(), "w");
+    if (!f) { unlink(tmp.c_str()); f = fopen(tmp.c_str(), "w"); }   /* leftover root-owned .tmp: the folder is the game's, replace it */
     if (!f) {
         static std::atomic<int> warned{0};
         if (!warned.exchange(1)) __android_log_print(ANDROID_LOG_WARN, "codm_tex", "%s status file not writable errno=%d", VERSION, errno);
@@ -122,8 +148,8 @@ static void st_set(const char *k, const std::string &v) {
     }
     for (auto &kv : st_kv) fprintf(f, "%s=%s\n", kv.first.c_str(), kv.second.c_str());
     fclose(f);
-    chmod(STATF ".tmp", 0666);
-    rename(STATF ".tmp", STATF);
+    chmod(tmp.c_str(), 0666);
+    rename(tmp.c_str(), STATF);
 }
 static void st_seti(const char *k, long long v) { st_set(k, std::to_string(v)); }
 
@@ -888,6 +914,32 @@ static void log_gl_info() {
 }
 
 static void mark_scale_progress(int frames);
+/* v0.40 live FPS cap: fps.txt is looked at about once per second on the render thread (a stat() call), and
+   a changed file is read again, so the WebUI can change the cap while the game is running. */
+static void live_fps_poll(int64_t t) {
+    static int64_t next = 0;
+    static dev_t last_dev = 0; static ino_t last_ino = 0; static int64_t last_mt = -1; static off_t last_sz = -1;
+    if (t < next) return;
+    next = t + 1000000000LL;
+    struct stat sb;
+    if (stat(FPSF, &sb) != 0) return;
+    int64_t mt = (int64_t)sb.st_mtim.tv_sec * 1000000000LL + sb.st_mtim.tv_nsec;
+    if (last_mt < 0) { last_dev = sb.st_dev; last_ino = sb.st_ino; last_mt = mt; last_sz = sb.st_size; return; }   /* first look: the value was read at launch */
+    if (mt == last_mt && sb.st_ino == last_ino && sb.st_dev == last_dev && sb.st_size == last_sz) return;
+    last_dev = sb.st_dev; last_ino = sb.st_ino; last_mt = mt; last_sz = sb.st_size;
+    int v = -1;
+    FILE *f = fopen(FPSF, "r");
+    if (!f) return;
+    if (fscanf(f, "%d", &v) != 1) v = -1;
+    fclose(f);
+    if (v < 0) return;                                  /* half-written or garbage: keep the current cap */
+    int nv = (v >= 20 && v <= 120) ? v : 0;
+    if (nv != g_fps.load()) {
+        L("LIVEFPS cap %d -> %d (fps.txt changed while the game runs)\n", g_fps.load(), nv);
+        g_fps = nv;
+    }
+    st_seti("live_fps", nv);
+}
 static EGLBoolean (*o_swap)(EGLDisplay, EGLSurface) = nullptr;
 static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     int64_t t_pre = now_ns();
@@ -922,6 +974,7 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     if (frame_no == 30) log_gl_info();
 
     /* FPS cap: sleep the remaining time so frame intervals stay even */
+    live_fps_poll(t);
     int cap = g_fps.load();
     if (cap > 0) {
         int64_t iv = 1000000000LL / cap;
@@ -1213,11 +1266,11 @@ static void log_rotate_if_new_version() {
    creates them as before. */
 struct CfgKey { const char *name; const char *path; int def; bool optional; };
 static const CfgKey CFG_KEYS[] = {
-    {"bias", CFGF, 0, false}, {"fps", FPSF, 0, false}, {"scale", SCLF, 0, false}, {"fz", FZF, 1, false},
-    {"th", THF, 1, false}, {"core", COREF, 1, false}, {"near", NEARF, 1, false}, {"blk", BLKF, 0, false},
-    {"minsz", MINF, 64, false}, {"delay", DLYF, 0, false}, {"style", STYF, 0, false}, {"sedge", SEDF, 1, false},
-    {"flat", FLATF, 0, false}, {"testtex", TTEXF, 1, false}, {"ttsize", TTSZF, 0, false}, {"ttsm", TTSMF, 0, false},
-    {"hookdelay", HDLYF, 0, true},
+    {"bias", "bias.txt", 0, false}, {"fps", "fps.txt", 0, false}, {"scale", "scale.txt", 0, false}, {"fz", "fz.txt", 1, false},
+    {"th", "th.txt", 1, false}, {"core", "core.txt", 1, false}, {"near", "near.txt", 1, false}, {"blk", "blk.txt", 0, false},
+    {"minsz", "minsz.txt", 64, false}, {"delay", "delay.txt", 0, false}, {"style", "style.txt", 0, false}, {"sedge", "sedge.txt", 1, false},
+    {"flat", "flat.txt", 0, false}, {"testtex", "testtex.txt", 1, false}, {"ttsize", "ttsize.txt", 0, false}, {"ttsm", "ttsm.txt", 0, false},
+    {"hookdelay", "hookdelay.txt", 0, true},
 };
 static int g_scale_safety = 0;   /* >0 = render scale was switched off at this launch; value = the percent that was active */
 static std::string g_cfg_note;   /* "" = no broken settings file; else e.g. "delay=empty,scale=invalid" */
@@ -1237,9 +1290,10 @@ static void write_int_atomic(const char *path, int v) {
 static void cfg_audit() {
     g_cfg_note.clear(); g_cfg_missing = 0;
     for (const CfgKey &k : CFG_KEYS) {
-        FILE *f = fopen(k.path, "r");
+        const char *kp = P(k.path);
+        FILE *f = fopen(kp, "r");
         if (!f) {
-            if (!k.optional && access(k.path, F_OK) != 0) g_cfg_missing++;   /* normal on a fresh install; load_cfg() creates it */
+            if (!k.optional && access(kp, F_OK) != 0) g_cfg_missing++;   /* normal on a fresh install; load_cfg() creates it */
             continue;
         }
         char buf[32]; size_t n = fread(buf, 1, sizeof buf - 1, f); fclose(f);
@@ -1251,7 +1305,7 @@ static void cfg_audit() {
         if (why) {
             if (!g_cfg_note.empty()) g_cfg_note += ",";
             g_cfg_note += std::string(k.name) + "=" + why;
-            write_int_atomic(k.path, k.def);
+            write_int_atomic(kp, k.def);
         }
     }
 }
@@ -1655,10 +1709,40 @@ static void log_start(int mode) {
       VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), g_ttsize.load(), g_ttsm.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
     st_set("ver", VERSION); st_seti("pid", (long long)getpid()); st_set("abi", abi); st_set("stage", "started");
     st_seti("started", (long long)time(nullptr));
+    st_seti("live_fps", g_fps.load()); st_set("dir", g_dir); st_set("live", "1");
     st_set("scale_safety", g_scale_safety > 0 ? "forced_off_prev_" + std::to_string(g_scale_safety) : "no");
     st_set("cfg_bad", g_cfg_note.empty() ? "none" : g_cfg_note); st_seti("cfg_missing", g_cfg_missing);
     if (!g_cfg_note.empty()) L("CFG invalid or missing settings were replaced by defaults: %s\n", g_cfg_note.c_str());
     if (g_delay.load() > 0) L("NOTE delay=%d: textures created in the first %d s are modified once the delay is over (v0.38 revisits them)\n", g_delay.load(), g_delay.load());
+}
+
+/* ---------- Crash-in-hook breaker (v0.40) ----------
+   The status file is rewritten at every stage. If the previous launch left "hooking" / "nl_hooking" behind, the game
+   died inside CommitHook. Hooks are then skipped (hooksafe.txt=1) so the game starts clean; the WebUI shows a banner
+   and a "Retry hooks" button that writes hooksafe.txt=0. */
+static int g_safe = 0;
+static std::string g_safe_why = "no";
+static std::string read_status_key(const char *key) {
+    FILE *f = fopen(STATF, "r");
+    if (!f) return "";
+    char line[256]; std::string out; size_t kl = strlen(key);
+    while (fgets(line, sizeof line, f)) {
+        if (strncmp(line, key, kl) == 0 && line[kl] == '=') { out = line + kl + 1; while (!out.empty() && (out.back() == '\n' || out.back() == '\r')) out.pop_back(); break; }
+    }
+    fclose(f);
+    return out;
+}
+static void decide_safe(const std::string &prev_stage) {
+    g_safe = 0; g_safe_why = "no";
+    int v = 0;
+    if (FILE *f = fopen(HSAFEF, "r")) { if (fscanf(f, "%d", &v) != 1) v = 0; fclose(f); }
+    if (v == 1) { g_safe = 1; g_safe_why = "hooksafe_file"; }
+    else if (prev_stage == "hooking" || prev_stage == "nl_hooking") {
+        g_safe = 1; g_safe_why = "crash_in_" + prev_stage;
+        write_int_atomic(HSAFEF, 1);
+    }
+    st_seti("hooksafe", g_safe); st_set("safe_why", g_safe_why);
+    if (g_safe) { st_set("stage", "safe_mode"); __android_log_print(ANDROID_LOG_WARN, "codm_tex", "%s safe mode: hooks skipped (%s)", VERSION, g_safe_why.c_str()); }
 }
 
 static void run(int mode) {
@@ -1666,6 +1750,7 @@ static void run(int mode) {
     std::set<std::pair<dev_t, ino_t>> done;
     std::map<std::pair<dev_t, ino_t>, int64_t> first;   /* when libunity was first seen */
     log_start(mode);
+    if (g_safe) { L("SAFE MODE: hooks skipped (%s). Press Retry hooks in the WebUI to try again.\n", g_safe_why.c_str()); st_set("stage", "safe_mode"); return; }
     int hd = read_hookdelay();
     int64_t settle_ns = (int64_t)std::max(3, hd) * 1000000000LL;   /* wait this long after libunity appears */
     if (mode >= 3) L("HOOK late: %d s after libunity appears\n", std::max(3, hd));
@@ -1708,9 +1793,15 @@ public:
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override {
         const char *n = env->GetStringUTFChars(args->nice_name, nullptr);
         target = n && strcmp(n, PKG) == 0;
+        g_app_dir[0] = 0;
         if (!target && args->app_data_dir) {          /* clones / secondary users may use another process name */
             const char *d = env->GetStringUTFChars(args->app_data_dir, nullptr);
             if (d && strstr(d, PKG)) target = true;
+            if (d) env->ReleaseStringUTFChars(args->app_data_dir, d);
+        }
+        if (target && args->app_data_dir) {               /* v0.40: remember where this copy of the game keeps its data */
+            const char *d = env->GetStringUTFChars(args->app_data_dir, nullptr);
+            if (d && strlen(d) < sizeof g_app_dir) snprintf(g_app_dir, sizeof g_app_dir, "%s", d);
             if (d) env->ReleaseStringUTFChars(args->app_data_dir, d);
         }
         /* Breadcrumb in logcat (tag codm_tex) for the game and anything that looks like it, so a
@@ -1724,12 +1815,17 @@ public:
         if (!target) return;
         /* First thing the game process does: leave proof in logcat and in the status file, before any
            other settings / log work, so "module never loaded" can be told apart from "loaded, no log". */
-        int dir_ok = access(DIR, W_OK) == 0;
+        set_dir(g_app_dir[0] ? g_app_dir : nullptr);
+        std::string prev_stage = read_status_key("stage");      /* BEFORE the first st_set below overwrites the file */
+        int dir_ok = access(g_dir, W_OK) == 0;
         __android_log_print(ANDROID_LOG_INFO, "codm_tex", "%s postAppSpecialize target pid=%d dir_writable=%d", VERSION, (int)getpid(), dir_ok);
         st_set("ver", VERSION); st_seti("pid", (long long)getpid()); st_set("stage", "injected");
-        st_seti("injected", (long long)time(nullptr)); st_set("dir_writable", dir_ok ? "yes" : "no");
+        st_seti("injected", (long long)time(nullptr)); st_set("dir_writable", dir_ok ? "yes" : "no"); st_set("dir", g_dir);
+        st_set("live", "1");
+        decide_safe(prev_stage);
         int mode = read_mode();
         if (mode == 4) {
+            if (g_safe) { load_cfg(); log_start(4); L("SAFE MODE: hooks skipped (%s). Press Retry hooks in the WebUI to try again.\n", g_safe_why.c_str()); st_set("stage", "safe_mode"); return; }
             if (read_hookdelay() > 0) { std::thread(run, 3).detach(); return; }   /* late hooking: run() logs its own start line */
             load_cfg();
             log_start(4);

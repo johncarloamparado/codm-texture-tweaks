@@ -4,6 +4,17 @@ SKIPUNZIP=0
 ui_print "- CODM Blocky Textures"
 ui_print "- Contributors: zynn, Shari"
 ui_print "- Needs Zygisk (Magisk: Settings > Zygisk ON, or ZygiskNext on KernelSU/APatch)"
+# v0.40: there is no x86 / x86_64 library. Stop here instead of installing a module that never loads.
+case "$ARCH" in
+  x86|x64|x86_64)
+    abort "! x86 / x86_64 devices are not supported (this device: $ARCH). The module only ships arm64-v8a and armeabi-v7a libraries."
+    ;;
+esac
+case "$(getprop ro.product.cpu.abi)" in
+  x86|x86_64)
+    abort "! x86 / x86_64 devices are not supported (abi: $(getprop ro.product.cpu.abi)). The module only ships arm64-v8a and armeabi-v7a libraries."
+    ;;
+esac
 # $ARCH comes from ro.product.cpu.abi, which other modules can spoof and which says "arm" on a 32-bit Android
 # running on a 64-bit CPU. So look at what the phone can really run before deciding.
 ABILIST64="$(getprop ro.product.cpu.abilist64)"
