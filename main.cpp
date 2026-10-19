@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.40"
+#define VERSION "v0.41"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -95,6 +95,7 @@ static void set_dir(const char *app_data_dir) {
 #define TTSZF P("ttsize.txt")
 #define TTSMF P("ttsm.txt")
 #define HDLYF P("hookdelay.txt")
+#define FGLF P("forcegl.txt")       /* v0.41: 1 = force OpenGL ES: Vulkan is hidden from libunity so Unity falls back to GLES (default 1) */
 #define HSAFEF P("hooksafe.txt")      /* v0.40: 1 = hooks skipped (the previous launch died while hooking); the WebUI resets it to 0 */
 #define STATF P("codm_tex.status")   /* small key=value file the WebUI reads: how far the module got (written by the game process) */
 #define FULLF P("fullsize.txt")      /* largest landscape window size ever seen (so a window shrunk by something else is never taken as "native") */
@@ -257,6 +258,8 @@ static std::atomic<int> g_sedge{1};
 static std::atomic<int> g_flat{0};
 static std::atomic<int> g_ttsize{0};   /* ttsize.txt: -2 = base level only (shimmers) | -1 = mips capped at level 3 | 0 = normal | 1-3 = coarser pixels (2x, 4x, 8x) */
 static std::atomic<int> g_ttsm{0};     /* ttsm.txt: 0 = sharp | 1 = soft blend between mip levels */
+static std::atomic<int> g_forcegl{1};  /* v0.41: forcegl.txt 1 = hide Vulkan from libunity (every effect here needs OpenGL ES) */
+static std::atomic<int> g_vk_blocked{0}; /* how many Vulkan loads / lookups were refused */
 static std::atomic<int> g_testtex{1};  /* testtex.txt: 0 = off | 1 = True Pixelated (NEAREST sampling, full mip chain) */
 #define TEX_MIN_LOD 0x813A
 #define TEX_MAX_LEVEL 0x813D
@@ -967,7 +970,7 @@ static EGLBoolean h_swap(EGLDisplay d, EGLSurface s) {
     if (g_t0.load() == 0) g_t0 = t;
     frame_no++;
     revisit_pending();
-    if (frame_no == 1) { L("GFX api=gles (eglSwapBuffers seen)\n"); st_set("gfx", "gles"); st_set("stage", "gfx"); }
+    if (frame_no == 1) { L("GFX api=gles (eglSwapBuffers seen)\n"); st_set("gfx", (g_forcegl.load() && g_vk_blocked.load()) ? "gles_forced" : "gles"); st_set("stage", "gfx"); }
     if (frame_no == 20 && g_scale_marked.load()) mark_scale_progress(20);
     if (frame_no == 120 && g_scale_marked.load()) { unlink(SCRASHF); L("scale ok: crash marker cleared after 120 frames\n"); }
     if (frame_no == 120) maps_report("frame120");
@@ -1184,6 +1187,14 @@ static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
 
 static void *wrap(const char *n, void *r) {
     if (!n || !r) return r;
+    if (n[0] == 'v' && n[1] == 'k' && n[2] >= 'A' && n[2] <= 'Z' && g_forcegl.load()) {
+        /* v0.41 Force OpenGL ES: libunity must not find any Vulkan entry point, so Unity cannot create a
+           Vulkan device and falls back to its next graphics API (GLES). Idea and method: the contributors' v0.39.1. */
+        int c = ++g_vk_blocked;
+        if (c == 1) { st_set("gfx", "gles_forced"); L("FORCEGL blocked Vulkan symbol %s (Unity should fall back to OpenGL ES)\n", n); }
+        st_seti("vk_blocked", c);
+        return nullptr;
+    }
     if (n[0] == 'v' && n[1] == 'k') {          /* Vulkan entry point requested by libunity */
         static std::atomic<int> vk_once{0};
         if (!vk_once.exchange(1)) {
@@ -1235,6 +1246,35 @@ static void *h_egl(const char *n) {
     return wrap(n, r);
 }
 
+/* ---------- Force OpenGL ES (v0.41) ----------
+   Unity tries Vulkan first when the game lists it, and only falls back to GLES when the Vulkan loader or
+   device creation fails. With forcegl.txt=1, libunity is told that libvulkan does not exist: dlopen of it
+   fails here, and every vk* symbol lookup (dlsym / eglGetProcAddress, see wrap()) returns null. Only
+   libunity's own imports are changed; the rest of the system keeps using Vulkan normally.
+   This is NOT Vulkan support: no texture hooks are installed for Vulkan. */
+static bool is_vulkan_lib(const char *path) {
+    if (!path) return false;
+    const char *b = strrchr(path, '/');
+    b = b ? b + 1 : path;
+    return strncmp(b, "libvulkan", 9) == 0;      /* libvulkan.so, libvulkan_*.so, libvulkan.adreno.so ... */
+}
+static void forcegl_note(const char *path) {
+    int c = ++g_vk_blocked;
+    st_seti("vk_blocked", c);
+    static std::atomic<int> once{0};
+    if (!once.exchange(1)) { st_set("gfx", "gles_forced"); L("FORCEGL refused to load %s for libunity (Unity should fall back to OpenGL ES)\n", path); }
+}
+static void *(*o_dlopen_u)(const char *, int) = nullptr;
+static void *h_dlopen_u(const char *path, int flags) {
+    if (g_forcegl.load() && is_vulkan_lib(path)) { forcegl_note(path); return nullptr; }
+    return (o_dlopen_u && o_dlopen_u != h_dlopen_u) ? o_dlopen_u(path, flags) : dlopen(path, flags);
+}
+static void *(*o_adle_u)(const char *, int, const android_dlextinfo *) = nullptr;
+static void *h_adle_u(const char *path, int flags, const android_dlextinfo *info) {
+    if (g_forcegl.load() && is_vulkan_lib(path)) { forcegl_note(path); return nullptr; }
+    return (o_adle_u && o_adle_u != h_adle_u) ? o_adle_u(path, flags, info) : android_dlopen_ext(path, flags, info);
+}
+
 /* New module version -> start a fresh log, so the top of codm_tex.log is always the installed version
    and nobody has to press "Clear log" after an update. Runs once per game launch, before the first L(). */
 static void log_rotate_if_new_version() {
@@ -1270,7 +1310,7 @@ static const CfgKey CFG_KEYS[] = {
     {"th", "th.txt", 1, false}, {"core", "core.txt", 1, false}, {"near", "near.txt", 1, false}, {"blk", "blk.txt", 0, false},
     {"minsz", "minsz.txt", 64, false}, {"delay", "delay.txt", 0, false}, {"style", "style.txt", 0, false}, {"sedge", "sedge.txt", 1, false},
     {"flat", "flat.txt", 0, false}, {"testtex", "testtex.txt", 1, false}, {"ttsize", "ttsize.txt", 0, false}, {"ttsm", "ttsm.txt", 0, false},
-    {"hookdelay", "hookdelay.txt", 0, true},
+    {"hookdelay", "hookdelay.txt", 0, true}, {"forcegl", "forcegl.txt", 1, false},
 };
 static int g_scale_safety = 0;   /* >0 = render scale was switched off at this launch; value = the percent that was active */
 static std::string g_cfg_note;   /* "" = no broken settings file; else e.g. "delay=empty,scale=invalid" */
@@ -1496,6 +1536,16 @@ static void load_cfg() {
         }
     }
     g_tstart = now_ns();
+    f = fopen(FGLF, "r");                          /* v0.41: force OpenGL ES, default ON (a missing file counts as 1) */
+    if (f) {
+        int v = 1;
+        if (fscanf(f, "%d", &v) == 1) g_forcegl = v ? 1 : 0;
+        fclose(f);
+    } else {
+        g_forcegl = 1;
+        f = fopen(FGLF, "w");
+        if (f) { fprintf(f, "1\n"); fclose(f); }
+    }
     f = fopen(COREF, "r");
     if (f) {
         int v = 1;
@@ -1545,6 +1595,10 @@ static int read_hookdelay() {
 
 /* Register every hook on a single libunity mapping */
 static void reg_hooks(dev_t dv, ino_t in) {
+    if (g_forcegl.load()) {
+        lsplt::RegisterHook(dv, in, "dlopen", (void *)h_dlopen_u, (void **)&o_dlopen_u);
+        lsplt::RegisterHook(dv, in, "android_dlopen_ext", (void *)h_adle_u, (void **)&o_adle_u);
+    }
     lsplt::RegisterHook(dv, in, "dlsym", (void *)h_dlsym, (void **)&o_dlsym);
     lsplt::RegisterHook(dv, in, "eglGetProcAddress", (void *)h_egl, (void **)&o_egl);
     lsplt::RegisterHook(dv, in, "glTexStorage2D", (void *)h_st, (void **)&o_st);
@@ -1705,9 +1759,10 @@ static void log_start(int mode) {
 #else
     const char *abi = "other";
 #endif
-    L("=== start %s build=%s %s abi=%s mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d ttsize=%d ttsm=%d builtin=%d ===\n",
-      VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), g_ttsize.load(), g_ttsm.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+    L("=== start %s build=%s %s abi=%s mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d ttsize=%d ttsm=%d forcegl=%d builtin=%d ===\n",
+      VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), g_ttsize.load(), g_ttsm.load(), g_forcegl.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
     st_set("ver", VERSION); st_seti("pid", (long long)getpid()); st_set("abi", abi); st_set("stage", "started");
+    st_set("forcegl", g_forcegl.load() ? "on" : "off");
     st_seti("started", (long long)time(nullptr));
     st_seti("live_fps", g_fps.load()); st_set("dir", g_dir); st_set("live", "1");
     st_set("scale_safety", g_scale_safety > 0 ? "forced_off_prev_" + std::to_string(g_scale_safety) : "no");
