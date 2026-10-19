@@ -2,6 +2,8 @@ name: Build Zygisk Module
 
 on:
   push:
+    branches: ["**"]
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
@@ -26,7 +28,12 @@ jobs:
         run: |
           curl -fsSL -o zygisk.hpp \
             https://raw.githubusercontent.com/topjohnwu/zygisk-module-sample/master/module/jni/zygisk.hpp
-          git clone --depth 1 https://github.com/LSPosed/LSPlt
+          # LSPlt is pinned to a known-good commit (2025-03-26) so a change upstream cannot break or alter the build.
+          git clone https://github.com/LSPosed/LSPlt
+          git -C LSPlt checkout 7d609ac3c2d8faa0c830b0904024ef5c81a98e6e
+
+      - name: Host tests
+        run: ./tests/run_host_tests.sh
 
       - name: Configure + compile arm64-v8a
         run: |
@@ -80,3 +87,39 @@ jobs:
           # No retention-days here on purpose: this repo caps artifact retention
           # at 1 day, and asking for more (it was 30) only triggers a warning.
           # Retention now follows the repository setting.
+
+  release:
+    name: Publish GitHub Release (v* tags)
+    needs: build-module
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Tag must equal the module version
+        run: |
+          MV="$(sed -n 's/^version=//p' module.prop | tr -d '\r')"
+          echo "tag=$GITHUB_REF_NAME module.prop=$MV"
+          [ "$GITHUB_REF_NAME" = "$MV" ] || { echo "::error::tag $GITHUB_REF_NAME differs from module version $MV"; exit 1; }
+
+      - name: Download built module
+        uses: actions/download-artifact@v6
+        with:
+          name: codm-blocky-textures-${{ github.ref_name }}
+          path: out
+
+      - name: Zip module
+        run: |
+          cd out && zip -r -9 "../codm-blocky-textures-${GITHUB_REF_NAME}.zip" . -x '*.DS_Store'
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "codm-blocky-textures-${GITHUB_REF_NAME}.zip" \
+            --title "CODM Blocky Textures ${GITHUB_REF_NAME}" \
+            --generate-notes --verify-tag
