@@ -512,7 +512,15 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
 .prow .pa b { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prow .pa small { color: var(--mute); font-size: 11.5px; line-height: 1.3; }
 .prow .ib.confirm { color: var(--bad); border-color: var(--bad); background: rgba(248, 113, 113, 0.1); }
-#codet { margin-top: 14px; min-height: 96px; word-break: break-all; }
+#codet { margin-top: 14px; width: 100%; box-sizing: border-box; min-height: 52px; max-height: 42vh; resize: none; overflow-y: auto; padding: 13px 14px; border-radius: 16px; border: 1px solid rgba(129,140,248,0.35); background: linear-gradient(180deg, rgba(129,140,248,0.08), rgba(0,0,0,0.3)); color: #dfe3ff; font-family: ui-monospace, monospace; font-size: 13.5px; line-height: 1.5; letter-spacing: 0.01em; word-break: break-all; transition: height 0.15s ease; }
+#codet:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+#codet[readonly] { -webkit-user-select: none; user-select: none; caret-color: transparent; -webkit-tap-highlight-color: transparent; cursor: default; }
+#codet[readonly]::selection { background: transparent; color: inherit; }
+#codet.sel { -webkit-user-select: text; user-select: text; }
+#codet.sel::selection { background: rgba(129,140,248,0.45); }
+#codew .codemsg:empty { display: none; }
+#codew .nrow { margin-top: 14px; }
+#codeCopy.done { border-color: rgba(52,211,153,0.55); color: var(--ok); background: rgba(52,211,153,0.1); }
 .codemsg { margin: 8px 3px 0; min-height: 18px; font-size: 12px; color: var(--mute); }
 .codemsg.bad { color: var(--bad); }
 /* stats */
@@ -1056,11 +1064,11 @@ html.compact .sbtn { min-height: 42px; }
 <div id="codew" role="dialog" aria-modal="true" aria-labelledby="codet2">
   <div class="savebox">
     <div class="sh">
-      <span class="sico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+      <span class="sico fine" id="codei"></span>
       <div class="stt"><h3 id="codet2">Preset code</h3><span id="codesub">Share this code</span></div>
       <button class="ib" id="codex" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
-    <textarea id="codet" rows="4" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="CT1;name;1,0,0,0,0,0,0,0,64,0;checksum"></textarea>
+    <textarea id="codet" rows="1" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="CT1;name;1,0,0,0,0,0,0,0,64,0;checksum"></textarea>
     <p class="codemsg" id="codemsg"></p>
     <div class="nrow">
       <button class="btn" id="codeCopy" type="button">Copy</button>
@@ -2900,7 +2908,7 @@ html.compact .sbtn { min-height: 42px; }
       });
       if (!chosen) for (var q = 0; q < cands.length; q++) if (cands[q].match) { chosen = cands[q]; break; }
     }
-    activePre = chosen ? { k: chosen.k, n: chosen.n } : null;
+    /* activePre is kept while the look is changed, so picking the same look again lights the same preset again */
     if (chosen) active = chosen.n;
     function isOn(c) { return chosen === c; }
     var h = "";
@@ -2955,8 +2963,22 @@ html.compact .sbtn { min-height: 42px; }
 
   var codew = $("codew"), codeMode = "show";
   codew.addEventListener("touchmove", function (e) { if (e.target === codew) e.preventDefault(); }, { passive: false });
+  var CODE_ICONS = {
+    show: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>',
+    "import": '<svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 19h14"/></svg>'
+  };
+  function fitCode() {
+    var t = $("codet");
+    t.style.height = "auto";
+    var h = Math.min(t.scrollHeight + 2, Math.round(window.innerHeight * 0.42));
+    t.style.height = Math.max(52, h) + "px";
+  }
+  $("codet").addEventListener("input", fitCode);
   function openCode(mode, text) {
     codeMode = mode;
+    $("codei").innerHTML = CODE_ICONS[mode] || CODE_ICONS.show;
+    $("codeCopy").classList.remove("done"); $("codeCopy").textContent = "Copy";
+    $("codet").classList.remove("sel");
     $("codet").value = text;
     $("codet").readOnly = mode === "show";
     $("codet2").textContent = mode === "show" ? "Preset code" : "Import a preset";
@@ -2967,19 +2989,30 @@ html.compact .sbtn { min-height: 42px; }
     $("codeCopy").parentNode.style.gridTemplateColumns = "1fr";
     lockPage();
     codew.classList.add("open");
-    setTimeout(function () { var t = $("codet"); t.focus(); if (mode === "show") t.select(); }, 80);
+    fitCode();
+    setTimeout(function () { var t = $("codet"); fitCode(); if (mode !== "show") t.focus(); }, 80);
   }
   function closeCode() { if (!codew.classList.contains("open")) return; codew.classList.remove("open"); unlockPage(); }
   $("codex").addEventListener("click", closeCode);
   codew.addEventListener("click", function (e) { if (e.target === codew) closeCode(); });
+  function copied() {
+    var b = $("codeCopy");
+    b.classList.add("done"); b.textContent = "Copied";
+    toast("Code copied.");
+    setTimeout(function () { b.classList.remove("done"); b.textContent = "Copy"; }, 1800);
+  }
   $("codeCopy").addEventListener("click", function () {
     var t = $("codet").value, ta = $("codet");
-    function fb() {
-      try { ta.focus(); ta.select(); ta.setSelectionRange(0, t.length); toast(document.execCommand("copy") ? "Code copied." : "Select the code and copy it by hand."); }
-      catch (e) { toast("Select the code and copy it by hand."); }
+    function fb() {                                   /* old webviews: select briefly, copy, then drop the selection */
+      try {
+        ta.classList.add("sel"); ta.readOnly = false; ta.focus(); ta.select(); ta.setSelectionRange(0, t.length);
+        var ok = document.execCommand("copy");
+        ta.setSelectionRange(0, 0); ta.blur(); ta.readOnly = true; ta.classList.remove("sel");
+        if (ok) copied(); else toast("Could not copy. Try again.");
+      } catch (e) { ta.readOnly = true; ta.classList.remove("sel"); toast("Could not copy. Try again."); }
     }
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(function () { toast("Code copied."); }, fb); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(copied, fb); return; }
     } catch (e) {}
     fb();
   });
