@@ -2449,7 +2449,7 @@ html.compact .sbtn { min-height: 42px; }
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.42'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.42.1'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -2473,7 +2473,7 @@ html.compact .sbtn { min-height: 42px; }
       "echo '== crash log (only CODM-related lines; other apps crashing, e.g. e.android:clean / android:channel, are hidden)'; C=$(timeout 8 logcat -b crash -d -t 400 2>&1); echo \"$C\" | grep -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | tail -n 80; echo \"(hidden non-CODM crash lines: $(echo \"$C\" | grep -v -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | grep -c .))\"; " +
       "echo '== logcat'; timeout 10 logcat -d -t 6000 2>/dev/null | grep -i -E 'garena|codm|libunity|zygisk|lsplt|FATAL|SIGSEGV|SIGABRT|tombstone|anogs|tersafe|lmkd' | tail -n 80; " +
       "echo '== tombstone'; T=$(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 40 | while read f; do grep -q -s $P \"$f\" && { echo \"$f\"; break; }; done); echo \"newest tombstone of any app: $(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 1)\"; if [ -n \"$T\" ]; then echo \"$T\"; echo \"tombstone_time=$(date -r \"$T\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c %y \"$T\" 2>/dev/null | cut -c1-19)\"; [ -n \"$(find \"$T\" -mmin +1440 2>/dev/null)\" ] && echo 'STALE: older than 24 h, NOT from the last session; do not treat as the current crash'; head -n 70 \"$T\"; else echo none; fi; " +
-      "echo '== process / exit reason (v0.42)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
+      "echo '== process / exit reason (v0.42.1)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
       "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
   }
 
