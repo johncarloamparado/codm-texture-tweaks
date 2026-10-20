@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.42"
+#define VERSION "v0.42.1"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -200,6 +200,37 @@ template <class F> static F orig_or(F &slot, const char *name, F self) {
 }
 static void maps_report(const char *tag);    /* defined below: lists non-system executable mappings (other injectors) */
 static void chain_report(const char *tag);   /* defined below: who owns the "original" function behind each of our hooks */
+
+/* ---------- ANativeWindow calls without our own PLT/GOT (v0.42.1) ----------
+   v0.42 crashed on some phones inside ANativeWindow_getWidth(): the GOT slot of THIS module for that libandroid
+   import held a stale pointer (SIGSEGV, pc in an unrelated mapping, backtrace #01 = h_sbg). Since v0.39 the calls
+   run on every launch even with render scale off. The functions are now looked up with dlsym at the time of use
+   (cached once found), so a corrupted or stale import slot can no longer be called. Missing symbol -> harmless 0. */
+static void *nw_sym(std::atomic<void *> &c, const char *n) {
+    void *p = c.load();
+    if (!p) { p = real_sym(n); if (p) c = p; }
+    return p;
+}
+static int32_t nw_width(ANativeWindow *w) {
+    static std::atomic<void *> c{nullptr};
+    auto f = (int32_t (*)(ANativeWindow *))nw_sym(c, "ANativeWindow_getWidth");
+    return (f && w) ? f(w) : 0;
+}
+static int32_t nw_height(ANativeWindow *w) {
+    static std::atomic<void *> c{nullptr};
+    auto f = (int32_t (*)(ANativeWindow *))nw_sym(c, "ANativeWindow_getHeight");
+    return (f && w) ? f(w) : 0;
+}
+static int32_t nw_format(ANativeWindow *w) {
+    static std::atomic<void *> c{nullptr};
+    auto f = (int32_t (*)(ANativeWindow *))nw_sym(c, "ANativeWindow_getFormat");
+    return (f && w) ? f(w) : 0;
+}
+static int32_t nw_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t fmt) {
+    static std::atomic<void *> c{nullptr};
+    auto f = (int32_t (*)(ANativeWindow *, int32_t, int32_t, int32_t))nw_sym(c, "ANativeWindow_setBuffersGeometry");
+    return (f && w) ? f(w, ww, hh, fmt) : -22;
+}
 
 /* ---------- Render scale and mip bias ---------- */
 static std::atomic<int> g_scale{0};        /* 0 = off, 20-99 = percent of native resolution */
@@ -1105,7 +1136,7 @@ static void learn_full_wh(int w, int h) {
 }
 static void learn_full(ANativeWindow *nwin) {
     if (!nwin) return;
-    learn_full_wh(ANativeWindow_getWidth(nwin), ANativeWindow_getHeight(nwin));
+    learn_full_wh(nw_width(nwin), nw_height(nwin));
 }
 static void mark_scale_progress(int frames) {
     FILE *f = fopen(SCRASHF, "w");
@@ -1124,7 +1155,7 @@ static EGLSurface h_cws(EGLDisplay d, EGLConfig c, EGLNativeWindowType win, cons
     int s = g_scale.load();
     ANativeWindow *nwin = (ANativeWindow *)win;
     if (s > 0 && nwin) {
-        int w = ANativeWindow_getWidth(nwin), h = ANativeWindow_getHeight(nwin);
+        int w = nw_width(nwin), h = nw_height(nwin);
         if (w > 0 && h > 0) {
             if (w < h) {
                 L("SURFACE portrait %dx%d: skip\n", w, h);
@@ -1140,11 +1171,11 @@ static EGLSurface h_cws(EGLDisplay d, EGLConfig c, EGLNativeWindowType win, cons
                            module/the system shrank it. Never make it smaller: that was the 1600x720 -> 880x396 -> 600x270 chain. */
                         L("SURFACE cur=%dx%d full=%dx%d target=%dx%d: window already that small, left alone\n", w, h, fw, fh, nw, nh);
                     } else if (scaled_pair(fw, fh, s, &nw, &nh)) {
-                        int fmt = ANativeWindow_getFormat(nwin);
+                        int fmt = nw_format(nwin);
                         if (fmt < 0) fmt = 0;           /* keep the window's current format */
                         mark_scale_in_use();
                         g_ovw = nw; g_ovh = nh;
-                        int r = ANativeWindow_setBuffersGeometry(nwin, nw, nh, fmt);
+                        int r = nw_sbg(nwin, nw, nh, fmt);
                         L("SURFACE cur=%dx%d full=%dx%d -> %dx%d fmt=%d r=%d\n", w, h, fw, fh, nw, nh, fmt, r);
                     } else L("SURFACE %dx%d (full %dx%d): scale skipped (size out of range)\n", w, h, fw, fh);
                 }
@@ -1153,7 +1184,7 @@ static EGLSurface h_cws(EGLDisplay d, EGLConfig c, EGLNativeWindowType win, cons
     }
     if (s == 0 && nwin) {
         static std::atomic<int> wn{0};
-        if (wn++ < 10) L("WINSIZE cws cur=%dx%d (render scale off, window untouched)\n", ANativeWindow_getWidth(nwin), ANativeWindow_getHeight(nwin));
+        if (wn++ < 10) L("WINSIZE cws cur=%dx%d (render scale off, window untouched)\n", nw_width(nwin), nw_height(nwin));
     }
     auto f_cws = orig_or(o_cws, "eglCreateWindowSurface", h_cws);
     return f_cws ? f_cws(d, c, win, at) : EGL_NO_SURFACE;
@@ -1164,7 +1195,7 @@ static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
     int s = g_scale.load();
     int n = ++g_sbgn;
     if (n == 1) st_set("first_sbg", "1");
-    if (n <= 20) L("SBG call %dx%d fmt=%d cur=%dx%d\n", ww, hh, f, w ? ANativeWindow_getWidth(w) : 0, w ? ANativeWindow_getHeight(w) : 0);
+    if (n <= 20) L("SBG call %dx%d fmt=%d cur=%dx%d\n", ww, hh, f, w ? nw_width(w) : 0, w ? nw_height(w) : 0);
     if (w && ww >= hh && ww >= 640 && hh >= 360) learn_full_wh(ww, hh);   /* what Unity asks for is the real native size */
     if (s > 0 && w) {
         if (ww == 0 || hh == 0) {
@@ -1182,7 +1213,7 @@ static int32_t h_sbg(ANativeWindow *w, int32_t ww, int32_t hh, int32_t f) {
         }
     }
     auto ob = (o_sbg && o_sbg != h_sbg) ? o_sbg : nullptr;
-    return ob ? ob(w, ww, hh, f) : ANativeWindow_setBuffersGeometry(w, ww, hh, f);
+    return ob ? ob(w, ww, hh, f) : nw_sbg(w, ww, hh, f);
 }
 
 static void *wrap(const char *n, void *r) {
