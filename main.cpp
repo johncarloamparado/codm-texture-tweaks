@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.42.1"
+#define VERSION "v0.44.0"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -94,6 +94,8 @@ static void set_dir(const char *app_data_dir) {
 #define TTEXF P("testtex.txt")
 #define TTSZF P("ttsize.txt")
 #define TTSMF P("ttsm.txt")
+#define ALPHAF P("alpha.txt")       /* v0.44: 1 = alpha-channel textures (smoke, dust, muzzle flash, leaves) keep their soft edge (default 1) */
+#define GRASSF P("grass.txt")       /* v0.44: "format size" lines; a matching alpha texture is uploaded fully transparent (Remove grass) */
 #define HDLYF P("hookdelay.txt")
 #define FGLF P("forcegl.txt")       /* v0.41: 1 = force OpenGL ES: Vulkan is hidden from libunity so Unity falls back to GLES (default 1) */
 #define HSAFEF P("hooksafe.txt")      /* v0.40: 1 = hooks skipped (the previous launch died while hooking); the WebUI resets it to 0 */
@@ -252,6 +254,7 @@ static std::atomic<int> g_blk{0};       /* blk.txt: target edge length in px per
 static std::atomic<int> g_flagged{0}, g_forced{0}, g_smp{0};
 static const GLuint MAXTEX = 1u << 18;
 static std::atomic<uint8_t> g_tf[1u << 18];        /* 1 = NEAREST filtering is forced on this texture */
+static std::atomic<uint8_t> g_blank[1u << 18];     /* v0.44: 1 = uploads to this texture id are replaced with transparent blocks (Remove grass) */
 static thread_local GLuint tl_bound[32];
 static thread_local int tl_unit = 0;
 
@@ -273,7 +276,7 @@ static void (*o_del)(GLsizei, const GLuint *) = nullptr;
 static void h_del(GLsizei n, const GLuint *ids) {
     if (ids) {
         for (GLsizei i = 0; i < n; i++) {
-            if (ids[i] < MAXTEX) g_tf[ids[i]] = 0;
+            if (ids[i] < MAXTEX) { g_tf[ids[i]] = 0; g_blank[ids[i]] = 0; }
             defer_drop(ids[i]);
             for (int u = 0; u < 32; u++) if (tl_bound[u] == ids[i]) tl_bound[u] = 0;
         }
@@ -447,6 +450,93 @@ static void defer_drop(GLuint id) {
     for (size_t i = g_pend_i; i < g_pend.size(); i++) if (g_pend[i].id == id) { g_pend[i].id = 0; }
 }
 
+/* ---------- v0.44: Keep alpha soft (alpha.txt) and Remove grass (grass.txt) ----------
+   Keep alpha soft: a compressed texture with an alpha channel (ETC2 punch-through / ETC2 EAC) is left exactly as the game
+   made it, so smoke, dust, muzzle flash and leaves are not turned into hard blocks by the pixel look.
+   Remove grass: for every "format size" line in grass.txt, a texture created with that format and longest side keeps its
+   size and mips but its pixel data is replaced, at upload time, with fully transparent blocks. The sprite is still drawn,
+   it just has nothing to show. Only formats with alpha can vanish; the scope / reticle atlas and the lobby buttons are
+   never blanked. Written for this module from scratch. */
+static std::atomic<int> g_alpha{1};
+struct GrRule { int fmt; int sz; };
+static std::vector<GrRule> g_grass;                  /* grass.txt, read once at startup */
+static std::atomic<int> g_grass_on{0};
+static std::atomic<int> g_alpha_kept{0}, g_grass_n{0}, g_grass_guard{0}, g_grass_noalpha{0}, g_grass_pbo{0}, g_grass_nobound{0};
+
+static inline bool fmt_alpha(GLenum f) { return f >= 0x9276 && f <= 0x9279; }   /* ETC2 punch-through (+sRGB), ETC2 EAC RGBA (+sRGB) */
+static inline bool tex_track() { return g_near.load() || g_style.load() || g_flat.load() || g_testtex.load() || g_grass_on.load(); }
+
+/* One fully transparent block for the format; returns its size in bytes, 0 = this format cannot be made transparent. */
+static int blank_block(GLenum f, uint8_t *out) {
+    if (f == 0x9276 || f == 0x9277) {            /* punch-through: opaque bit 0, every pixel index 2 (= transparent) */
+        static const uint8_t b[8] = {0, 0, 0, 0, 0xFF, 0xFF, 0, 0};
+        memcpy(out, b, 8); return 8;
+    }
+    if (f == 0x9278 || f == 0x9279) {            /* EAC alpha half: base 0, multiplier 0 -> alpha 0 everywhere */
+        memset(out, 0, 16); return 16;
+    }
+    if ((f >= 0x93B0 && f <= 0x93BD) || (f >= 0x93D0 && f <= 0x93DD)) {   /* ASTC: LDR void-extent block, colour 0,0,0,0 */
+        static const uint8_t b[16] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0};
+        memcpy(out, b, 16); return 16;
+    }
+    return 0;
+}
+/* The scope / reticle atlases and the lobby buttons (exact sizes) are never blanked. */
+static bool grass_guard(int fmt, int w, int h) {
+    if (fmt == 37497 && ((w == 256 && h == 512) || (w == 512 && h == 1024) || (w == 512 && h == 256))) return true;
+    if (fmt == 37496 && w == 512 && h == 512) return true;
+    return false;
+}
+static bool grass_rule(int fmt, int mx) {
+    for (auto &r : g_grass) if (r.fmt == fmt && r.sz == mx) return true;
+    return false;
+}
+/* Which kind of texture this upload belongs to; returns true when the pixel data must be replaced. */
+static bool grass_check(int fmt, int w, int h, bool log_it) {
+    int mx = std::max(w, h);
+    if (!grass_rule(fmt, mx)) return false;
+    if (grass_guard(fmt, w, h)) {
+        int c = ++g_grass_guard; st_seti("grass_guard", c);
+        if (log_it && c <= 5) L("GRASS kept fmt=%d %dx%d: it is the scope / reticle atlas (or the lobby buttons)\n", fmt, w, h);
+        return false;
+    }
+    uint8_t blk[16];
+    if (!blank_block((GLenum)fmt, blk)) {
+        int c = ++g_grass_noalpha; st_seti("grass_noalpha", c);
+        if (log_it && c <= 5) L("GRASS refused fmt=%d %dx%d: this format has no alpha channel, it cannot be made transparent\n", fmt, w, h);
+        return false;
+    }
+    return true;
+}
+/* Called from the texture-storage hook: remember which texture ids must be blanked. */
+static void grass_on_storage(GLenum t, GLsizei w, GLsizei h, GLenum fmt) {
+    if (!g_grass_on.load() || t != GL_TEXTURE_2D) return;
+    GLuint id = tl_bound[tl_unit];
+    bool hit = grass_check((int)fmt, (int)w, (int)h, true);
+    if (id == 0 || id >= MAXTEX) { if (hit) { g_grass_nobound++; st_seti("grass_nobound", g_grass_nobound.load()); } return; }
+    g_blank[id] = hit ? 1 : 0;
+    if (hit) {
+        int n = ++g_grass_n; st_seti("grass_n", n);
+        if (n <= 40) L("GRASS rule hit #%d fmt=0x%x %dx%d tex=%u\n", n, (unsigned)fmt, (int)w, (int)h, (unsigned)id);
+    }
+}
+/* Transparent replacement for `n` bytes of compressed data (same size, same format). */
+static thread_local std::vector<uint8_t> tl_blank;
+static const void *grass_data(GLenum fmt, GLsizei n, const void *p) {
+    uint8_t blk[16];
+    int bs = blank_block(fmt, blk);
+    if (!bs || n <= 0 || !p || n > (8 << 20) || (n % bs)) return p;
+    typedef void (*giv_t)(GLenum, GLint *);
+    static giv_t giv = (giv_t)real_sym("glGetIntegerv");
+    if (giv) {
+        GLint pbo = 0; giv(0x88EF /* GL_PIXEL_UNPACK_BUFFER_BINDING */, &pbo);
+        if (pbo != 0) { int c = ++g_grass_pbo; if (c == 1) L("GRASS cannot blank an upload that comes from a pixel buffer\n"); st_seti("grass_pbo", c); return p; }
+    }
+    tl_blank.resize((size_t)n);
+    for (GLsizei i = 0; i < n; i += bs) memcpy(&tl_blank[(size_t)i], blk, (size_t)bs);
+    return tl_blank.data();
+}
+
 static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, bool revisit);
 static void (*o_st)(GLenum, GLsizei, GLenum, GLsizei, GLsizei) = nullptr;
 static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
@@ -456,6 +546,7 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
 static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, bool revisit) {
     int b = g_bias.load(), k = g_blk.load();
     int mx = std::max(w, h);
+    if (!revisit) grass_on_storage(t, w, h, fmt);
     bool cand = (t == GL_TEXTURE_2D && lv >= 3 && mx >= 64 && is_cmp(fmt));
     if (!revisit && t == GL_TEXTURE_2D && mx >= 16) texn_log((int)w, (int)h, (int)lv, (int)fmt, cand);
     if (!cand) return;
@@ -463,6 +554,10 @@ static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, boo
     bool skip = false;
     if (in_skip((int)fmt, (int)w, (int)h)) { skip = true; if (!revisit) g_sk_rule++; }
     else if (mx < g_minsz.load()) { skip = true; if (!revisit) g_sk_minsz++; }
+    else if (g_alpha.load() && fmt_alpha(fmt)) {          /* v0.44: Keep alpha soft */
+        skip = true;
+        if (!revisit) { int c = ++g_alpha_kept; if (c <= 20 || c % 200 == 0) L("ALPHAKEEP #%d %dx%d lv=%d fmt=0x%x left soft\n", c, (int)w, (int)h, (int)lv, (unsigned)fmt); }
+    }
     int dl = g_delay.load();
     if (!skip && !revisit && dl > 0 && now_ns() - g_tstart.load() < (int64_t)dl * 1000000000LL) {
         skip = true; g_sk_delay++;
@@ -624,6 +719,7 @@ static std::string why0_reason() {
     if (g_sk_delay.load() > 0) add("delay(" + std::to_string(g_sk_delay.load()) + ")");
     if (g_sk_minsz.load() > 0) add("minsz(" + std::to_string(g_sk_minsz.load()) + ")");
     if (g_sk_rule.load() > 0) add("skip_rule(" + std::to_string(g_sk_rule.load()) + ")");
+    if (g_alpha_kept.load() > 0) add("alpha_soft(" + std::to_string(g_alpha_kept.load()) + ")");
     if (g_nobound.load() > 0) add("unbound(" + std::to_string(g_nobound.load()) + ")");
     return r.empty() ? "unknown" : r;
 }
@@ -631,7 +727,7 @@ static std::string why0_reason() {
 static void grp_dump(double t_s) {
     st_seti("cand", g_cand.load()); st_seti("applied", g_applied.load());
     st_seti("skip_rule", g_sk_rule.load()); st_seti("skip_minsz", g_sk_minsz.load());
-    st_seti("skip_delay", g_sk_delay.load()); st_seti("revisited", g_revisited.load()); st_seti("ts3_cmp", g_n_ts3_cmp.load()); st_set("why0", why0_reason());
+    st_seti("skip_delay", g_sk_delay.load()); st_seti("alpha_kept", g_alpha_kept.load()); st_seti("grass_n", g_grass_n.load()); st_seti("revisited", g_revisited.load()); st_seti("ts3_cmp", g_n_ts3_cmp.load()); st_set("why0", why0_reason());
     L("TEXSKIP applied=%d cand=%d skip_rule=%d skip_minsz=%d skip_delay=%d unbound=%d revisited=%d pending=%d dropped=%d ts3=%d ts3cmp=%d cti2=%d\n", g_applied.load(), g_cand.load(), g_sk_rule.load(), g_sk_minsz.load(), g_sk_delay.load(), g_nobound.load(), g_revisited.load(), g_pend_n.load(), g_pend_drop.load(), g_n_ts3.load(), g_n_ts3_cmp.load(), g_n_cti2.load());
     Grp tmp[MAXG]; int n;
     { std::lock_guard<std::mutex> lk(g_gm); n = g_ng; for (int i = 0; i < n; i++) tmp[i] = g_grp[i]; g_gdirty = 0; }
@@ -691,7 +787,15 @@ static void h_ti2(GLenum t, GLint l, GLint ifmt, GLsizei w, GLsizei h, GLint b, 
 static void (*o_cti2)(GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const void *) = nullptr;
 static void h_cti2(GLenum t, GLint l, GLenum f, GLsizei w, GLsizei h, GLint b, GLsizei n, const void *p) {
     if (l == 0) g_n_cti2++;
-    auto fn_ = orig_or(o_cti2, "glCompressedTexImage2D", h_cti2); if (!fn_) return; TIMED(K_TEX, fn_(t, l, f, w, h, b, n, p));
+    auto fn_ = orig_or(o_cti2, "glCompressedTexImage2D", h_cti2); if (!fn_) return;
+    if (g_grass_on.load() && p && t == GL_TEXTURE_2D && l >= 0 && l < 14) {      /* v0.44 Remove grass (texture made without glTexStorage2D) */
+        int bw = (int)w << l, bh = (int)h << l;
+        if (grass_check((int)f, bw, bh, l == 0)) {
+            if (l == 0) { int c = ++g_grass_n; st_seti("grass_n", c); if (c <= 40) L("GRASS rule hit #%d fmt=0x%x %dx%d (glCompressedTexImage2D)\n", c, (unsigned)f, (int)w, (int)h); }
+            p = grass_data(f, n, p);
+        }
+    }
+    TIMED(K_TEX, fn_(t, l, f, w, h, b, n, p));
 }
 
 static void (*o_tsi2)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void *) = nullptr;
@@ -701,7 +805,12 @@ static void h_tsi2(GLenum t, GLint l, GLint x, GLint y, GLsizei w, GLsizei h, GL
 
 static void (*o_ctsi2)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLsizei, const void *) = nullptr;
 static void h_ctsi2(GLenum t, GLint l, GLint x, GLint y, GLsizei w, GLsizei h, GLenum f, GLsizei n, const void *p) {
-    auto fn_ = orig_or(o_ctsi2, "glCompressedTexSubImage2D", h_ctsi2); if (!fn_) return; TIMED(K_TEX, fn_(t, l, x, y, w, h, f, n, p));
+    auto fn_ = orig_or(o_ctsi2, "glCompressedTexSubImage2D", h_ctsi2); if (!fn_) return;
+    if (g_grass_on.load() && p && t == GL_TEXTURE_2D) {                           /* v0.44 Remove grass */
+        GLuint id = tl_bound[tl_unit];
+        if (id > 0 && id < MAXTEX && g_blank[id].load()) p = grass_data(f, n, p);
+    }
+    TIMED(K_TEX, fn_(t, l, x, y, w, h, f, n, p));
 }
 
 static void (*o_ts3)(GLenum, GLsizei, GLenum, GLsizei, GLsizei, GLsizei) = nullptr;
@@ -1240,7 +1349,7 @@ static void *wrap(const char *n, void *r) {
 #define WRAP_ONE(NAME, O, H) if (!strcmp(n, NAME)) { if (r == (void *)(H)) return r; if (!(O)) (O) = (decltype(O))r; return (void *)(H); }
     if (!strcmp(n, "glTexParameteri")) { if (r == (void *)h_tp) return r; if (!real_tp) real_tp = (decltype(real_tp))r; return (g_near.load() || g_style.load() || g_flat.load() || g_testtex.load()) ? (void *)h_tp : r; }
     if (!strcmp(n, "glTexParameterf")) { if (r == (void *)h_tpf) return r; if (!o_tpf) o_tpf = (decltype(o_tpf))r; return (g_style.load() || g_flat.load() || g_testtex.load()) ? (void *)h_tpf : r; }
-    if (g_near.load() || g_style.load() || g_flat.load() || g_testtex.load()) {
+    if (tex_track()) {
         WRAP_ONE("glActiveTexture", o_act, h_act)
         WRAP_ONE("glBindTexture", o_bind, h_bind)
         WRAP_ONE("glDeleteTextures", o_del, h_del)
@@ -1260,6 +1369,9 @@ static void *wrap(const char *n, void *r) {
         WRAP_ONE("glTexSubImage2D", o_tsi2, h_tsi2)
         WRAP_ONE("glCompressedTexSubImage2D", o_ctsi2, h_ctsi2)
         WRAP_ONE("glTexStorage3D", o_ts3, h_ts3)
+    } else if (g_grass_on.load()) {          /* v0.44: Remove grass needs the two compressed upload calls even when the freeze logger is off */
+        WRAP_ONE("glCompressedTexImage2D", o_cti2, h_cti2)
+        WRAP_ONE("glCompressedTexSubImage2D", o_ctsi2, h_ctsi2)
     }
 #undef WRAP_ONE
     return r;
@@ -1341,7 +1453,7 @@ static const CfgKey CFG_KEYS[] = {
     {"th", "th.txt", 1, false}, {"core", "core.txt", 1, false}, {"near", "near.txt", 1, false}, {"blk", "blk.txt", 0, false},
     {"minsz", "minsz.txt", 64, false}, {"delay", "delay.txt", 0, false}, {"style", "style.txt", 0, false}, {"sedge", "sedge.txt", 1, false},
     {"flat", "flat.txt", 0, false}, {"testtex", "testtex.txt", 1, false}, {"ttsize", "ttsize.txt", 0, false}, {"ttsm", "ttsm.txt", 0, false},
-    {"hookdelay", "hookdelay.txt", 0, true}, {"forcegl", "forcegl.txt", 1, false},
+    {"hookdelay", "hookdelay.txt", 0, true}, {"forcegl", "forcegl.txt", 1, false}, {"alpha", "alpha.txt", 1, false},
 };
 static int g_scale_safety = 0;   /* >0 = render scale was switched off at this launch; value = the percent that was active */
 static std::string g_cfg_note;   /* "" = no broken settings file; else e.g. "delay=empty,scale=invalid" */
@@ -1547,6 +1659,29 @@ static void load_cfg() {
         f = fopen(TTSMF, "w");
         if (f) { fprintf(f, "0\n"); fclose(f); }
     }
+    f = fopen(ALPHAF, "r");                        /* v0.44: Keep alpha soft, default ON */
+    if (f) {
+        int v = 1;
+        if (fscanf(f, "%d", &v) == 1) g_alpha = v ? 1 : 0;
+        fclose(f);
+    } else {
+        g_alpha = 1;
+        f = fopen(ALPHAF, "w");
+        if (f) { fprintf(f, "1\n"); fclose(f); }
+    }
+    g_grass.clear();
+    f = fopen(GRASSF, "r");                        /* v0.44: Remove grass, "format size" per line; missing or empty = off */
+    if (f) {
+        char ln[96];
+        while (g_grass.size() < 16 && fgets(ln, sizeof ln, f)) {
+            int a = 0, b = 0;
+            if (sscanf(ln, "%i %i", &a, &b) == 2 && a > 0 && b > 0) g_grass.push_back({a, b});
+            else if (ln[0] != '\n' && ln[0] != '#' && ln[0] != '\r') L("GRASSRULE ignored (cannot read it): %.40s", ln);
+        }
+        fclose(f);
+        for (auto &r : g_grass) L("GRASSRULE loaded fmt=%d size=%d\n", r.fmt, r.sz);
+    }
+    g_grass_on = g_grass.empty() ? 0 : 1;
     if (FILE *ff = fopen(FULLF, "r")) {
         int fw = 0, fh = 0;
         if (fscanf(ff, "%d %d", &fw, &fh) == 2 && fw >= 640 && fw <= 8192 && fh >= 360 && fw >= fh) { g_fullw = fw; g_fullh = fh; }
@@ -1634,8 +1769,9 @@ static void reg_hooks(dev_t dv, ino_t in) {
     lsplt::RegisterHook(dv, in, "eglGetProcAddress", (void *)h_egl, (void **)&o_egl);
     lsplt::RegisterHook(dv, in, "glTexStorage2D", (void *)h_st, (void **)&o_st);
     if (g_style.load() || g_flat.load() || g_testtex.load()) lsplt::RegisterHook(dv, in, "glTexParameterf", (void *)h_tpf, (void **)&o_tpf);
-    if (g_near.load() || g_style.load() || g_flat.load() || g_testtex.load()) {
+    if (g_near.load() || g_style.load() || g_flat.load() || g_testtex.load())
         lsplt::RegisterHook(dv, in, "glTexParameteri", (void *)h_tp, (void **)&real_tp);
+    if (tex_track()) {
         lsplt::RegisterHook(dv, in, "glActiveTexture", (void *)h_act, (void **)&o_act);
         lsplt::RegisterHook(dv, in, "glBindTexture", (void *)h_bind, (void **)&o_bind);
         lsplt::RegisterHook(dv, in, "glDeleteTextures", (void *)h_del, (void **)&o_del);
@@ -1654,6 +1790,9 @@ static void reg_hooks(dev_t dv, ino_t in) {
         lsplt::RegisterHook(dv, in, "glTexSubImage2D", (void *)h_tsi2, (void **)&o_tsi2);
         lsplt::RegisterHook(dv, in, "glCompressedTexSubImage2D", (void *)h_ctsi2, (void **)&o_ctsi2);
         lsplt::RegisterHook(dv, in, "glTexStorage3D", (void *)h_ts3, (void **)&o_ts3);
+    } else if (g_grass_on.load()) {
+        lsplt::RegisterHook(dv, in, "glCompressedTexImage2D", (void *)h_cti2, (void **)&o_cti2);
+        lsplt::RegisterHook(dv, in, "glCompressedTexSubImage2D", (void *)h_ctsi2, (void **)&o_ctsi2);
     }
 }
 
@@ -1790,10 +1929,11 @@ static void log_start(int mode) {
 #else
     const char *abi = "other";
 #endif
-    L("=== start %s build=%s %s abi=%s mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d ttsize=%d ttsm=%d forcegl=%d builtin=%d ===\n",
-      VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), g_ttsize.load(), g_ttsm.load(), g_forcegl.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]));
+    L("=== start %s build=%s %s abi=%s mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d ttsize=%d ttsm=%d forcegl=%d builtin=%d alpha=%d grass=%d ===\n",
+      VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), g_ttsize.load(), g_ttsm.load(), g_forcegl.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]), g_alpha.load(), (int)g_grass.size());
     st_set("ver", VERSION); st_seti("pid", (long long)getpid()); st_set("abi", abi); st_set("stage", "started");
     st_set("forcegl", g_forcegl.load() ? "on" : "off");
+    st_set("alpha", g_alpha.load() ? "keep" : "off"); st_seti("grass_rules", (long long)g_grass.size());
     st_seti("started", (long long)time(nullptr));
     st_seti("live_fps", g_fps.load()); st_set("dir", g_dir); st_set("live", "1");
     st_set("scale_safety", g_scale_safety > 0 ? "forced_off_prev_" + std::to_string(g_scale_safety) : "no");
