@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.44.0"
+#define VERSION "v0.44.1"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -521,7 +521,11 @@ static void grass_on_storage(GLenum t, GLsizei w, GLsizei h, GLenum fmt) {
     }
 }
 /* Transparent replacement for `n` bytes of compressed data (same size, same format). */
-static thread_local std::vector<uint8_t> tl_blank;
+/* NOTE: only trivially destructible thread_locals are allowed in this file. A thread_local with a destructor (std::vector,
+   std::string ...) makes the first use on a thread call __cxa_thread_atexit_impl, and the linker aborts there because this
+   module is loaded by Zygisk and has no soinfo ("Couldn't find soinfo by dso_handle"). v0.44.0 crashed the game this way. */
+static thread_local uint8_t *tl_blank_p = nullptr;
+static thread_local size_t tl_blank_cap = 0;
 static const void *grass_data(GLenum fmt, GLsizei n, const void *p) {
     uint8_t blk[16];
     int bs = blank_block(fmt, blk);
@@ -532,9 +536,13 @@ static const void *grass_data(GLenum fmt, GLsizei n, const void *p) {
         GLint pbo = 0; giv(0x88EF /* GL_PIXEL_UNPACK_BUFFER_BINDING */, &pbo);
         if (pbo != 0) { int c = ++g_grass_pbo; if (c == 1) L("GRASS cannot blank an upload that comes from a pixel buffer\n"); st_seti("grass_pbo", c); return p; }
     }
-    tl_blank.resize((size_t)n);
-    for (GLsizei i = 0; i < n; i += bs) memcpy(&tl_blank[(size_t)i], blk, (size_t)bs);
-    return tl_blank.data();
+    if (tl_blank_cap < (size_t)n) {                    /* plain malloc: freed never (one buffer per thread, at most 8 MB) */
+        uint8_t *nb = (uint8_t *)realloc(tl_blank_p, (size_t)n);
+        if (!nb) return p;
+        tl_blank_p = nb; tl_blank_cap = (size_t)n;
+    }
+    for (GLsizei i = 0; i < n; i += bs) memcpy(tl_blank_p + i, blk, (size_t)bs);
+    return tl_blank_p;
 }
 
 static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, bool revisit);
