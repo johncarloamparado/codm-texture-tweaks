@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 W="${TMPDIR:-/tmp}/codm_ht_$$"
 mkdir -p "$W/files" && chmod 777 "$W/files"
 sed "s#\"/data/data/\" PKG \"/files/\"#\"$W/files/\"#" "$ROOT/main.cpp" > "$W/main_test_copy.cpp"
-for t in cfg scale chain v040 v041; do
+for t in cfg scale chain v040 v041 v044; do
   g++ -std=c++20 -w -I"$ROOT/tests/stubs" -I"$W" "$ROOT/tests/host_test_$t.cpp" -o "$W/t_$t" -Wl,--unresolved-symbols=ignore-all -lpthread -ldl
   echo "== $t"; (cd "$W" && "./t_$t")
 done
