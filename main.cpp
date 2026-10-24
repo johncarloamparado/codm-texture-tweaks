@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.44.1"
+#define VERSION "v0.45.0"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -95,7 +95,7 @@ static void set_dir(const char *app_data_dir) {
 #define TTSZF P("ttsize.txt")
 #define TTSMF P("ttsm.txt")
 #define ALPHAF P("alpha.txt")       /* v0.44: 1 = alpha-channel textures (smoke, dust, muzzle flash, leaves) keep their soft edge (default 1) */
-#define GRASSF P("grass.txt")       /* v0.44: "format size" lines; a matching alpha texture is uploaded fully transparent (Remove grass) */
+#define GRASSF P("grass.txt")       /* v0.45: "format width height hash" lines; that one texture is uploaded fully transparent (Remove grass) */
 #define HDLYF P("hookdelay.txt")
 #define FGLF P("forcegl.txt")       /* v0.41: 1 = force OpenGL ES: Vulkan is hidden from libunity so Unity falls back to GLES (default 1) */
 #define HSAFEF P("hooksafe.txt")      /* v0.40: 1 = hooks skipped (the previous launch died while hooking); the WebUI resets it to 0 */
@@ -450,18 +450,21 @@ static void defer_drop(GLuint id) {
     for (size_t i = g_pend_i; i < g_pend.size(); i++) if (g_pend[i].id == id) { g_pend[i].id = 0; }
 }
 
-/* ---------- v0.44: Keep alpha soft (alpha.txt) and Remove grass (grass.txt) ----------
+/* ---------- v0.44: Keep alpha soft (alpha.txt) / v0.45: Remove grass by texture fingerprint (grass.txt) ----------
    Keep alpha soft: a compressed texture with an alpha channel (ETC2 punch-through / ETC2 EAC) is left exactly as the game
    made it, so smoke, dust, muzzle flash and leaves are not turned into hard blocks by the pixel look.
-   Remove grass: for every "format size" line in grass.txt, a texture created with that format and longest side keeps its
-   size and mips but its pixel data is replaced, at upload time, with fully transparent blocks. The sprite is still drawn,
-   it just has nothing to show. Only formats with alpha can vanish; the scope / reticle atlas and the lobby buttons are
-   never blanked. Written for this module from scratch. */
+   Remove grass: v0.44 matched "format + size" and so also blanked characters and reticles that share them. v0.45 matches ONE
+   texture: grass.txt lines are "format width height hash". The hash is a fingerprint of the compressed level-0 data the game
+   uploads, so it names exactly one texture and stays the same from match to match. A matching texture keeps its size and
+   mips but its pixel data is replaced, at upload time, with fully transparent blocks. Every upload of a format that could be
+   made transparent is also written to the log once as a GRASSCAND line; the WebUI finder reads those lines.
+   Written for this module from scratch. */
 static std::atomic<int> g_alpha{1};
-struct GrRule { int fmt; int sz; };
+struct GrRule { int fmt; int w; int h; uint64_t hash; };
 static std::vector<GrRule> g_grass;                  /* grass.txt, read once at startup */
 static std::atomic<int> g_grass_on{0};
 static std::atomic<int> g_alpha_kept{0}, g_grass_n{0}, g_grass_guard{0}, g_grass_noalpha{0}, g_grass_pbo{0}, g_grass_nobound{0};
+static std::atomic<int> g_grass_cand{0}, g_grass_early{0};
 
 static inline bool fmt_alpha(GLenum f) { return f >= 0x9276 && f <= 0x9279; }   /* ETC2 punch-through (+sRGB), ETC2 EAC RGBA (+sRGB) */
 static inline bool tex_track() { return g_near.load() || g_style.load() || g_flat.load() || g_testtex.load() || g_grass_on.load(); }
@@ -487,55 +490,103 @@ static bool grass_guard(int fmt, int w, int h) {
     if (fmt == 37496 && w == 512 && h == 512) return true;
     return false;
 }
-static bool grass_rule(int fmt, int mx) {
-    for (auto &r : g_grass) if (r.fmt == fmt && r.sz == mx) return true;
+/* Fingerprint of an upload: FNV-1a over the size and three 2 KB windows (start, middle, end). Fast, and the same every match. */
+static uint64_t tex_hash(const void *p, int n) {
+    const uint8_t *b = (const uint8_t *)p;
+    uint64_t h = 1469598103934665603ULL ^ (uint64_t)(uint32_t)n;
+    auto win = [&](int off, int len) { for (int i = 0; i < len; i++) { h ^= b[off + i]; h *= 1099511628211ULL; } };
+    if (n <= 6144) win(0, n);
+    else { win(0, 2048); win(n / 2 - 1024, 2048); win(n - 2048, 2048); }
+    return h;
+}
+/* Rough alpha picture of an ETC2 EAC texture (sampled blocks): mean = average base alpha 0-255, zero = percent of blocks that
+   are (almost) fully transparent. Only a hint for ordering the finder's list. -1 = not an EAC format. */
+static void eac_stats(GLenum f, const void *p, int n, int *mean, int *zero) {
+    *mean = -1; *zero = -1;
+    if (f != 0x9278 && f != 0x9279) return;
+    int blocks = n / 16; if (blocks <= 0) return;
+    int step = std::max(1, blocks / 256), cnt = 0, z = 0; long sum = 0;
+    for (int i = 0; i < blocks; i += step) {
+        int base = ((const uint8_t *)p)[(size_t)i * 16];
+        sum += base; cnt++; if (base < 16) z++;
+    }
+    if (cnt) { *mean = (int)(sum / cnt); *zero = z * 100 / cnt; }
+}
+static inline int blank_block_size(GLenum f) { uint8_t t[16]; return blank_block(f, t); }
+static bool grass_rule_match(int fmt, int w, int h, uint64_t hash) {
+    for (auto &r : g_grass) if (r.fmt == fmt && r.w == w && r.h == h && r.hash == hash) return true;
     return false;
 }
-/* Which kind of texture this upload belongs to; returns true when the pixel data must be replaced. */
-static bool grass_check(int fmt, int w, int h, bool log_it) {
-    int mx = std::max(w, h);
-    if (!grass_rule(fmt, mx)) return false;
-    if (grass_guard(fmt, w, h)) {
-        int c = ++g_grass_guard; st_seti("grass_guard", c);
-        if (log_it && c <= 5) L("GRASS kept fmt=%d %dx%d: it is the scope / reticle atlas (or the lobby buttons)\n", fmt, w, h);
-        return false;
-    }
-    uint8_t blk[16];
-    if (!blank_block((GLenum)fmt, blk)) {
-        int c = ++g_grass_noalpha; st_seti("grass_noalpha", c);
-        if (log_it && c <= 5) L("GRASS refused fmt=%d %dx%d: this format has no alpha channel, it cannot be made transparent\n", fmt, w, h);
-        return false;
-    }
-    return true;
+/* true when the current GL_PIXEL_UNPACK_BUFFER binding is non-zero (then the data pointer is an offset, never read it) */
+static void (*g_giv_hook)(GLenum, GLint *) = nullptr;     /* host tests only */
+static bool unpack_pbo_bound() {
+    typedef void (*giv_t)(GLenum, GLint *);
+    static giv_t real = (giv_t)real_sym("glGetIntegerv");
+    giv_t giv = g_giv_hook ? g_giv_hook : real;
+    if (!giv) return true;                                     /* cannot tell: do not touch the data */
+    GLint pbo = 0; giv(0x88EF /* GL_PIXEL_UNPACK_BUFFER_BINDING */, &pbo);
+    return pbo != 0;
 }
-/* Called from the texture-storage hook: remember which texture ids must be blanked. */
+static std::mutex g_cmu;
+static uint64_t g_cseen[1024];
+static int g_cseen_n = 0;
+/* Level-0 upload of a compressed texture: write it to the log once (finder list) and decide whether this texture is blanked.
+   g_blank[id]: 0 = not decided yet, 1 = blank every upload, 2 = checked, leave it. */
+static void grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p) {
+    if (!p || n < 16 || n > (8 << 20) || std::max(w, h) < 64) return;
+    uint8_t blk[16];
+    int bs = blank_block(f, blk);
+    if (!bs || (n % bs)) return;
+    if (unpack_pbo_bound()) {
+        if (g_grass_on.load()) { int c = ++g_grass_pbo; if (c == 1) L("GRASS cannot read an upload that comes from a pixel buffer\n"); st_seti("grass_pbo", c); }
+        return;
+    }
+    uint64_t hh = tex_hash(p, n);
+    bool fresh = false;
+    {
+        std::lock_guard<std::mutex> lk(g_cmu);
+        uint64_t key = hh ^ ((uint64_t)(uint32_t)f << 40) ^ ((uint64_t)(uint32_t)w << 20) ^ (uint64_t)(uint32_t)h;
+        bool seen = false;
+        for (int i = 0; i < g_cseen_n; i++) if (g_cseen[i] == key) { seen = true; break; }
+        if (!seen && g_cseen_n < 1024) { g_cseen[g_cseen_n++] = key; fresh = true; }
+    }
+    if (fresh) {
+        int mean, zero; eac_stats(f, p, n, &mean, &zero);
+        int c = ++g_grass_cand; if (c % 20 == 0) st_seti("grass_cand", c);
+        L("GRASSCAND fmt=%d w=%d h=%d n=%d h=%016llx a=%d z=%d\n", (int)f, w, h, n, (unsigned long long)hh, mean, zero);
+    }
+    if (id == 0 || id >= MAXTEX) return;
+    if (!g_grass_on.load()) return;
+    if (grass_rule_match((int)f, w, h, hh)) {
+        if (grass_guard((int)f, w, h)) {
+            int c = ++g_grass_guard; st_seti("grass_guard", c);
+            if (c <= 5) L("GRASS kept fmt=%d %dx%d: it is the scope / reticle atlas (or the lobby buttons)\n", (int)f, w, h);
+            g_blank[id] = 2; return;
+        }
+        g_blank[id] = 1;
+        int c = ++g_grass_n; st_seti("grass_n", c);
+        if (c <= 40) L("GRASS rule hit #%d fmt=0x%x %dx%d h=%016llx tex=%u\n", c, (unsigned)f, w, h, (unsigned long long)hh, (unsigned)id);
+    } else {
+        g_blank[id] = 2;
+    }
+}
+/* A new texture storage starts the decision over for that texture id. */
 static void grass_on_storage(GLenum t, GLsizei w, GLsizei h, GLenum fmt) {
     if (!g_grass_on.load() || t != GL_TEXTURE_2D) return;
     GLuint id = tl_bound[tl_unit];
-    bool hit = grass_check((int)fmt, (int)w, (int)h, true);
-    if (id == 0 || id >= MAXTEX) { if (hit) { g_grass_nobound++; st_seti("grass_nobound", g_grass_nobound.load()); } return; }
-    g_blank[id] = hit ? 1 : 0;
-    if (hit) {
-        int n = ++g_grass_n; st_seti("grass_n", n);
-        if (n <= 40) L("GRASS rule hit #%d fmt=0x%x %dx%d tex=%u\n", n, (unsigned)fmt, (int)w, (int)h, (unsigned)id);
-    }
+    if (id > 0 && id < MAXTEX) g_blank[id] = 0;
 }
-/* Transparent replacement for `n` bytes of compressed data (same size, same format). */
 /* NOTE: only trivially destructible thread_locals are allowed in this file. A thread_local with a destructor (std::vector,
    std::string ...) makes the first use on a thread call __cxa_thread_atexit_impl, and the linker aborts there because this
    module is loaded by Zygisk and has no soinfo ("Couldn't find soinfo by dso_handle"). v0.44.0 crashed the game this way. */
 static thread_local uint8_t *tl_blank_p = nullptr;
 static thread_local size_t tl_blank_cap = 0;
+/* Transparent replacement for `n` bytes of compressed data (same size, same format). Caller has checked there is no pixel buffer. */
 static const void *grass_data(GLenum fmt, GLsizei n, const void *p) {
     uint8_t blk[16];
     int bs = blank_block(fmt, blk);
     if (!bs || n <= 0 || !p || n > (8 << 20) || (n % bs)) return p;
-    typedef void (*giv_t)(GLenum, GLint *);
-    static giv_t giv = (giv_t)real_sym("glGetIntegerv");
-    if (giv) {
-        GLint pbo = 0; giv(0x88EF /* GL_PIXEL_UNPACK_BUFFER_BINDING */, &pbo);
-        if (pbo != 0) { int c = ++g_grass_pbo; if (c == 1) L("GRASS cannot blank an upload that comes from a pixel buffer\n"); st_seti("grass_pbo", c); return p; }
-    }
+    if (unpack_pbo_bound()) { int c = ++g_grass_pbo; if (c == 1) L("GRASS cannot blank an upload that comes from a pixel buffer\n"); st_seti("grass_pbo", c); return p; }
     if (tl_blank_cap < (size_t)n) {                    /* plain malloc: freed never (one buffer per thread, at most 8 MB) */
         uint8_t *nb = (uint8_t *)realloc(tl_blank_p, (size_t)n);
         if (!nb) return p;
@@ -735,7 +786,7 @@ static std::string why0_reason() {
 static void grp_dump(double t_s) {
     st_seti("cand", g_cand.load()); st_seti("applied", g_applied.load());
     st_seti("skip_rule", g_sk_rule.load()); st_seti("skip_minsz", g_sk_minsz.load());
-    st_seti("skip_delay", g_sk_delay.load()); st_seti("alpha_kept", g_alpha_kept.load()); st_seti("grass_n", g_grass_n.load()); st_seti("revisited", g_revisited.load()); st_seti("ts3_cmp", g_n_ts3_cmp.load()); st_set("why0", why0_reason());
+    st_seti("skip_delay", g_sk_delay.load()); st_seti("alpha_kept", g_alpha_kept.load()); st_seti("grass_n", g_grass_n.load()); st_seti("grass_cand", g_grass_cand.load()); st_seti("grass_early", g_grass_early.load()); st_seti("revisited", g_revisited.load()); st_seti("ts3_cmp", g_n_ts3_cmp.load()); st_set("why0", why0_reason());
     L("TEXSKIP applied=%d cand=%d skip_rule=%d skip_minsz=%d skip_delay=%d unbound=%d revisited=%d pending=%d dropped=%d ts3=%d ts3cmp=%d cti2=%d\n", g_applied.load(), g_cand.load(), g_sk_rule.load(), g_sk_minsz.load(), g_sk_delay.load(), g_nobound.load(), g_revisited.load(), g_pend_n.load(), g_pend_drop.load(), g_n_ts3.load(), g_n_ts3_cmp.load(), g_n_cti2.load());
     Grp tmp[MAXG]; int n;
     { std::lock_guard<std::mutex> lk(g_gm); n = g_ng; for (int i = 0; i < n; i++) tmp[i] = g_grp[i]; g_gdirty = 0; }
@@ -796,11 +847,12 @@ static void (*o_cti2)(GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, c
 static void h_cti2(GLenum t, GLint l, GLenum f, GLsizei w, GLsizei h, GLint b, GLsizei n, const void *p) {
     if (l == 0) g_n_cti2++;
     auto fn_ = orig_or(o_cti2, "glCompressedTexImage2D", h_cti2); if (!fn_) return;
-    if (g_grass_on.load() && p && t == GL_TEXTURE_2D && l >= 0 && l < 14) {      /* v0.44 Remove grass (texture made without glTexStorage2D) */
-        int bw = (int)w << l, bh = (int)h << l;
-        if (grass_check((int)f, bw, bh, l == 0)) {
-            if (l == 0) { int c = ++g_grass_n; st_seti("grass_n", c); if (c <= 40) L("GRASS rule hit #%d fmt=0x%x %dx%d (glCompressedTexImage2D)\n", c, (unsigned)f, (int)w, (int)h); }
-            p = grass_data(f, n, p);
+    if (p && t == GL_TEXTURE_2D && l >= 0 && l < 14) {                           /* v0.45 Remove grass (texture made without glTexStorage2D) */
+        GLuint id = tl_bound[tl_unit];
+        if (l == 0) grass_level0(id, f, (int)w, (int)h, (int)n, p);
+        if (g_grass_on.load() && id > 0 && id < MAXTEX) {
+            if (l > 0 && g_blank[id].load() == 0) g_grass_early++;
+            if (g_blank[id].load() == 1) p = grass_data(f, n, p);
         }
     }
     TIMED(K_TEX, fn_(t, l, f, w, h, b, n, p));
@@ -814,9 +866,13 @@ static void h_tsi2(GLenum t, GLint l, GLint x, GLint y, GLsizei w, GLsizei h, GL
 static void (*o_ctsi2)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLsizei, const void *) = nullptr;
 static void h_ctsi2(GLenum t, GLint l, GLint x, GLint y, GLsizei w, GLsizei h, GLenum f, GLsizei n, const void *p) {
     auto fn_ = orig_or(o_ctsi2, "glCompressedTexSubImage2D", h_ctsi2); if (!fn_) return;
-    if (g_grass_on.load() && p && t == GL_TEXTURE_2D) {                           /* v0.44 Remove grass */
+    if (p && t == GL_TEXTURE_2D) {                                                /* v0.45 Remove grass */
         GLuint id = tl_bound[tl_unit];
-        if (id > 0 && id < MAXTEX && g_blank[id].load()) p = grass_data(f, n, p);
+        if (l == 0 && x == 0 && y == 0) grass_level0(id, f, (int)w, (int)h, (int)n, p);
+        if (g_grass_on.load() && id > 0 && id < MAXTEX) {
+            if (l > 0 && g_blank[id].load() == 0 && blank_block_size(f)) g_grass_early++;
+            if (g_blank[id].load() == 1) p = grass_data(f, n, p);
+        }
     }
     TIMED(K_TEX, fn_(t, l, x, y, w, h, f, n, p));
 }
@@ -1377,7 +1433,7 @@ static void *wrap(const char *n, void *r) {
         WRAP_ONE("glTexSubImage2D", o_tsi2, h_tsi2)
         WRAP_ONE("glCompressedTexSubImage2D", o_ctsi2, h_ctsi2)
         WRAP_ONE("glTexStorage3D", o_ts3, h_ts3)
-    } else if (g_grass_on.load()) {          /* v0.44: Remove grass needs the two compressed upload calls even when the freeze logger is off */
+    } else {                                 /* v0.45: the finder log and Remove grass need the two compressed upload calls even when the freeze logger is off */
         WRAP_ONE("glCompressedTexImage2D", o_cti2, h_cti2)
         WRAP_ONE("glCompressedTexSubImage2D", o_ctsi2, h_ctsi2)
     }
@@ -1678,16 +1734,18 @@ static void load_cfg() {
         if (f) { fprintf(f, "1\n"); fclose(f); }
     }
     g_grass.clear();
-    f = fopen(GRASSF, "r");                        /* v0.44: Remove grass, "format size" per line; missing or empty = off */
+    f = fopen(GRASSF, "r");                        /* v0.45: Remove grass, "format width height hash" per line; missing or empty = off */
     if (f) {
-        char ln[96];
-        while (g_grass.size() < 16 && fgets(ln, sizeof ln, f)) {
-            int a = 0, b = 0;
-            if (sscanf(ln, "%i %i", &a, &b) == 2 && a > 0 && b > 0) g_grass.push_back({a, b});
+        char ln[128];
+        while (g_grass.size() < 64 && fgets(ln, sizeof ln, f)) {
+            int a = 0, b = 0, c = 0; unsigned long long hh = 0;
+            int k = sscanf(ln, "%i %i %i %llx", &a, &b, &c, &hh);
+            if (k == 4 && a > 0 && b > 0 && c > 0) g_grass.push_back({a, b, c, (uint64_t)hh});
+            else if (k == 2) L("GRASSRULE old v0.44 line ignored (it matched too many textures): %.40s", ln);
             else if (ln[0] != '\n' && ln[0] != '#' && ln[0] != '\r') L("GRASSRULE ignored (cannot read it): %.40s", ln);
         }
         fclose(f);
-        for (auto &r : g_grass) L("GRASSRULE loaded fmt=%d size=%d\n", r.fmt, r.sz);
+        for (auto &r : g_grass) L("GRASSRULE loaded fmt=%d %dx%d h=%016llx\n", r.fmt, r.w, r.h, (unsigned long long)r.hash);
     }
     g_grass_on = g_grass.empty() ? 0 : 1;
     if (FILE *ff = fopen(FULLF, "r")) {
@@ -1798,7 +1856,7 @@ static void reg_hooks(dev_t dv, ino_t in) {
         lsplt::RegisterHook(dv, in, "glTexSubImage2D", (void *)h_tsi2, (void **)&o_tsi2);
         lsplt::RegisterHook(dv, in, "glCompressedTexSubImage2D", (void *)h_ctsi2, (void **)&o_ctsi2);
         lsplt::RegisterHook(dv, in, "glTexStorage3D", (void *)h_ts3, (void **)&o_ts3);
-    } else if (g_grass_on.load()) {
+    } else {
         lsplt::RegisterHook(dv, in, "glCompressedTexImage2D", (void *)h_cti2, (void **)&o_cti2);
         lsplt::RegisterHook(dv, in, "glCompressedTexSubImage2D", (void *)h_ctsi2, (void **)&o_ctsi2);
     }
