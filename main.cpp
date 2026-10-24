@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.45.0"
+#define VERSION "v0.46.0"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -254,6 +254,7 @@ static std::atomic<int> g_blk{0};       /* blk.txt: target edge length in px per
 static std::atomic<int> g_flagged{0}, g_forced{0}, g_smp{0};
 static const GLuint MAXTEX = 1u << 18;
 static std::atomic<uint8_t> g_tf[1u << 18];        /* 1 = NEAREST filtering is forced on this texture */
+static std::atomic<uint8_t> g_lv[1u << 18];        /* v0.46: mip levels of a texture made with glTexStorage2D (0 = unknown); UI textures have 1, 3D textures have many */
 static std::atomic<uint8_t> g_blank[1u << 18];     /* v0.44: 1 = uploads to this texture id are replaced with transparent blocks (Remove grass) */
 static thread_local GLuint tl_bound[32];
 static thread_local int tl_unit = 0;
@@ -276,7 +277,7 @@ static void (*o_del)(GLsizei, const GLuint *) = nullptr;
 static void h_del(GLsizei n, const GLuint *ids) {
     if (ids) {
         for (GLsizei i = 0; i < n; i++) {
-            if (ids[i] < MAXTEX) { g_tf[ids[i]] = 0; g_blank[ids[i]] = 0; }
+            if (ids[i] < MAXTEX) { g_tf[ids[i]] = 0; g_blank[ids[i]] = 0; g_lv[ids[i]] = 0; }
             defer_drop(ids[i]);
             for (int u = 0; u < 32; u++) if (tl_bound[u] == ids[i]) tl_bound[u] = 0;
         }
@@ -528,7 +529,7 @@ static bool unpack_pbo_bound() {
     return pbo != 0;
 }
 static std::mutex g_cmu;
-static uint64_t g_cseen[1024];
+static uint64_t g_cseen[4096];
 static int g_cseen_n = 0;
 /* Level-0 upload of a compressed texture: write it to the log once (finder list) and decide whether this texture is blanked.
    g_blank[id]: 0 = not decided yet, 1 = blank every upload, 2 = checked, leave it. */
@@ -547,13 +548,14 @@ static void grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p
         std::lock_guard<std::mutex> lk(g_cmu);
         uint64_t key = hh ^ ((uint64_t)(uint32_t)f << 40) ^ ((uint64_t)(uint32_t)w << 20) ^ (uint64_t)(uint32_t)h;
         bool seen = false;
-        for (int i = 0; i < g_cseen_n; i++) if (g_cseen[i] == key) { seen = true; break; }
-        if (!seen && g_cseen_n < 1024) { g_cseen[g_cseen_n++] = key; fresh = true; }
+        for (int i = 0, e = std::min(g_cseen_n, 4096); i < e; i++) if (g_cseen[i] == key) { seen = true; break; }
+        if (!seen && g_cseen_n < 4096) { g_cseen[g_cseen_n++] = key; fresh = true; }
+        else if (!seen && g_cseen_n == 4096) { g_cseen_n++; L("GRASSCAND list is full (4096 textures): later ones are not listed\n"); }
     }
     if (fresh) {
         int mean, zero; eac_stats(f, p, n, &mean, &zero);
         int c = ++g_grass_cand; if (c % 20 == 0) st_seti("grass_cand", c);
-        L("GRASSCAND fmt=%d w=%d h=%d n=%d h=%016llx a=%d z=%d\n", (int)f, w, h, n, (unsigned long long)hh, mean, zero);
+        L("GRASSCAND fmt=%d w=%d h=%d n=%d h=%016llx a=%d z=%d lv=%d\n", (int)f, w, h, n, (unsigned long long)hh, mean, zero, (id > 0 && id < MAXTEX) ? (int)g_lv[id].load() : 0);
     }
     if (id == 0 || id >= MAXTEX) return;
     if (!g_grass_on.load()) return;
@@ -571,10 +573,10 @@ static void grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p
     }
 }
 /* A new texture storage starts the decision over for that texture id. */
-static void grass_on_storage(GLenum t, GLsizei w, GLsizei h, GLenum fmt) {
-    if (!g_grass_on.load() || t != GL_TEXTURE_2D) return;
+static void grass_on_storage(GLenum t, GLsizei lv, GLsizei w, GLsizei h, GLenum fmt) {
+    if (t != GL_TEXTURE_2D) return;
     GLuint id = tl_bound[tl_unit];
-    if (id > 0 && id < MAXTEX) g_blank[id] = 0;
+    if (id > 0 && id < MAXTEX) { g_blank[id] = 0; g_lv[id] = (uint8_t)std::min<GLsizei>(std::max<GLsizei>(lv, 0), 255); }
 }
 /* NOTE: only trivially destructible thread_locals are allowed in this file. A thread_local with a destructor (std::vector,
    std::string ...) makes the first use on a thread call __cxa_thread_atexit_impl, and the linker aborts there because this
@@ -605,7 +607,7 @@ static void h_st(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h) {
 static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, bool revisit) {
     int b = g_bias.load(), k = g_blk.load();
     int mx = std::max(w, h);
-    if (!revisit) grass_on_storage(t, w, h, fmt);
+    if (!revisit) grass_on_storage(t, lv, w, h, fmt);
     bool cand = (t == GL_TEXTURE_2D && lv >= 3 && mx >= 64 && is_cmp(fmt));
     if (!revisit && t == GL_TEXTURE_2D && mx >= 16) texn_log((int)w, (int)h, (int)lv, (int)fmt, cand);
     if (!cand) return;
@@ -849,7 +851,7 @@ static void h_cti2(GLenum t, GLint l, GLenum f, GLsizei w, GLsizei h, GLint b, G
     auto fn_ = orig_or(o_cti2, "glCompressedTexImage2D", h_cti2); if (!fn_) return;
     if (p && t == GL_TEXTURE_2D && l >= 0 && l < 14) {                           /* v0.45 Remove grass (texture made without glTexStorage2D) */
         GLuint id = tl_bound[tl_unit];
-        if (l == 0) grass_level0(id, f, (int)w, (int)h, (int)n, p);
+        if (l == 0) { if (id > 0 && id < MAXTEX) g_lv[id] = 0; grass_level0(id, f, (int)w, (int)h, (int)n, p); }
         if (g_grass_on.load() && id > 0 && id < MAXTEX) {
             if (l > 0 && g_blank[id].load() == 0) g_grass_early++;
             if (g_blank[id].load() == 1) p = grass_data(f, n, p);
