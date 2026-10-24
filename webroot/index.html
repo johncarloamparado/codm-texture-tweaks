@@ -646,7 +646,17 @@ html.compact .sbtn { min-height: 42px; }
 .gf-now small { display: block; margin-top: 4px; color: var(--mute); font-size: 12.5px; line-height: 1.45; }
 .gf-now.on { border-color: rgba(248, 113, 113, 0.55); background: rgba(248, 113, 113, 0.08); }
 .gf-steps { margin: 0; padding-left: 18px; color: var(--mute); font-size: 12.5px; line-height: 1.6; }
-.gf .btn.main { border-color: rgba(248, 113, 113, 0.55); }
+.gf .btn { min-height: 50px; font-size: 15px; }
+.gf .btn.good { border-color: rgba(52, 211, 153, 0.7); background: rgba(52, 211, 153, 0.14); font-weight: 650; }
+.gf .btn.quiet { background: transparent; color: var(--mute); border-style: dashed; min-height: 44px; font-size: 13.5px; }
+.gf .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.gf-list { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 12.5px; color: var(--mute); }
+.gf-list li { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.gf-prog { height: 6px; border-radius: 99px; background: var(--fill); overflow: hidden; margin-top: 8px; }
+.gf-prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); }
+.gf-conf { display: grid; gap: 8px; }
+.gf-conf .item { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--line); background: var(--fill); border-radius: 14px; padding: 10px 12px; font-size: 13px; }
+.gf-conf .item button { min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: inherit; font: inherit; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -877,14 +887,14 @@ html.compact .sbtn { min-height: 42px; }
 
     <section class="card" id="grassCard">
       <div class="ch"><h2>Grass &amp; smoke</h2><span class="tag n" id="grassTag" hidden style="margin-left:auto"></span></div>
-      <p class="cap">Two fixes for the pixel look. Keep smoke soft leaves smoke, dust and muzzle flash smooth. Remove grass makes the grass texture on your phone invisible.</p>
+      <p class="cap">Two fixes for the pixel look. Keep smoke soft leaves smoke, dust and muzzle flash smooth. Remove grass makes ONE texture invisible, found by its fingerprint, so characters and reticles are not touched.</p>
       <button class="sw" id="alpha" role="switch" aria-checked="true" type="button">
         <span><span class="t">Keep smoke soft</span><span class="d">Textures with an alpha channel (smoke, dust, muzzle flash, leaves) stay as the game made them. Off = they turn into blocks too.</span></span>
         <span class="knob"></span>
       </button>
       <div class="row">
         <div class="rh"><span class="lb">Remove grass</span><span class="val" id="grassV">Off</span></div>
-        <p class="desc" id="grassD">Finds the grass texture on this phone. Play one match with logs on first so the list can fill in.</p>
+        <p class="desc" id="grassD">Finds the grass texture on this phone. Play one match with logs on first so the list can fill in (needs the v0.45 module).</p>
         <div class="gf" id="gf"></div>
       </div>
     </section>
@@ -1196,7 +1206,7 @@ html.compact .sbtn { min-height: 42px; }
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4", forcegl: "1",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0", alpha: "1",
-    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", ver: "v0.44.1",
+    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.45.0",
     st: "ver=v0.41|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
     startline: "=== start v0.41 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
     ftall: "FT fps=57.1 avg=17.5ms p50=16.9 p99=36.2 max=48.0 >33ms=2 >50ms=0 n=285 cap=0 bias=0 scale=100 t=60.0 fz=0\nFT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=65.0 fz=1\nFT fps=58.4 avg=17.1ms p50=16.8 p99=30.2 max=41.0 >33ms=1 >50ms=0 n=292 cap=0 bias=0 scale=100 t=70.0 fz=0\nFT fps=56.0 avg=17.9ms p50=17.2 p99=38.9 max=52.0 >33ms=2 >50ms=1 n=280 cap=0 bias=0 scale=100 t=75.0 fz=0",
@@ -1350,6 +1360,7 @@ html.compact .sbtn { min-height: 42px; }
       "echo -n 'bloff='; [ -f $D/bltoff.txt ] && cat $D/bltoff.txt | tr '\\n' '|' || true; echo; " +
       "echo -n 'bldel='; [ -f $D/bltdel.txt ] && cat $D/bltdel.txt | tr '\\n' '|' || true; echo; " +
       "echo -n 'texg='; [ -f $D/codm_tex.log ] && grep -E '^TEXG ' $D/codm_tex.log | tail -n 200 | tr '\\n' '|' || true; echo; " +
+      "echo -n 'gcand='; [ -f $D/codm_tex.log ] && grep -E '^GRASSCAND ' $D/codm_tex.log | sort -u | tail -n 700 | tr '\\n' '|' || true; echo; " +
       "echo -n 'ft='; [ -f $D/codm_tex.log ] && grep -E '^FT ' $D/codm_tex.log | tail -n 1 || true; echo; " +
       "L=$D/codm_tex.log; if [ -f $L ]; then S=$(grep -n '^=== start' $L | tail -n 1 | cut -d: -f1); [ -n \"$S\" ] || S=1; " +
       "echo gl=$(tail -n +$S $L | grep -c -E '^(TEXN|FT |GLINFO|GFX api=gles)'); " +
@@ -1378,7 +1389,7 @@ html.compact .sbtn { min-height: 42px; }
         var i = ln.indexOf("=");
         if (i < 0) return;
         var k = ln.slice(0, i), v = ln.slice(i + 1);
-        if (k === "skip" || k === "grass" || k === "texg" || k === "bloff" || k === "bldel" || k === "ftall") v = v.replace(/\|/g, "\n").replace(/\n$/, "");
+        if (k === "skip" || k === "grass" || k === "texg" || k === "gcand" || k === "bloff" || k === "bldel" || k === "ftall") v = v.replace(/\|/g, "\n").replace(/\n$/, "");
         s[k] = v.trim();
       });
       /* If the first root route could not list /data/adb/modules, ask again through the other routes before anyone sees a warning */
@@ -1858,16 +1869,22 @@ html.compact .sbtn { min-height: 42px; }
     (s.bloff || "").split("\n").forEach(function (l) { l = l.trim().replace(/\s+/g, " "); if (l) blOff[l] = 1; });
     (s.bldel || "").split("\n").forEach(function (l) { l = l.trim().replace(/\s+/g, " "); if (l) blDel[l] = 1; });
     grassSel = {};
+    var gOld = false;
     (s.grass || "").split("\n").forEach(function (l) {
-      var m = /^\s*(\d+)\s+(\d+)\s*$/.exec(l);
-      if (m && m[2] !== "0") grassSel[m[1] + "|" + m[2]] = 1;
+      if (!l.trim()) return;
+      var m = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(?:0x)?([0-9a-fA-F]+)\s*$/.exec(l);
+      if (m && m[2] !== "0" && m[3] !== "0") grassSel[m[1] + "|" + m[2] + "|" + m[3] + "|" + m[4].toLowerCase()] = 1;
+      else gOld = true;                                    /* a v0.44 line ("format size") matched too many textures */
     });
+    gCand = parseCands(s.gcand || "");
+    gLoadState();
     parseGroups(s.skip || "", s.texg || "");
     cur.skip = nl(skipLines()); cur.bloff = nk(blOff); cur.bldel = nk(blDel); cur.grass = nk(grassSel);
     if (!base) setBaseline();
     updatePend();
     renderGroups();
     renderGrass();
+    if (gOld && !demo) { writeGrass(); toast("Old v0.44 grass rule removed: it hit too many textures."); }
     renderSkipList();
     updateLookUI();
     renderPresets();
@@ -2002,7 +2019,7 @@ html.compact .sbtn { min-height: 42px; }
       var key = g.fmt + "|" + g.sz, sk = !!skipSet[key];
       if (sk) off++;
       h += '<button class="sw" type="button" role="switch" data-k="' + key + '" aria-checked="' + (sk ? "false" : "true") + '">' +
-        '<span><span class="t">' + esc(fmtName(g.fmt)) + ", " + g.sz + ' px' + (grassSel[key] ? " · grass removed" : "") + '</span><span class="d">' +
+        '<span><span class="t">' + esc(fmtName(g.fmt)) + ", " + g.sz + ' px' + (grassInGroup(g) ? " · grass removed" : "") + '</span><span class="d">' +
         (g.n ? g.n + " seen · " + g.ap + " changed" + (alphaKept(g) ? " · kept soft" : "") : "Not seen in the current log") +
         '</span></span><span class="knob"></span></button>';
     });
@@ -2018,7 +2035,7 @@ html.compact .sbtn { min-height: 42px; }
   function fmtAlphaSoft(f) { return f >= 0x9276 && f <= 0x9279; }
   function alphaKept(g) { return getSw("alpha") && fmtAlphaSoft(g.fmt); }
   function grassLines() {
-    return Object.keys(grassSel).sort().map(function (k) { return k.replace("|", " "); });
+    return Object.keys(grassSel).sort().map(function (k) { return k.split("|").join(" "); });
   }
   function writeGrass() {
     cur.grass = nk(grassSel);
@@ -2035,78 +2052,173 @@ html.compact .sbtn { min-height: 42px; }
     var p = r.ok && updatePend();
     toast(!r.ok ? "Could not save Remove grass." : (p ? msg + " Tap Save to apply it." : "Remove grass is back to how it was."));
   }
-  /* "not it" list is kept in this browser only */
-  var gBad = {}, gOk = "";
-  try { gBad = JSON.parse(localStorage.getItem("ct_gbad") || "{}") || {}; gOk = localStorage.getItem("ct_gok") || ""; } catch (e) {}
-  function saveGMeta() { try { localStorage.setItem("ct_gbad", JSON.stringify(gBad)); localStorage.setItem("ct_gok", gOk); } catch (e) {} }
-  /* Candidates: formats that can be made transparent, seen in the log. Closest to 512 px first (the usual size of the grass atlas),
-     groups already ruled out go last. */
-  function grassCands() {
-    var c = groups.filter(function (g) { return g.n > 0 && fmtBlankable(g.fmt); });
-    c.sort(function (a, b) {
-      var ba = gBad[a.fmt + "|" + a.sz] ? 1 : 0, bb = gBad[b.fmt + "|" + b.sz] ? 1 : 0;
-      if (ba !== bb) return ba - bb;
-      var da = Math.abs(Math.log(a.sz / 512)), db = Math.abs(Math.log(b.sz / 512));
-      return da - db || b.n - a.n;
+  /* ---------- Remove grass finder (v0.45) ----------
+     The module writes one GRASSCAND line per distinct texture it sees (format, size, fingerprint). A rule in grass.txt is
+     "fmt w h hash" and hits exactly that texture. The finder blanks a small group at a time: "Grass is gone" narrows the group
+     down (half at a time) until one texture is left; "Not it" moves on to the next group. Back undoes one step. */
+  var gCand = [];
+  var gst = null;           /* finder session: { keep, list, N, pos, mode, pool, test, scanPos, hist } */
+  function parseCands(txt) {
+    var seen = {}, out = [];
+    (txt || "").split("\n").forEach(function (l) {
+      var m = /^GRASSCAND fmt=(\d+) w=(\d+) h=(\d+) n=(\d+) h=([0-9a-f]+) a=(-?\d+) z=(-?\d+)/.exec(l.trim());
+      if (!m) return;
+      var key = m[1] + "|" + m[2] + "|" + m[3] + "|" + m[5];
+      if (seen[key]) return;
+      seen[key] = 1;
+      out.push({ key: key, fmt: +m[1], w: +m[2], h: +m[3], n: +m[4], a: +m[6], z: +m[7] });
     });
-    return c;
+    return out;
   }
-  function setGrass(key, msg) {
+  function keyInfo(k) {
+    for (var i = 0; i < gCand.length; i++) if (gCand[i].key === k) return gCand[i];
+    var a = k.split("|");
+    return { key: k, fmt: +a[0], w: +a[1], h: +a[2], a: -1, z: -1 };
+  }
+  function keyText(k) {
+    var c = keyInfo(k);
+    return fmtName(c.fmt) + " " + c.w + "×" + c.h + (c.z >= 0 ? " · " + c.z + "% see-through" : "");
+  }
+  function grassInGroup(g) {
+    return Object.keys(grassSel).some(function (k) { var a = k.split("|"); return +a[0] === g.fmt && Math.max(+a[1], +a[2]) === g.sz; });
+  }
+  /* the module never blanks these (scope / reticle atlas, lobby buttons) */
+  function guarded(c) {
+    if (c.fmt === 37497 && ((c.w === 256 && c.h === 512) || (c.w === 512 && c.h === 1024) || (c.w === 512 && c.h === 256))) return true;
+    return c.fmt === 37496 && c.w === 512 && c.h === 512;
+  }
+  /* most likely grass first: many see-through blocks, size near 512 px */
+  function cscore(c) {
+    var z = c.z >= 0 ? c.z : 20;
+    return z - Math.abs(Math.log(Math.max(c.w, c.h) / 512)) * 10;
+  }
+  function rankCands(keep) {
+    var skip = {};
+    keep.forEach(function (k) { skip[k] = 1; });
+    return gCand.filter(function (c) { return !skip[c.key] && !guarded(c); })
+      .sort(function (a, b) { return cscore(b) - cscore(a); })
+      .map(function (c) { return c.key; });
+  }
+  function gSave() { try { if (gst) localStorage.setItem("ct_gst", JSON.stringify(gst)); else localStorage.removeItem("ct_gst"); } catch (e) {} }
+  function gLoadState() {
+    gst = null;
+    try { gst = JSON.parse(localStorage.getItem("ct_gst") || "null"); } catch (e) { gst = null; }
+    if (gst && !(gst.test && gst.test.length && gst.test.every(function (k) { return grassSel[k]; }))) { gst = null; gSave(); }   /* the file no longer matches */
+  }
+  function setRules(keys, msg) {
     grassSel = {};
-    if (key) grassSel[key] = 1;
-    renderGrass(); renderGroups();
+    keys.forEach(function (k) { grassSel[k] = 1; });
+    gSave(); renderGrass(); renderGroups();
     return writeGrass().then(function (r) { grassDone(r, msg); });
+  }
+  function gApply(msg) { return setRules(gst.keep.concat(gst.test), msg); }
+  function gHalf(a) { return a.slice(0, Math.ceil(a.length / 2)); }
+  function gSnap() { gst.hist.push({ mode: gst.mode, pool: gst.pool.slice(), test: gst.test.slice(), pos: gst.pos, scanPos: gst.scanPos || 0 }); }
+  function gScanNext() {
+    gst.mode = "scan"; gst.pos += gst.N;
+    if (gst.pos >= gst.list.length) {
+      var keep = gst.keep, n = gst.list.length; gst = null;
+      setRules(keep, "No grass found.");
+      toast("No grass found in " + n + " textures. Play a match WITH grass in view, tap Refresh list, then try again.");
+      return;
+    }
+    gst.test = gst.list.slice(gst.pos, gst.pos + gst.N);
+    gApply("Trying the next group.");
+  }
+  function gConfirm(k) {
+    var keep = gst.keep; gst = null;
+    setRules(keep.concat([k]), "Grass found.");
+    toast("Found it: " + keyText(k) + ". Tap Save to keep it.");
+  }
+  function gStart() {
+    var keep = Object.keys(grassSel);
+    var list = rankCands(keep);
+    if (!list.length) { toast("No textures in the list yet. Play one match with logs on, then tap Refresh list."); return; }
+    var N = Math.min(10, Math.max(1, Math.ceil(list.length / 6)));
+    gst = { keep: keep, list: list, N: N, pos: 0, mode: "scan", pool: [], test: list.slice(0, N), scanPos: 0, hist: [] };
+    gApply("Trying the first group.");
+  }
+  function gGone() {
+    gSnap();
+    if (gst.mode === "verify" || (gst.mode === "scan" && gst.test.length === 1)) { gConfirm(gst.test[0]); return; }
+    if (gst.mode === "scan") { gst.scanPos = gst.pos; gst.pool = gst.test.slice(); }
+    else gst.pool = gst.test.slice();                      /* narrow: the grass is in the half that was just blanked */
+    gst.mode = "narrow";
+    if (gst.pool.length === 1) { gConfirm(gst.pool[0]); return; }
+    gst.test = gHalf(gst.pool);
+    gApply("Narrowing it down.");
+  }
+  function gNot() {
+    gSnap();
+    if (gst.mode === "scan") { gScanNext(); return; }
+    if (gst.mode === "narrow") {
+      var t = {}; gst.test.forEach(function (k) { t[k] = 1; });
+      gst.pool = gst.pool.filter(function (k) { return !t[k]; });
+      if (gst.pool.length === 1) { gst.mode = "verify"; gst.test = gst.pool.slice(); }
+      else gst.test = gHalf(gst.pool);
+      gApply("Narrowing it down.");
+      return;
+    }
+    gst.pos = gst.scanPos; gScanNext();                    /* verify said no: the grass was not in that group after all, keep scanning */
+  }
+  function gBack() {
+    if (!gst || !gst.hist.length) return;
+    var h = gst.hist.pop();
+    gst.mode = h.mode; gst.pool = h.pool; gst.test = h.test; gst.pos = h.pos; gst.scanPos = h.scanPos;
+    gApply("Went back one step.");
+  }
+  function grassDone(r, msg) {
+    var p = r.ok && updatePend();
+    toast(!r.ok ? "Could not save Remove grass." : (p ? msg + " Tap Save to apply it." : "Remove grass is back to how it was."));
   }
   function renderGrass() {
     var box = $("gf"); if (!box) return;
-    var keys = Object.keys(grassSel), n = keys.length, c = grassCands();
+    var keys = Object.keys(grassSel), n = keys.length;
     var tag = $("grassTag");
     $("grassV").textContent = n ? "On" : "Off";
-    tag.hidden = !n; tag.textContent = n + " removed";
+    tag.hidden = !n; tag.textContent = n + " texture" + (n === 1 ? "" : "s") + " removed";
     var h = "";
-    if (n) {
-      var a = keys[0].split("|"), g = { fmt: +a[0], sz: +a[1] };
-      var ok = gOk === keys[0];
-      h += '<div class="gf-now on"><b>' + esc(fmtName(g.fmt)) + ", " + g.sz + ' px' + (n > 1 ? " +" + (n - 1) + " more" : "") + '</b><small>' +
-        (ok ? "Confirmed as grass on your phone." : "Being tested. Tap Save, open a match, look at the grass, then come back and answer below.") + '</small></div>';
-      if (!ok && n === 1) {
-        var idx = c.filter(function (x) { return gBad[x.fmt + "|" + x.sz]; }).length;
-        h += '<ol class="gf-steps"><li>Tap <b>Save</b> (CODM restarts).</li><li>Go to a place with grass. Check the scope and lobby buttons too.</li><li>Come back here and tap one answer.</li></ol>' +
-          '<div class="grid2"><button class="btn main" id="gfOk" type="button">Grass is gone</button><button class="btn" id="gfNext" type="button">Not it, try next' + (c.length > 1 ? " (" + (idx + 1) + "/" + c.length + ")" : "") + '</button></div>';
-      }
-      h += '<button class="btn" id="gfOff" type="button">Turn Remove grass off</button>';
-    } else if (c.length) {
-      h += '<div class="gf-now"><b>' + c.length + ' possible texture' + (c.length === 1 ? "" : "s") + '</b><small>Only formats with an alpha channel can disappear. The finder tries them one at a time, closest to 512 px first.</small></div>' +
-        '<button class="btn main" id="gfStart" type="button">Find the grass</button>' +
-        (gOk ? '<button class="btn" id="gfLast" type="button">Use the grass found last time</button>' : "");
+    if (gst) {
+      var total = gst.list.length, shown = gst.test.slice(0, 6);
+      var what = gst.mode === "scan" ? "Group " + (Math.floor(gst.pos / gst.N) + 1) + " of " + Math.ceil(total / gst.N) + " · textures " + (gst.pos + 1) + "–" + Math.min(gst.pos + gst.N, total) + " of " + total
+        : gst.mode === "narrow" ? "Narrowing down · " + gst.pool.length + " left to sort out" : "Last check · one texture left";
+      var pct = gst.mode === "scan" ? Math.round(gst.pos / total * 100) : 100 - Math.round(gst.pool.length / Math.max(1, gst.N) * 100);
+      h += '<div class="gf-now on"><b>Testing ' + gst.test.length + ' texture' + (gst.test.length === 1 ? "" : "s") + '</b><small>' + esc(what) + '</small>' +
+        '<ul class="gf-list">' + shown.map(function (k) { return "<li>" + esc(keyText(k)) + "</li>"; }).join("") +
+        (gst.test.length > shown.length ? "<li>+" + (gst.test.length - shown.length) + " more</li>" : "") + '</ul>' +
+        '<div class="gf-prog"><i style="width:' + Math.max(4, Math.min(100, pct)) + '%"></i></div></div>' +
+        '<ol class="gf-steps"><li>Tap <b>Save</b> at the bottom (CODM restarts).</li><li>Open a match where there is grass. Look at the grass, your character, the scope and the lobby buttons.</li><li>Come back here and tap ONE answer.</li></ol>' +
+        '<button class="btn good" id="gfOk" type="button">✓ Grass is gone</button>' +
+        '<div class="grid2"><button class="btn" id="gfBack" type="button"' + (gst.hist.length ? "" : " disabled") + '>← Back</button>' +
+        '<button class="btn" id="gfNext" type="button">Not it · next →</button></div>' +
+        '<button class="btn quiet" id="gfOff" type="button">Cancel and restore everything</button>' +
+        '<p class="pnote">Tap “Grass is gone” even if a character or the scope also broke. The finder keeps narrowing until only the grass texture is left.</p>';
+    } else if (n) {
+      h += '<div class="gf-now on"><b>' + n + ' texture' + (n === 1 ? "" : "s") + ' made invisible</b><small>Only these exact textures. Anything else with the same format and size is untouched.</small></div><div class="gf-conf">' +
+        keys.map(function (k) { return '<div class="item"><span>' + esc(keyText(k)) + '</span><button type="button" data-restore="' + k + '">Restore</button></div>'; }).join("") + '</div>' +
+        '<button class="btn" id="gfMore" type="button">Find another grass texture</button>' +
+        '<button class="btn quiet" id="gfOff" type="button">Restore all textures</button>';
+    } else if (gCand.length) {
+      h += '<div class="gf-now"><b>' + gCand.length + ' texture' + (gCand.length === 1 ? "" : "s") + ' in the list</b><small>Only formats with an alpha channel can disappear. The finder tests a few at a time, the most see-through first.</small></div>' +
+        '<button class="btn good" id="gfStart" type="button">Find the grass</button>';
     } else {
-      h += '<div class="gf-now"><b>No texture list yet</b><small>Turn logging on, play one match, then refresh.</small></div><button class="btn" id="gfRef" type="button">Refresh list</button>';
+      h += '<div class="gf-now"><b>No texture list yet</b><small>Install v0.45, turn logging on, play one match where grass is visible, then tap Refresh list.</small></div><button class="btn" id="gfRef" type="button">Refresh list</button>';
     }
     box.innerHTML = h;
   }
   $("gf").addEventListener("click", function (e) {
     var t = e.target.closest ? e.target.closest("button") : null;
-    if (!t) return;
-    var keys = Object.keys(grassSel), c = grassCands();
-    if (t.id === "gfStart") {
-      if (!c.length) return;
-      gOk = ""; saveGMeta();
-      setGrass(c[0].fmt + "|" + c[0].sz, "Trying " + fmtName(c[0].fmt) + ", " + c[0].sz + " px.");
-    } else if (t.id === "gfLast") {
-      setGrass(gOk, "Grass from last time is on.");
-    } else if (t.id === "gfOk") {
-      gOk = keys[0]; delete gBad[keys[0]]; saveGMeta(); renderGrass();
-      toast("Saved as your grass texture.");
-    } else if (t.id === "gfNext") {
-      gBad[keys[0]] = 1; saveGMeta();
-      var nx = grassCands().filter(function (x) { return !gBad[x.fmt + "|" + x.sz]; })[0];
-      if (!nx) { setGrass("", "No more textures to try."); toast("That was the last one. Nothing is removed now."); return; }
-      setGrass(nx.fmt + "|" + nx.sz, "Trying " + fmtName(nx.fmt) + ", " + nx.sz + " px.");
-    } else if (t.id === "gfOff") {
-      setGrass("", "");
-    } else if (t.id === "gfRef") {
-      refresh().then(function () { toast("Groups refreshed."); });
+    if (!t || t.disabled) return;
+    if (t.getAttribute("data-restore")) {
+      var k = t.getAttribute("data-restore"); delete grassSel[k];
+      setRules(Object.keys(grassSel), "Texture restored."); return;
     }
+    if (t.id === "gfStart" || t.id === "gfMore") gStart();
+    else if (t.id === "gfOk" && gst) gGone();
+    else if (t.id === "gfNext" && gst) gNot();
+    else if (t.id === "gfBack") gBack();
+    else if (t.id === "gfOff") { gst = null; setRules([], ""); }
+    else if (t.id === "gfRef") refresh().then(function () { toast("List refreshed."); });
   });
   $("alpha").addEventListener("click", function () {
     var on = !getSw("alpha");
@@ -2587,7 +2699,7 @@ html.compact .sbtn { min-height: 42px; }
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.44.1'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.45.0'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -2600,7 +2712,7 @@ html.compact .sbtn { min-height: 42px; }
       ZYG_SCRIPT +
       "echo \"injection_breadcrumb_in_logcat=$(timeout 5 logcat -d -s codm_tex 2>/dev/null | grep -c postAppSpecialize)\"; " +
       "ls -ln $D/codm_tex.status 2>&1 | head -n 1; " +
-      "if [ -f $D/codm_tex.status ]; then for k in ver stage dir dir_writable hooksafe safe_why live live_fps abi lib hook gfx forcegl vk_blocked cand skip_rule skip_minsz skip_delay applied why0 cfg_bad cfg_missing injected started updated nl_hook adle_first first_cws first_sbg chain_foreign maps_nonsys maps_anon_exec alpha alpha_kept grass_rules grass_n grass_guard grass_noalpha grass_pbo; do echo \"status.$k=$(sed -n 's/^'$k'=//p' $D/codm_tex.status)\"; done; else echo 'status file: none (module has not run in CODM since install/update)'; fi; " +
+      "if [ -f $D/codm_tex.status ]; then for k in ver stage dir dir_writable hooksafe safe_why live live_fps abi lib hook gfx forcegl vk_blocked cand skip_rule skip_minsz skip_delay applied why0 cfg_bad cfg_missing injected started updated nl_hook adle_first first_cws first_sbg chain_foreign maps_nonsys maps_anon_exec alpha alpha_kept grass_rules grass_n grass_guard grass_noalpha grass_pbo grass_cand grass_early; do echo \"status.$k=$(sed -n 's/^'$k'=//p' $D/codm_tex.status)\"; done; else echo 'status file: none (module has not run in CODM since install/update)'; fi; " +
       "echo \"settings_files_owned_by_game=$(ls -ln $D/*.txt 2>/dev/null | awk '$3!=0' | wc -l) (0 = only root wrote them: the game process never created or repaired any)\"; " +
       "echo '== game dir'; ls -ldZ /data/data/$P /data/data/$P/files 2>&1; ls -ldZ /data/user/*/$P 2>&1; " +
       "echo '== settings folder'; echo \"$D\"; ls -la $D 2>&1 | grep -v -i -E 'login|token|jwt|ticket|passwd|account' | head -n 60; " +
@@ -2611,7 +2723,7 @@ html.compact .sbtn { min-height: 42px; }
       "echo '== crash log (only CODM-related lines; other apps crashing, e.g. e.android:clean / android:channel, are hidden)'; C=$(timeout 8 logcat -b crash -d -t 400 2>&1); echo \"$C\" | grep -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | tail -n 80; echo \"(hidden non-CODM crash lines: $(echo \"$C\" | grep -v -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | grep -c .))\"; " +
       "echo '== logcat'; timeout 10 logcat -d -t 6000 2>/dev/null | grep -i -E 'garena|codm|libunity|zygisk|lsplt|FATAL|SIGSEGV|SIGABRT|tombstone|anogs|tersafe|lmkd' | tail -n 80; " +
       "echo '== tombstone'; T=$(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 40 | while read f; do grep -q -s $P \"$f\" && { echo \"$f\"; break; }; done); echo \"newest tombstone of any app: $(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 1)\"; if [ -n \"$T\" ]; then echo \"$T\"; echo \"tombstone_time=$(date -r \"$T\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c %y \"$T\" 2>/dev/null | cut -c1-19)\"; [ -n \"$(find \"$T\" -mmin +1440 2>/dev/null)\" ] && echo 'STALE: older than 24 h, NOT from the last session; do not treat as the current crash'; head -n 70 \"$T\"; else echo none; fi; " +
-      "echo '== process / exit reason (v0.44.1)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
+      "echo '== process / exit reason (v0.45.0)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
       "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
   }
 
