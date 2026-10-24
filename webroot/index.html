@@ -1206,7 +1206,7 @@ html.compact .sbtn { min-height: 42px; }
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4", forcegl: "1",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0", alpha: "1",
-    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.46.0",
+    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.46.1",
     st: "ver=v0.41|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
     startline: "=== start v0.41 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
     ftall: "FT fps=57.1 avg=17.5ms p50=16.9 p99=36.2 max=48.0 >33ms=2 >50ms=0 n=285 cap=0 bias=0 scale=100 t=60.0 fz=0\nFT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=65.0 fz=1\nFT fps=58.4 avg=17.1ms p50=16.8 p99=30.2 max=41.0 >33ms=1 >50ms=0 n=292 cap=0 bias=0 scale=100 t=70.0 fz=0\nFT fps=56.0 avg=17.9ms p50=17.2 p99=38.9 max=52.0 >33ms=2 >50ms=1 n=280 cap=0 bias=0 scale=100 t=75.0 fz=0",
@@ -2092,7 +2092,9 @@ html.compact .sbtn { min-height: 42px; }
   function cscore(c) {
     var z = c.z >= 0 ? c.z : 20;
     var mip = c.lv > 1 ? 20 : (c.lv === 1 ? -40 : 0);
-    return z * 0.5 - Math.abs(Math.log(Math.max(c.w, c.h) / 512)) * 25 + mip;
+    /* On this kind of phone the grass hid when every 512 px ETC2 sRGBA texture was blanked (v0.44 test), so those go first. */
+    var hint = (c.fmt === 37497 && Math.max(c.w, c.h) === 512) ? 60 : 0;
+    return z * 0.5 - Math.abs(Math.log(Math.max(c.w, c.h) / 512)) * 25 + mip + hint;
   }
   function rankCands(keep) {
     var skip = {};
@@ -2701,7 +2703,7 @@ html.compact .sbtn { min-height: 42px; }
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.46.0'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.46.1'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -2725,7 +2727,7 @@ html.compact .sbtn { min-height: 42px; }
       "echo '== crash log (only CODM-related lines; other apps crashing, e.g. e.android:clean / android:channel, are hidden)'; C=$(timeout 8 logcat -b crash -d -t 400 2>&1); echo \"$C\" | grep -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | tail -n 80; echo \"(hidden non-CODM crash lines: $(echo \"$C\" | grep -v -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | grep -c .))\"; " +
       "echo '== logcat'; timeout 10 logcat -d -t 6000 2>/dev/null | grep -i -E 'garena|codm|libunity|zygisk|lsplt|FATAL|SIGSEGV|SIGABRT|tombstone|anogs|tersafe|lmkd' | tail -n 80; " +
       "echo '== tombstone'; T=$(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 40 | while read f; do grep -q -s $P \"$f\" && { echo \"$f\"; break; }; done); echo \"newest tombstone of any app: $(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 1)\"; if [ -n \"$T\" ]; then echo \"$T\"; echo \"tombstone_time=$(date -r \"$T\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c %y \"$T\" 2>/dev/null | cut -c1-19)\"; [ -n \"$(find \"$T\" -mmin +1440 2>/dev/null)\" ] && echo 'STALE: older than 24 h, NOT from the last session; do not treat as the current crash'; head -n 70 \"$T\"; else echo none; fi; " +
-      "echo '== process / exit reason (v0.46.0)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
+      "echo '== process / exit reason (v0.46.1)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
       "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
   }
 
