@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.46.0"
+#define VERSION "v0.46.1"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -465,7 +465,7 @@ struct GrRule { int fmt; int w; int h; uint64_t hash; };
 static std::vector<GrRule> g_grass;                  /* grass.txt, read once at startup */
 static std::atomic<int> g_grass_on{0};
 static std::atomic<int> g_alpha_kept{0}, g_grass_n{0}, g_grass_guard{0}, g_grass_noalpha{0}, g_grass_pbo{0}, g_grass_nobound{0};
-static std::atomic<int> g_grass_cand{0}, g_grass_early{0};
+static std::atomic<int> g_grass_cand{0}, g_grass_early{0}, g_grass_early_fix{0};
 
 static inline bool fmt_alpha(GLenum f) { return f >= 0x9276 && f <= 0x9279; }   /* ETC2 punch-through (+sRGB), ETC2 EAC RGBA (+sRGB) */
 static inline bool tex_track() { return g_near.load() || g_style.load() || g_flat.load() || g_testtex.load() || g_grass_on.load(); }
@@ -533,14 +533,15 @@ static uint64_t g_cseen[4096];
 static int g_cseen_n = 0;
 /* Level-0 upload of a compressed texture: write it to the log once (finder list) and decide whether this texture is blanked.
    g_blank[id]: 0 = not decided yet, 1 = blank every upload, 2 = checked, leave it. */
-static void grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p) {
-    if (!p || n < 16 || n > (8 << 20) || std::max(w, h) < 64) return;
+/* returns 0 = nothing to do, 1 = this texture is now blanked, 2 = blanked AND mip levels reached the GPU before level 0 did */
+static int grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p) {
+    if (!p || n < 16 || n > (8 << 20) || std::max(w, h) < 64) return 0;
     uint8_t blk[16];
     int bs = blank_block(f, blk);
-    if (!bs || (n % bs)) return;
+    if (!bs || (n % bs)) return 0;
     if (unpack_pbo_bound()) {
         if (g_grass_on.load()) { int c = ++g_grass_pbo; if (c == 1) L("GRASS cannot read an upload that comes from a pixel buffer\n"); st_seti("grass_pbo", c); }
-        return;
+        return 0;
     }
     uint64_t hh = tex_hash(p, n);
     bool fresh = false;
@@ -557,20 +558,23 @@ static void grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p
         int c = ++g_grass_cand; if (c % 20 == 0) st_seti("grass_cand", c);
         L("GRASSCAND fmt=%d w=%d h=%d n=%d h=%016llx a=%d z=%d lv=%d\n", (int)f, w, h, n, (unsigned long long)hh, mean, zero, (id > 0 && id < MAXTEX) ? (int)g_lv[id].load() : 0);
     }
-    if (id == 0 || id >= MAXTEX) return;
-    if (!g_grass_on.load()) return;
+    if (id == 0 || id >= MAXTEX) return 0;
+    if (!g_grass_on.load()) return 0;
     if (grass_rule_match((int)f, w, h, hh)) {
         if (grass_guard((int)f, w, h)) {
             int c = ++g_grass_guard; st_seti("grass_guard", c);
             if (c <= 5) L("GRASS kept fmt=%d %dx%d: it is the scope / reticle atlas (or the lobby buttons)\n", (int)f, w, h);
-            g_blank[id] = 2; return;
+            g_blank[id] = 2; return 0;
         }
+        bool early = g_blank[id].load() == 3;
         g_blank[id] = 1;
         int c = ++g_grass_n; st_seti("grass_n", c);
-        if (c <= 40) L("GRASS rule hit #%d fmt=0x%x %dx%d h=%016llx tex=%u\n", c, (unsigned)f, w, h, (unsigned long long)hh, (unsigned)id);
+        if (c <= 40) L("GRASS rule hit #%d fmt=0x%x %dx%d h=%016llx tex=%u%s\n", c, (unsigned)f, w, h, (unsigned long long)hh, (unsigned)id, early ? " (mips came first)" : "");
+        return early ? 2 : 1;
     } else {
         g_blank[id] = 2;
     }
+    return 0;
 }
 /* A new texture storage starts the decision over for that texture id. */
 static void grass_on_storage(GLenum t, GLsizei lv, GLsizei w, GLsizei h, GLenum fmt) {
@@ -584,18 +588,37 @@ static void grass_on_storage(GLenum t, GLsizei lv, GLsizei w, GLsizei h, GLenum 
 static thread_local uint8_t *tl_blank_p = nullptr;
 static thread_local size_t tl_blank_cap = 0;
 /* Transparent replacement for `n` bytes of compressed data (same size, same format). Caller has checked there is no pixel buffer. */
-static const void *grass_data(GLenum fmt, GLsizei n, const void *p) {
+static const uint8_t *blank_fill(GLenum fmt, size_t n) {          /* n bytes of transparent blocks in this thread's buffer, null = no */
     uint8_t blk[16];
     int bs = blank_block(fmt, blk);
-    if (!bs || n <= 0 || !p || n > (8 << 20) || (n % bs)) return p;
-    if (unpack_pbo_bound()) { int c = ++g_grass_pbo; if (c == 1) L("GRASS cannot blank an upload that comes from a pixel buffer\n"); st_seti("grass_pbo", c); return p; }
-    if (tl_blank_cap < (size_t)n) {                    /* plain malloc: freed never (one buffer per thread, at most 8 MB) */
-        uint8_t *nb = (uint8_t *)realloc(tl_blank_p, (size_t)n);
-        if (!nb) return p;
-        tl_blank_p = nb; tl_blank_cap = (size_t)n;
+    if (!bs || n == 0 || n > (8u << 20) || (n % (size_t)bs)) return nullptr;
+    if (tl_blank_cap < n) {                            /* plain malloc: freed never (one buffer per thread, at most 8 MB) */
+        uint8_t *nb = (uint8_t *)realloc(tl_blank_p, n);
+        if (!nb) return nullptr;
+        tl_blank_p = nb; tl_blank_cap = n;
     }
-    for (GLsizei i = 0; i < n; i += bs) memcpy(tl_blank_p + i, blk, (size_t)bs);
+    for (size_t i = 0; i < n; i += (size_t)bs) memcpy(tl_blank_p + i, blk, (size_t)bs);
     return tl_blank_p;
+}
+static const void *grass_data(GLenum fmt, GLsizei n, const void *p) {
+    if (n <= 0 || !p || !blank_block_size(fmt)) return p;
+    if (unpack_pbo_bound()) { int c = ++g_grass_pbo; if (c == 1) L("GRASS cannot blank an upload that comes from a pixel buffer\n"); st_seti("grass_pbo", c); return p; }
+    const uint8_t *b = blank_fill(fmt, (size_t)n);
+    return b ? (const void *)b : p;
+}
+/* The game sent smaller mip levels before level 0 (texture streaming): they are already on the GPU. Once level 0 is known to be
+   grass, send every smaller level again as transparent blocks. ETC2 only (4x4 blocks); ASTC textures keep their early mips. */
+typedef void (*ctsi2_t)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLsizei, const void *);
+static void blank_early_mips(ctsi2_t fn, GLenum f, int w0, int h0, int levels) {
+    if (!fn || f < 0x9276 || f > 0x9279 || levels < 2) return;
+    int bs = (f <= 0x9277) ? 8 : 16, fixed = 0;
+    for (int l = 1; l < levels && l < 14; l++) {
+        int wl = std::max(1, w0 >> l), hl = std::max(1, h0 >> l);
+        size_t n = (size_t)((wl + 3) / 4) * (size_t)((hl + 3) / 4) * (size_t)bs;
+        const uint8_t *b = blank_fill(f, n);
+        if (b) { fn(GL_TEXTURE_2D, l, 0, 0, wl, hl, f, (GLsizei)n, b); fixed++; }
+    }
+    int c = ++g_grass_early_fix; if (c <= 5) L("GRASS early mips blanked again (%d levels)\n", fixed);
 }
 
 static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, bool revisit);
@@ -788,7 +811,7 @@ static std::string why0_reason() {
 static void grp_dump(double t_s) {
     st_seti("cand", g_cand.load()); st_seti("applied", g_applied.load());
     st_seti("skip_rule", g_sk_rule.load()); st_seti("skip_minsz", g_sk_minsz.load());
-    st_seti("skip_delay", g_sk_delay.load()); st_seti("alpha_kept", g_alpha_kept.load()); st_seti("grass_n", g_grass_n.load()); st_seti("grass_cand", g_grass_cand.load()); st_seti("grass_early", g_grass_early.load()); st_seti("revisited", g_revisited.load()); st_seti("ts3_cmp", g_n_ts3_cmp.load()); st_set("why0", why0_reason());
+    st_seti("skip_delay", g_sk_delay.load()); st_seti("alpha_kept", g_alpha_kept.load()); st_seti("grass_n", g_grass_n.load()); st_seti("grass_cand", g_grass_cand.load()); st_seti("grass_early", g_grass_early.load()); st_seti("grass_early_fix", g_grass_early_fix.load()); st_seti("revisited", g_revisited.load()); st_seti("ts3_cmp", g_n_ts3_cmp.load()); st_set("why0", why0_reason());
     L("TEXSKIP applied=%d cand=%d skip_rule=%d skip_minsz=%d skip_delay=%d unbound=%d revisited=%d pending=%d dropped=%d ts3=%d ts3cmp=%d cti2=%d\n", g_applied.load(), g_cand.load(), g_sk_rule.load(), g_sk_minsz.load(), g_sk_delay.load(), g_nobound.load(), g_revisited.load(), g_pend_n.load(), g_pend_drop.load(), g_n_ts3.load(), g_n_ts3_cmp.load(), g_n_cti2.load());
     Grp tmp[MAXG]; int n;
     { std::lock_guard<std::mutex> lk(g_gm); n = g_ng; for (int i = 0; i < n; i++) tmp[i] = g_grp[i]; g_gdirty = 0; }
@@ -870,9 +893,11 @@ static void h_ctsi2(GLenum t, GLint l, GLint x, GLint y, GLsizei w, GLsizei h, G
     auto fn_ = orig_or(o_ctsi2, "glCompressedTexSubImage2D", h_ctsi2); if (!fn_) return;
     if (p && t == GL_TEXTURE_2D) {                                                /* v0.45 Remove grass */
         GLuint id = tl_bound[tl_unit];
-        if (l == 0 && x == 0 && y == 0) grass_level0(id, f, (int)w, (int)h, (int)n, p);
+        int dec = 0;
+        if (l == 0 && x == 0 && y == 0) dec = grass_level0(id, f, (int)w, (int)h, (int)n, p);
         if (g_grass_on.load() && id > 0 && id < MAXTEX) {
-            if (l > 0 && g_blank[id].load() == 0 && blank_block_size(f)) g_grass_early++;
+            if (l > 0 && g_blank[id].load() == 0 && blank_block_size(f)) { g_grass_early++; g_blank[id] = 3; }   /* 3 = a mip came before level 0 */
+            if (dec == 2 && g_lv[id].load() > 1) blank_early_mips(fn_, f, (int)w, (int)h, (int)g_lv[id].load());
             if (g_blank[id].load() == 1) p = grass_data(f, n, p);
         }
     }
