@@ -50,6 +50,8 @@ int main(){
   h_ctsi2(GL_TEXTURE_2D,0,0,0,512,512,37497,N,B.data()); CHECK(g_blank[77].load()==2);
   h_ctsi2(GL_TEXTURE_2D,0,0,0,512,512,37497,N,A.data()); CHECK(g_blank[77].load()==1);
   GLuint d=77; h_del(1,&d); CHECK(g_blank[77].load()==0);
+  /* v0.46: the log line carries the mip count from the storage call; textures made without it say lv=0; list cap is 4096 */
+  { auto C=mk(N,7); tl_bound[0]=87; g_lv[87]=9; h_cti2(GL_TEXTURE_2D,0,37497,512,512,0,N,C.data()); std::string lg=rd(LOGF); CHECK(lg.find(" z=")!=std::string::npos); CHECK(lg.find(" lv=10\n")!=std::string::npos); CHECK(lg.find(" lv=0\n")!=std::string::npos); }
   /* wrong format or size with the same bytes: not a match */
   tl_bound[0]=81; h_cti2(GL_TEXTURE_2D,0,0x9278,512,512,0,N,A.data()); CHECK(g_blank[81].load()==2);
   /* RGB-only formats are never touched or logged */
