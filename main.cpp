@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.46.1"
+#define VERSION "v0.47.0"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -463,6 +463,11 @@ static void defer_drop(GLuint id) {
 static std::atomic<int> g_alpha{1};
 struct GrRule { int fmt; int w; int h; uint64_t hash; };
 static std::vector<GrRule> g_grass;                  /* grass.txt, read once at startup */
+/* v0.46.1: "range LO HI FMT SIDE MINLV" = every candidate texture whose fingerprint is between LO and HI (hex, inclusive), with
+   format FMT (0 = any blankable format), longest side SIDE (0 = any) and at least MINLV mip levels (0 = any). Lets the WebUI
+   switch off half of all textures at once and bisect down to the grass. */
+struct GrRange { uint64_t lo, hi; int fmt, side, minlv; };
+static std::vector<GrRange> g_range;
 static std::atomic<int> g_grass_on{0};
 static std::atomic<int> g_alpha_kept{0}, g_grass_n{0}, g_grass_guard{0}, g_grass_noalpha{0}, g_grass_pbo{0}, g_grass_nobound{0};
 static std::atomic<int> g_grass_cand{0}, g_grass_early{0}, g_grass_early_fix{0};
@@ -514,8 +519,15 @@ static void eac_stats(GLenum f, const void *p, int n, int *mean, int *zero) {
     if (cnt) { *mean = (int)(sum / cnt); *zero = z * 100 / cnt; }
 }
 static inline int blank_block_size(GLenum f) { uint8_t t[16]; return blank_block(f, t); }
-static bool grass_rule_match(int fmt, int w, int h, uint64_t hash) {
+static bool grass_rule_match(int fmt, int w, int h, uint64_t hash, int lv = 0) {
     for (auto &r : g_grass) if (r.fmt == fmt && r.w == w && r.h == h && r.hash == hash) return true;
+    for (auto &r : g_range) {
+        if (hash < r.lo || hash > r.hi) continue;
+        if (r.fmt && r.fmt != fmt) continue;
+        if (r.side && r.side != std::max(w, h)) continue;
+        if (r.minlv > 0 && lv > 0 && lv < r.minlv) continue;       /* lv 0 = unknown, never excluded */
+        return true;
+    }
     return false;
 }
 /* true when the current GL_PIXEL_UNPACK_BUFFER binding is non-zero (then the data pointer is an offset, never read it) */
@@ -560,7 +572,7 @@ static int grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p)
     }
     if (id == 0 || id >= MAXTEX) return 0;
     if (!g_grass_on.load()) return 0;
-    if (grass_rule_match((int)f, w, h, hh)) {
+    if (grass_rule_match((int)f, w, h, hh, (int)g_lv[id].load())) {
         if (grass_guard((int)f, w, h)) {
             int c = ++g_grass_guard; st_seti("grass_guard", c);
             if (c <= 5) L("GRASS kept fmt=%d %dx%d: it is the scope / reticle atlas (or the lobby buttons)\n", (int)f, w, h);
@@ -1760,12 +1772,17 @@ static void load_cfg() {
         f = fopen(ALPHAF, "w");
         if (f) { fprintf(f, "1\n"); fclose(f); }
     }
-    g_grass.clear();
+    g_grass.clear(); g_range.clear();
     f = fopen(GRASSF, "r");                        /* v0.45: Remove grass, "format width height hash" per line; missing or empty = off */
     if (f) {
         char ln[128];
         while (g_grass.size() < 64 && fgets(ln, sizeof ln, f)) {
-            int a = 0, b = 0, c = 0; unsigned long long hh = 0;
+            int a = 0, b = 0, c = 0; unsigned long long hh = 0, h2 = 0; int fm = 0, sd = 0, ml = 0;
+            if (strncmp(ln, "range ", 6) == 0) {
+                if (sscanf(ln + 6, "%llx %llx %i %i %i", &hh, &h2, &fm, &sd, &ml) == 5 && h2 >= hh && g_range.size() < 8) g_range.push_back({(uint64_t)hh, (uint64_t)h2, fm, sd, ml});
+                else L("GRASSRULE range ignored (cannot read it): %.60s", ln);
+                continue;
+            }
             int k = sscanf(ln, "%i %i %i %llx", &a, &b, &c, &hh);
             if (k == 4 && a > 0 && b > 0 && c > 0) g_grass.push_back({a, b, c, (uint64_t)hh});
             else if (k == 2) L("GRASSRULE old v0.44 line ignored (it matched too many textures): %.40s", ln);
@@ -1773,8 +1790,9 @@ static void load_cfg() {
         }
         fclose(f);
         for (auto &r : g_grass) L("GRASSRULE loaded fmt=%d %dx%d h=%016llx\n", r.fmt, r.w, r.h, (unsigned long long)r.hash);
+        for (auto &r : g_range) L("GRASSRULE range loaded %016llx-%016llx fmt=%d side=%d minlv=%d\n", (unsigned long long)r.lo, (unsigned long long)r.hi, r.fmt, r.side, r.minlv);
     }
-    g_grass_on = g_grass.empty() ? 0 : 1;
+    g_grass_on = (g_grass.empty() && g_range.empty()) ? 0 : 1;
     if (FILE *ff = fopen(FULLF, "r")) {
         int fw = 0, fh = 0;
         if (fscanf(ff, "%d %d", &fw, &fh) == 2 && fw >= 640 && fw <= 8192 && fh >= 360 && fw >= fh) { g_fullw = fw; g_fullh = fh; }
@@ -2026,7 +2044,7 @@ static void log_start(int mode) {
       VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), g_ttsize.load(), g_ttsm.load(), g_forcegl.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]), g_alpha.load(), (int)g_grass.size());
     st_set("ver", VERSION); st_seti("pid", (long long)getpid()); st_set("abi", abi); st_set("stage", "started");
     st_set("forcegl", g_forcegl.load() ? "on" : "off");
-    st_set("alpha", g_alpha.load() ? "keep" : "off"); st_seti("grass_rules", (long long)g_grass.size());
+    st_set("alpha", g_alpha.load() ? "keep" : "off"); st_seti("grass_rules", (long long)(g_grass.size() + g_range.size()));
     st_seti("started", (long long)time(nullptr));
     st_seti("live_fps", g_fps.load()); st_set("dir", g_dir); st_set("live", "1");
     st_set("scale_safety", g_scale_safety > 0 ? "forced_off_prev_" + std::to_string(g_scale_safety) : "no");
