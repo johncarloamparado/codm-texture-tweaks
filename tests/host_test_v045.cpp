@@ -9,7 +9,8 @@ static void fake_giv(GLenum, GLint *v){ *v = g_fake_pbo; }
 static std::string rd(const char*p){FILE*f=fopen(p,"r");if(!f)return "";std::string s;char b[4096];size_t n;while((n=fread(b,1,sizeof b,f))>0)s.append(b,n);fclose(f);return s;}
 static void wr(const char*p,const char*t){unlink(p);FILE*f=fopen(p,"w");fputs(t,f);fclose(f);}
 static GLenum cap_fmt; static GLsizei cap_n; static std::vector<uint8_t> cap;
-static void fake_ctsi2(GLenum,GLint,GLint,GLint,GLsizei,GLsizei,GLenum f,GLsizei n,const void*p){cap_fmt=f;cap_n=n;cap.assign((const uint8_t*)p,(const uint8_t*)p+n);}
+struct Call{int l,w,h,n;bool z;}; static std::vector<Call> calls;
+static void fake_ctsi2(GLenum,GLint l,GLint,GLint,GLsizei w,GLsizei h,GLenum f,GLsizei n,const void*p){cap_fmt=f;cap_n=n;cap.assign((const uint8_t*)p,(const uint8_t*)p+n);bool z=true;for(auto v:cap) if(v) z=false;calls.push_back({l,w,h,n,z});}
 static void fake_cti2(GLenum,GLint,GLenum f,GLsizei,GLsizei,GLint,GLsizei n,const void*p){cap_fmt=f;cap_n=n;cap.assign((const uint8_t*)p,(const uint8_t*)p+n);}
 static void fake_st(GLenum,GLsizei,GLenum,GLsizei,GLsizei){}
 static void fake_tp(GLenum,GLenum,GLint){}
@@ -77,6 +78,23 @@ int main(){
   /* an upload that comes from a pixel buffer is never read or blanked (the pointer would be an offset) */
   wr(GRASSF,""); snprintf(line,sizeof line,"37497 512 512 %016llx\n",(unsigned long long)hA); wr(GRASSF,line); load_cfg();
   g_fake_pbo=5; tl_bound[0]=86; cap.clear(); h_cti2(GL_TEXTURE_2D,0,37497,512,512,0,N,A.data()); CHECK(g_blank[86].load()==0); CHECK(cap==A); CHECK(g_grass_pbo.load()>=1); g_fake_pbo=0;
+  /* mips that reach the GPU BEFORE level 0 (texture streaming): once level 0 is recognised, they are sent again as blank */
+  { tl_bound[0]=95; h_st(GL_TEXTURE_2D,4,37497,128,128); calls.clear();
+    auto M=mk(128*128,5); uint64_t hM=tex_hash(M.data(),128*128);
+    snprintf(line,sizeof line,"37497 128 128 %016llx\n",(unsigned long long)hM); wr(GRASSF,line); load_cfg();
+    h_ctsi2(GL_TEXTURE_2D,2,0,0,32,32,37497,1024,M.data());   /* a small mip first: passes through, state = 3 */
+    CHECK(calls.size()==1 && !calls[0].z); CHECK(g_blank[95].load()==3);
+    calls.clear(); h_ctsi2(GL_TEXTURE_2D,0,0,0,128,128,37497,128*128,M.data());
+    CHECK(g_blank[95].load()==1);
+    /* levels 1,2,3 re-sent blank with the right sizes, then level 0 itself blank */
+    CHECK(calls.size()==4);
+    if(calls.size()==4){ CHECK(calls[0].l==1&&calls[0].w==64&&calls[0].h==64&&calls[0].n==16*16*16&&calls[0].z);
+      CHECK(calls[1].l==2&&calls[1].w==32&&calls[1].n==8*8*16&&calls[1].z); CHECK(calls[2].l==3&&calls[2].w==16&&calls[2].n==4*4*16&&calls[2].z);
+      CHECK(calls[3].l==0&&calls[3].n==128*128&&calls[3].z); }
+    /* a texture whose level 0 comes first needs no repair */
+    tl_bound[0]=96; h_st(GL_TEXTURE_2D,4,37497,128,128); calls.clear();
+    h_ctsi2(GL_TEXTURE_2D,0,0,0,128,128,37497,128*128,M.data()); CHECK(calls.size()==1 && calls[0].z); }
+  wr(GRASSF,""); snprintf(line,sizeof line,"37497 512 512 %016llx\n",(unsigned long long)hA); wr(GRASSF,line); load_cfg();
   /* no thread_local destructor trouble: a fresh thread blanks too (this is what crashed v0.44.0 on the phone) */
   wr(GRASSF,""); snprintf(line,sizeof line,"37497 512 512 %016llx\n",(unsigned long long)hA); wr(GRASSF,line); load_cfg();
   std::thread th([&]{ tl_bound[0]=90; h_cti2(GL_TEXTURE_2D,0,37497,512,512,0,N,A.data()); }); th.join();
