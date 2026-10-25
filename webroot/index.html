@@ -2,7 +2,7 @@
 <!-- CODM Blocky Textures: WebUI for SukiSU Ultra / KernelSU. Reads and writes the module's settings files via ksu.exec. -->
 <html lang="en">
 <head>
-<script>try{if(localStorage.getItem("ct_density")==="compact")document.documentElement.classList.add("compact");}catch(e){}</script>
+<script>try{var H=document.documentElement;if(localStorage.getItem("ct_density")==="compact")H.classList.add("compact");if(localStorage.getItem("ct_ui_cards")!=="roomy")H.classList.add("cc");if(localStorage.getItem("ct_ui_guide")==="short")H.classList.add("short");}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
@@ -810,6 +810,60 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
 @keyframes shine{from{background-position:120% 0}to{background-position:-120% 0}}
 .bootbar{height:6px;border-radius:99px;box-shadow:0 0 18px rgba(56,189,248,.25)}
 .bootbar i{background:linear-gradient(90deg,#8b5cf6,#2563eb,#38bdf8,#67e8f9);box-shadow:0 0 12px rgba(56,189,248,.7)}
+
+/* ===== v0.53: sharper start-up logo, even tab capsule ===== */
+.bootlogo .logo{filter:none;box-shadow:0 0 30px rgba(139,92,246,.4);shape-rendering:geometricPrecision}
+@keyframes tw2{50%{opacity:.62}}
+#boot .bootlogo .logo rect{animation-name:blockin,tw2}
+.ind{transition:none;top:0;bottom:0}
+#dock .tabs{gap:4px}
+
+/* ===== v0.53: organised settings. Every card is collapsible and has a colour per kind of setting ===== */
+.card[data-cat]{--cat:#38bdf8}
+.card[data-cat]::after{content:"";position:absolute;left:0;top:20px;bottom:20px;width:3px;border-radius:0 4px 4px 0;background:var(--cat);box-shadow:0 0 12px var(--cat);opacity:.85;pointer-events:none}
+.card[data-cat] .hi{color:var(--cat);border-color:color-mix(in srgb,var(--cat) 45%,transparent);background:linear-gradient(145deg,color-mix(in srgb,var(--cat) 24%,transparent),color-mix(in srgb,var(--cat) 7%,transparent))}
+.ttl{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ttl em{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--cat);line-height:1.1}
+.ttl span{line-height:1.2}
+/* marker in front of every setting title, so the kind of setting is visible at a glance */
+.card[data-cat] .rh .lb::before,.card[data-cat] .rh>label::before,.card[data-cat] .sw .t::before{content:"";display:inline-block;width:4px;height:14px;border-radius:3px;margin-right:8px;vertical-align:-2px;background:var(--cat);box-shadow:0 0 8px color-mix(in srgb,var(--cat) 70%,transparent)}
+.gf .sw .t::before,.card[data-cat] .item.lib .t::before,.card[data-cat] .skip-item .t::before,.card[data-cat] .prow .t::before{display:none}
+.card>details>summary.ch{padding:2px 0;min-height:44px}
+.card>details[open]>.body{animation:cbody .3s var(--ease)}
+@keyframes cbody{from{opacity:0;transform:translateY(-6px)}}
+/* legend + open / close all */
+.vbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0}
+.vbar .vc{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid color-mix(in srgb,var(--cat) 45%,transparent);background:color-mix(in srgb,var(--cat) 10%,transparent);color:var(--text);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:transform .2s var(--spring),background-color .2s}
+.vbar .vc i{width:8px;height:8px;border-radius:50%;background:var(--cat);box-shadow:0 0 8px var(--cat)}
+.vbar .vc small{color:var(--mute);font-weight:700}
+.vbar .vc:active{transform:scale(.94)}
+.vbar .vc.on{background:color-mix(in srgb,var(--cat) 24%,transparent)}
+.vbar .va{margin-left:auto;display:flex;gap:6px}
+.vbar .va button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mute);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+.vbar .va button:active{transform:scale(.94)}
+
+/* ===== v0.53: thinner cards, Short mode (hides long explanations) ===== */
+html.cc .card{margin-top:10px;padding:12px 16px;border-radius:20px}
+html.cc .card::before{height:40px;border-radius:20px 20px 0 0}
+html.cc .card[data-cat]::after{top:13px;bottom:13px}
+html.cc .card h2{font-size:15.5px}
+html.cc .card>details>summary.ch{min-height:36px;padding:0}
+html.cc .hi{width:28px;height:28px;border-radius:9px}
+html.cc .hi svg{width:15px;height:15px}
+html.cc .ttl em{font-size:8.5px;letter-spacing:.14em}
+html.cc summary svg{width:20px;height:20px}
+html.cc .card>details>.body{margin-top:10px}
+html.cc .card>details[open]>.body{margin-top:12px}
+html.cc .cap{margin:2px 0 10px;font-size:12.5px;line-height:1.45}
+html.cc .row{margin-top:14px}
+html.cc .desc{margin:2px 0 8px;font-size:12.5px}
+html.cc .vbar{margin:10px 0}
+html.cc .vbar .vc,html.cc .vbar .va button{min-height:32px;font-size:12px}
+html.cc .tile{padding:10px 12px}
+html.cc .banner{padding:12px 14px}
+html.short .cap,html.short .desc,html.short .pnote,html.short ul.legend,html.short .gf-steps,html.short .sw .d,html.short .qt-more{display:none!important}
+html.short .gf .sw .d,html.short .item.lib .sw .d,html.short .rg-btn .d,html.short .opt .d{display:block!important}
+html.short #uiCard .cap{display:block!important}
 </style>
 </head>
 <body>
@@ -1040,16 +1094,22 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
 
     <section class="card" id="grassCard">
       <div class="ch"><h2>Textures</h2><span class="tag n" id="grassTag" hidden style="margin-left:auto"></span></div>
-      <p class="cap">Keep smoke soft leaves transparent textures smooth. The texture finder finds one single texture on this phone by switching off half of the list at a time, and keeps what it finds in My textures.</p>
+      <p class="cap">Keep smoke soft leaves transparent textures smooth. The texture finder finds one single texture on this phone by switching off half of the list at a time, and keeps what it finds in the My textures card below.</p>
       <button class="sw" id="alpha" role="switch" aria-checked="true" type="button">
         <span><span class="t">Keep smoke soft</span><span class="d">Textures with an alpha channel (smoke, dust, muzzle flash, leaves) stay as the game made them. Off = they turn into blocks too.</span></span>
         <span class="knob"></span>
       </button>
       <div class="row">
         <div class="rh"><span class="lb">Texture finder</span><span class="val" id="grassV">Off</span></div>
-        <p class="desc" id="grassD">Needs the v0.50 module and a list: play one match with logs on, stay in it until the thing you are looking for is on screen, then tap Refresh list. Use a mode without rank points.</p>
+        <p class="desc" id="grassD">Needs the v0.53 module and a list: play one match with logs on, stay in it until the thing you are looking for is on screen, then tap Refresh list. Use a mode without rank points.</p>
         <div class="gf" id="gf"></div>
       </div>
+    </section>
+
+    <section class="card" id="libCard">
+      <div class="ch"><h2>My textures</h2><span class="tag n" id="libTag" hidden style="margin-left:auto"></span></div>
+      <p class="cap">Everything the Texture finder found. Each one (or each set of textures that work together) has its own on / off switch. Tap Save at the bottom after you change one.</p>
+      <div class="gf" id="gl"></div>
     </section>
 
     <section class="card">
@@ -1117,6 +1177,25 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
 
   <!-- ========== TOOLS ========== -->
   <div class="view" id="v-tools">
+    <section class="card" id="uiCard">
+      <div class="ch"><h2>Interface</h2></div>
+      <p class="cap">Choose how much text and space the app uses. These two are kept in this app only.</p>
+      <div class="row">
+        <div class="rh"><span class="lb" id="uiGuideL">Explanations</span><span class="val" id="uiGuideV">Full</span></div>
+        <div class="steps" id="uiGuide" role="radiogroup" aria-labelledby="uiGuideL" style="--n:2">
+          <button class="step" type="button" role="radio" data-v="full" aria-checked="true"><b>Full guide</b><small>All instructions</small></button>
+          <button class="step" type="button" role="radio" data-v="short" aria-checked="false"><b>Short</b><small>Hide long text</small></button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="rh"><span class="lb" id="uiCardsL">Card size</span><span class="val" id="uiCardsV">Compact</span></div>
+        <div class="steps" id="uiCards" role="radiogroup" aria-labelledby="uiCardsL" style="--n:2">
+          <button class="step" type="button" role="radio" data-v="compact" aria-checked="true"><b>Compact</b><small>Thin cards</small></button>
+          <button class="step" type="button" role="radio" data-v="roomy" aria-checked="false"><b>Roomy</b><small>Bigger cards</small></button>
+        </div>
+      </div>
+    </section>
+
     <section class="card">
       <div class="ch"><h2>Quick test</h2></div>
       <p class="cap" style="margin-bottom:6px">Not sure it is working? Tap this to load a test setup, then tap Save, open CODM and play for about 5 minutes.</p>
@@ -1351,7 +1430,7 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4", forcegl: "1",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0", alpha: "1",
-    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.50.0",
+    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.53.0",
     st: "ver=v0.41|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
     startline: "=== start v0.41 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
     ftall: "FT fps=57.1 avg=17.5ms p50=16.9 p99=36.2 max=48.0 >33ms=2 >50ms=0 n=285 cap=0 bias=0 scale=100 t=60.0 fz=0\nFT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=65.0 fz=1\nFT fps=58.4 avg=17.1ms p50=16.8 p99=30.2 max=41.0 >33ms=1 >50ms=0 n=292 cap=0 bias=0 scale=100 t=70.0 fz=0\nFT fps=56.0 avg=17.9ms p50=17.2 p99=38.9 max=52.0 >33ms=2 >50ms=1 n=280 cap=0 bias=0 scale=100 t=75.0 fz=0",
@@ -2197,7 +2276,7 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
       return sh(cmd).then(function (r) { r.ok = r.stdout.indexOf("OK") >= 0; return r; });
     });
   }
-  /* ---------- Texture finder (v0.50): switch off half of the textures, then half again ----------
+  /* ---------- Texture finder (v0.53): switch off half of the textures, then half again ----------
      The module writes one GRASSCAND line per distinct texture (format, size, mips, fingerprint). The finder sorts a set of them
      by fingerprint and writes ONE range line to grass.txt that switches off a slice of that list. Test 1 switches off the whole
      set: if nothing changes on screen then, the finder cannot find it and says so. After that every answer halves the search.
@@ -2256,6 +2335,18 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
   function libClean(n) { return String(n || "").replace(/[^A-Za-z0-9 _.\-]/g, "").replace(/\s+/g, " ").trim().slice(0, 24); }
   function libHas(k) { return gLib.some(function (e) { return e.key === k; }); }
   function libKeys() { return gLib.map(function (e) { return e.key; }); }
+  /* a unit is one texture, or a set of textures that only work together (they share a set id) */
+  function unitKeys(id) { return gLib.filter(function (e) { return e.key === id || e.set === id; }).map(function (e) { return e.key; }); }
+  function unitsOf(grp) {
+    var out = [], seen = {};
+    gLib.forEach(function (e) {
+      if (grp && e.grp !== grp) return;
+      if (e.set) { if (seen[e.set]) return; seen[e.set] = 1; out.push({ id: e.set, set: true, name: e.name, grp: e.grp, keys: unitKeys(e.set) }); }
+      else out.push({ id: e.key, set: false, name: e.name, grp: e.grp, keys: [e.key] });
+    });
+    return out;
+  }
+  function unitState(u) { var n = u.keys.filter(function (k) { return grassSel[k]; }).length; return n === u.keys.length ? 2 : (n ? 1 : 0); }
   function libAdd(k, name, grp) {
     if (libHas(k)) return false;
     grp = grpOk(grp || "other");
@@ -2271,17 +2362,17 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
       if (!m) return;
       var key = m[1] + "|" + m[2] + "|" + m[3] + "|" + m[4].toLowerCase();
       if (libHas(key)) return;
-      var rest = m[5], grp = "", name = rest, bar = rest.indexOf("|");
-      if (bar >= 0) { grp = grpOk(rest.slice(0, bar).trim()); name = rest.slice(bar + 1); }
+      var rest = m[5], grp = "", name = rest, bar = rest.indexOf("|"), setId = "";
+      if (bar >= 0) { var gp = rest.slice(0, bar).trim().split("~"); grp = grpOk(gp[0]); setId = (gp[1] || "").replace(/[^a-z0-9]/g, ""); name = rest.slice(bar + 1); }
       else grp = /^grass/i.test(rest) ? "plants" : "other";        /* v0.48 lines had no group */
-      gLib.push({ key: key, name: libClean(name) || "Texture", grp: grp });
+      gLib.push({ key: key, name: libClean(name) || "Texture", grp: grp, set: setId });
     });
     var added = false;
     Object.keys(grassSel).forEach(function (k) { if (libAdd(k, "", "other")) added = true; });      /* a rule already in grass.txt joins the library */
     if (added && !demo) writeLib();
   }
   function writeLib() {
-    var lines = gLib.map(function (e) { return e.key.split("|").join(" ") + " " + e.grp + "|" + e.name; });
+    var lines = gLib.map(function (e) { return e.key.split("|").join(" ") + " " + e.grp + (e.set ? "~" + e.set : "") + "|" + e.name; });
     if (demo) { fake.texlib = lines.join("\n"); return Promise.resolve({ ok: true }); }
     var cmd = "D=" + D + "; [ -d $D ] || { echo NODIR; exit 1; }; " +
       (lines.length ? "printf '%s\\n' " + lines.map(function (l) { return "'" + l + "'"; }).join(" ") + " > $D/texlib.txt; " : ": > $D/texlib.txt; ") +
@@ -2302,6 +2393,7 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
       if (ok) { var r = gRuleFor(gst); ok = r.single ? !!grassSel[r.single] : gRange === r.line; }
       if (!ok) { gst = null; gSave(); }
     }
+    gLoadPend();
   }
   function setRules(keys, rline, msg) {
     grassSel = {};
@@ -2324,6 +2416,13 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
     toast("Found it: " + keyText(k) + ". It is in My textures. Tap Save to keep it.");
   }
   function gFail(why) {
+    if (why === "verify" && gst.U.length > 1) {          /* the whole set worked in Test 1, but no half did: it needs several together */
+      gPend = { U: gst.U.slice(), filt: gst.filt, name: gst.name, grp: gst.grp, keep: gst.keep.slice() };
+      gst = null; gNote = ""; gPendSave();
+      setRules(gPend.keep, gPendLine(gPend), "All " + gPend.U.length + " are switched off.");
+      toast("It needs several textures together. Tap Keep all.");
+      return;
+    }
     var keep = gst.keep, mode = gst.mode, n = gst.U.length; gst = null;
     gNote = why === "check"
       ? "Even with all " + n + " textures of this set switched off, nothing changed on screen. " + (mode === "quick" ? "Try “Wide search”. " : "") +
@@ -2336,7 +2435,7 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
     var keep = Object.keys(grassSel);
     var U = universe(filt, libKeys().concat(keep));
     if (!U.length) { toast("No textures in the list yet. Play one match with logs on, then tap Refresh list."); return; }
-    gNote = "";
+    gNote = ""; gPend = null; gPendSave();
     gst = { keep: keep, mode: mode, filt: filt, U: U, a: 0, b: U.length, ta: 0, tb: U.length, phase: "check", hist: [], name: libClean(gForm.name), grp: grpOk(gForm.grp) };
     gApply("Test 1 is ready: ALL textures of the set are off.");
   }
@@ -2376,26 +2475,90 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
       (na ? '<button class="btn" id="gfStartA" type="button">Wide search · everything with mips (' + na + ', about ' + (log2c(na) + 1) + ' tests)</button>' : "");
   }
   function libHtml() {
-    var h = '<div class="gf-now' + (gLib.some(function (e) { return grassSel[e.key]; }) ? " on" : "") + '"><b>My textures · ' + gLib.filter(function (e) { return grassSel[e.key]; }).length + ' of ' + gLib.length + ' on</b><small>Each one is a single texture found by its fingerprint. Switch it off to see it again. Tap Save to apply.</small></div>';
+    var all = unitsOf(""), onN = all.filter(function (u) { return unitState(u) === 2; }).length;
+    var h = '<div class="gf-now' + (onN ? " on" : "") + '"><b>Saved · ' + onN + ' of ' + all.length + ' on</b><small>Each one was found by its fingerprint. A set (several textures that only work together) has one switch. Switch it off to see it again. Tap Save to apply.</small></div>';
     GROUPS.forEach(function (g) {
-      var items = gLib.filter(function (e) { return e.grp === g[0]; });
+      var items = unitsOf(g[0]);
       if (!items.length) return;
-      var on = items.filter(function (e) { return grassSel[e.key]; }).length;
+      var on = items.filter(function (u) { return unitState(u) === 2; }).length;
       h += '<details class="gf-grp" data-grp="' + g[0] + '"' + (gOpen[g[0]] ? " open" : "") + '><summary><span>' + g[1] + '</span><small>' + on + ' of ' + items.length + ' on</small></summary><div class="gf-conf">' +
-        items.map(function (e) {
-          var isOn = !!grassSel[e.key];
-          return '<div class="item lib"><button class="sw" type="button" role="switch" data-toggle="' + e.key + '" aria-checked="' + (isOn ? "true" : "false") + '">' +
-            '<span><span class="t">' + esc(e.name) + '</span><span class="d">' + esc(keyText(e.key)) + (isOn ? " · hidden" : " · normal") + '</span></span><span class="knob"></span></button>' +
-            '<div class="lib-row"><input class="gf-name" type="text" maxlength="24" data-name="' + e.key + '" value="' + esc(e.name) + '" aria-label="Name">' +
-            '<select data-grpsel="' + e.key + '" aria-label="Group">' + GROUPS.map(function (x) { return '<option value="' + x[0] + '"' + (e.grp === x[0] ? " selected" : "") + '>' + x[1] + '</option>'; }).join("") + '</select>' +
-            '<button type="button" data-forget="' + e.key + '">Forget</button></div></div>';
+        items.map(function (u) {
+          var st = unitState(u), isOn = st === 2;
+          var desc = u.set ? u.keys.length + " textures together" : keyText(u.id);
+          desc += st === 2 ? " · hidden" : (st === 1 ? " · partly hidden" : " · normal");
+          return '<div class="item lib"><button class="sw" type="button" role="switch" data-toggle="' + u.id + '" aria-checked="' + (isOn ? "true" : "false") + '">' +
+            '<span><span class="t">' + esc(u.name) + '</span><span class="d">' + esc(desc) + '</span></span><span class="knob"></span></button>' +
+            '<div class="lib-row"><input class="gf-name" type="text" maxlength="24" data-name="' + u.id + '" value="' + esc(u.name) + '" aria-label="Name">' +
+            '<select data-grpsel="' + u.id + '" aria-label="Group">' + GROUPS.map(function (x) { return '<option value="' + x[0] + '"' + (u.grp === x[0] ? " selected" : "") + '>' + x[1] + '</option>'; }).join("") + '</select>' +
+            '<button type="button" data-forget="' + u.id + '">Forget</button></div></div>';
         }).join("") + '</div></details>';
     });
     return h;
   }
+  /* ---- several textures that only work together (hiding half did not hide it, hiding all did) ---- */
+  var gPend = null;         /* { U, filt, name, grp, keep } : all of U is switched off now, not saved to My textures yet */
+  function gPendSave() { try { if (gPend) localStorage.setItem("ct_gset", JSON.stringify(gPend)); else localStorage.removeItem("ct_gset"); } catch (e) {} }
+  function gPendLine(q) { return "range " + hashOf(q.U[0]) + " " + hashOf(q.U[q.U.length - 1]) + " " + q.filt.fmt + " " + q.filt.side + " " + q.filt.minlv; }
+  function gLoadPend() {
+    gPend = null;
+    try { gPend = JSON.parse(localStorage.getItem("ct_gset") || "null"); } catch (e) { gPend = null; }
+    if (gPend && !(gPend.U && gPend.U.length > 1 && gPend.filt && !gst && gRange === gPendLine(gPend))) { gPend = null; gPendSave(); }
+  }
+  function gKeepSet() {
+    var q = gPend; if (!q) return;
+    var all = {}; q.keep.concat(q.U).forEach(function (k) { all[k] = 1; });
+    if (Object.keys(all).length > 60) { toast("Too many textures for one list. Press Discard and use Quick search."); return; }
+    var id = "s" + Date.now().toString(36), nm = libClean(q.name) || (grpName(q.grp) + " set");
+    gPend = null; gPendSave(); gOpen[q.grp] = true; gForm.name = "";
+    if (q.U.length === 1) libAdd(q.U[0], q.name, q.grp);
+    else q.U.forEach(function (k) { if (!libHas(k)) gLib.push({ key: k, name: nm, grp: q.grp, set: id }); });
+    writeLib();
+    setRules(Object.keys(all), "", "Saved " + q.U.length + " textures as one set.");
+  }
+  function gDropSet() { var q = gPend; if (!q) return; gPend = null; gPendSave(); setRules(q.keep, "", "Test cancelled."); }
+  /* a range rule in grass.txt that no saved search owns (for example a test that was cut off) */
+  function rangeMembers() {
+    var m = /^range ([0-9a-fA-F]+) ([0-9a-fA-F]+) (\d+) (\d+) (\d+)$/.exec(gRange || "");
+    if (!m) return [];
+    function pad(x) { x = x.toLowerCase(); while (x.length < 16) x = "0" + x; return x; }
+    var lo = pad(m[1]), hi = pad(m[2]), fmt = +m[3], side = +m[4], minlv = +m[5];
+    return gCand.filter(function (c) {
+      var h = pad(hashOf(c.key));
+      return h >= lo && h <= hi && !grassSel[c.key] && !guarded(c) && (!fmt || c.fmt === fmt) && (!side || Math.max(c.w, c.h) === side) && (minlv <= 0 || c.lv === 0 || c.lv >= minlv);
+    }).map(function (c) { return c.key; }).sort(function (x, y) { var a = hashOf(x), b = hashOf(y); return a < b ? -1 : (a > b ? 1 : 0); });
+  }
+  function orphanHtml() {
+    var M = rangeMembers(), N = M.length;
+    return '<div class="gf-now on"><b>A range rule is hiding textures</b><small>' + (N
+      ? "It comes from a search that was not saved. In your list it hides " + N + " texture" + (N === 1 ? "" : "s") + ". Save them to get switches for them. Textures that are not in your list yet are not included."
+      : "It comes from a search that was not saved, and none of the textures in your list are inside it. Tap Refresh list, or remove the range.") + '</small>' +
+      (N ? '<ul class="gf-list">' + M.slice(0, 8).map(function (k) { return "<li>" + esc(keyText(k)) + "</li>"; }).join("") + (N > 8 ? "<li>and " + (N - 8) + " more</li>" : "") + '</ul>' : "") + '</div>' +
+      (N ? '<button class="btn good" id="gfKeepRange" type="button">Save these ' + N + (N === 1 ? "" : " together") + '</button>' : "") +
+      '<button class="btn quiet" id="gfDropRange" type="button">Remove the range</button>';
+  }
+  function gKeepRange() {
+    var M = rangeMembers();
+    if (!M.length) return;
+    gPend = { U: M, filt: { fmt: 0, side: 0, minlv: 0 }, name: gForm.name, grp: gForm.grp, keep: Object.keys(grassSel) };
+    gKeepSet();
+  }
+  function pendHtml() {
+    var N = gPend.U.length;
+    return '<div class="gf-now on"><b>It needs ' + N + ' textures together</b><small>Hiding half of them did not hide it, but hiding all ' + N + ' did. So what you look for is made of several textures. All ' + N + ' are switched off right now.' +
+      (N > 8 ? " That is a lot: other things may disappear too." : "") + '</small><ul class="gf-list">' + gPend.U.slice(0, 8).map(function (k) { return "<li>" + esc(keyText(k)) + "</li>"; }).join("") + (N > 8 ? "<li>and " + (N - 8) + " more</li>" : "") + '</ul></div>' +
+      '<button class="btn good" id="gfKeepSet" type="button">Keep all ' + N + ' together</button>' +
+      '<button class="btn quiet" id="gfDropSet" type="button">Discard</button>' +
+      '<p class="pnote">After Keep, tap Save at the bottom to apply. In My textures they show as one item with one switch.</p>';
+  }
   function renderGrass() {
     var box = $("gf"); if (!box) return;
     var keys = Object.keys(grassSel), n = keys.length;
+    var gl = $("gl");
+    if (gl) {
+      gl.innerHTML = gLib.length ? libHtml() : '<div class="gf-now"><b>Nothing saved yet</b><small>When the Texture finder finds something, it is kept here with its own switch.</small></div>';
+      var lt = $("libTag"), onU = unitsOf("").filter(function (u) { return unitState(u) === 2; }).length;
+      if (lt) { lt.hidden = !gLib.length; lt.textContent = onU + " on"; }
+    }
     var tag = $("grassTag");
     $("grassV").textContent = (n || gRange) ? "On" : "Off";
     tag.hidden = !(n || gRange); tag.textContent = gst ? "testing" : n + " hidden";
@@ -2419,31 +2582,36 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
         '<p class="pnote">' + (gst.phase === "check" ? "If nothing changes in this first test, tell me: the texture is not in this set, or switching off does not work. " : "") +
         'Every answer cuts the list in half.</p>';
     } else {
-      if (gLib.length) h += libHtml();
-      if (gNote) h += '<div class="gf-now on"><b>Search stopped</b><small>' + esc(gNote) + '</small></div>';
+      if (gPend) h += pendHtml();
+      else if (gRange) h += orphanHtml();
+      if (gNote && !gPend) h += '<div class="gf-now on"><b>Search stopped</b><small>' + esc(gNote) + '</small></div>';
       if (gCand.length) {
         h += '<div class="gf-now"><b>New search · ' + gCand.length + ' texture' + (gCand.length === 1 ? "" : "s") + ' in the list</b><small>Test 1 switches off the whole set. If what you look for is gone, every next answer cuts the list in half until one texture is left.</small></div>' + startForm() +
-          '<button class="btn quiet" id="gfRef" type="button">Refresh list</button>' + (n ? '<button class="btn quiet" id="gfOff" type="button">Turn all off</button>' : "");
+          '<button class="btn quiet" id="gfRef" type="button">Refresh list</button>' + ((n || gRange) ? '<button class="btn quiet" id="gfOff" type="button">Turn all off</button>' : "");
       } else {
-        h += '<div class="gf-now"><b>No texture list yet</b><small>Install v0.50, turn logging on, play one match where you can see what you look for, then tap Refresh list.</small></div><button class="btn" id="gfRef" type="button">Refresh list</button>';
+        h += '<div class="gf-now"><b>No texture list yet</b><small>Install v0.53, turn logging on, play one match where you can see what you look for, then tap Refresh list.</small></div><button class="btn" id="gfRef" type="button">Refresh list</button>';
       }
     }
     box.innerHTML = h;
   }
-  $("gf").addEventListener("click", function (e) {
+  function gfClick(e) {
     var t = e.target.closest ? e.target.closest("button") : null;
     if (!t || t.disabled) return;
     var sw = t.closest ? t.closest("[data-toggle]") : null;
     var tk = t.getAttribute("data-toggle") || (sw ? sw.getAttribute("data-toggle") : "");
     if (tk) {
       if (gst) { toast("Finish or cancel the test first."); return; }
-      if (grassSel[tk]) delete grassSel[tk]; else grassSel[tk] = 1;
-      setRules(Object.keys(grassSel), "", grassSel[tk] ? "Texture is hidden." : "Texture is back."); return;
+      if (gPend) { toast("Keep or discard the set first."); return; }
+      var tks = unitKeys(tk), allOn = tks.length > 0 && tks.every(function (x) { return grassSel[x]; });
+      tks.forEach(function (x) { if (allOn) delete grassSel[x]; else grassSel[x] = 1; });
+      setRules(Object.keys(grassSel), "", allOn ? "Texture is back." : "Texture is hidden."); return;
     }
     var fk = t.getAttribute("data-forget");
     if (fk) {
       if (gst) { toast("Finish or cancel the test first."); return; }
-      gLib = gLib.filter(function (x) { return x.key !== fk; }); delete grassSel[fk]; writeLib();
+      if (gPend) { toast("Keep or discard the set first."); return; }
+      var fks = unitKeys(fk);
+      gLib = gLib.filter(function (x) { return x.key !== fk && x.set !== fk; }); fks.forEach(function (x) { delete grassSel[x]; }); writeLib();
       setRules(Object.keys(grassSel), "", "Texture forgotten, it is back to normal."); return;
     }
     if (t.id === "gfStartQ") gStart(G_QUICK, "quick");
@@ -2451,27 +2619,37 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
     else if (t.id === "gfYes" && gst) gYes();
     else if (t.id === "gfNo" && gst) gNo();
     else if (t.id === "gfBack") gBack();
+    else if (t.id === "gfKeepSet") gKeepSet();
+    else if (t.id === "gfDropSet") gDropSet();
+    else if (t.id === "gfKeepRange") gKeepRange();
+    else if (t.id === "gfDropRange") setRules(Object.keys(grassSel), "", "Range removed.");
     else if (t.id === "gfOff") {
       if (gst) { var kp = gst.keep; gst = null; gNote = ""; setRules(kp, "", "Test cancelled."); }
-      else { gNote = ""; setRules([], "", "All off."); }
+      else { gNote = ""; gPend = null; gPendSave(); setRules([], "", "All off."); }
     }
     else if (t.id === "gfRef") refresh().then(function () { toast("List refreshed."); });
-  });
-  $("gf").addEventListener("change", function (e) {
+  }
+  function gfChange(e) {
     var el = e.target; if (!el || !el.getAttribute) return;
     if (el.id === "gfName") { gForm.name = libClean(el.value); return; }
     if (el.id === "gfGroup") { gForm.grp = grpOk(el.value); return; }
     var k = el.getAttribute("data-name"), gk = el.getAttribute("data-grpsel");
     if (k) {
-      for (var i = 0; i < gLib.length; i++) if (gLib[i].key === k) { gLib[i].name = libClean(el.value) || gLib[i].name; el.value = gLib[i].name; }
+      var nn = libClean(el.value);
+      for (var i = 0; i < gLib.length; i++) if (gLib[i].key === k || gLib[i].set === k) { if (nn) gLib[i].name = nn; el.value = gLib[i].name; }
       writeLib(); renderGrass(); toast("Name saved.");
     } else if (gk) {
-      for (var j = 0; j < gLib.length; j++) if (gLib[j].key === gk) { gLib[j].grp = grpOk(el.value); gOpen[gLib[j].grp] = true; }
+      for (var j = 0; j < gLib.length; j++) if (gLib[j].key === gk || gLib[j].set === gk) { gLib[j].grp = grpOk(el.value); gOpen[gLib[j].grp] = true; }
       writeLib(); renderGrass(); toast("Moved to " + grpName(grpOk(el.value)) + ".");
     }
+  }
+  ["gf", "gl"].forEach(function (id) {
+    var el = $(id); if (!el) return;
+    el.addEventListener("click", gfClick);
+    el.addEventListener("change", gfChange);
+    el.addEventListener("input", function (e) { if (e.target && e.target.id === "gfName") gForm.name = libClean(e.target.value); });
+    el.addEventListener("toggle", function (e) { var d = e.target; if (d && d.getAttribute && d.getAttribute("data-grp")) gOpen[d.getAttribute("data-grp")] = d.open; }, true);
   });
-  $("gf").addEventListener("input", function (e) { if (e.target && e.target.id === "gfName") gForm.name = libClean(e.target.value); });
-  $("gf").addEventListener("toggle", function (e) { var d = e.target; if (d && d.getAttribute && d.getAttribute("data-grp")) gOpen[d.getAttribute("data-grp")] = d.open; }, true);
   $("alpha").addEventListener("click", function () {
     var on = !getSw("alpha");
     setSw("alpha", on);
@@ -2951,7 +3129,7 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.50.0'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.53.0'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -2975,7 +3153,7 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
       "echo '== crash log (only CODM-related lines; other apps crashing, e.g. e.android:clean / android:channel, are hidden)'; C=$(timeout 8 logcat -b crash -d -t 400 2>&1); echo \"$C\" | grep -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | tail -n 80; echo \"(hidden non-CODM crash lines: $(echo \"$C\" | grep -v -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | grep -c .))\"; " +
       "echo '== logcat'; timeout 10 logcat -d -t 6000 2>/dev/null | grep -i -E 'garena|codm|libunity|zygisk|lsplt|FATAL|SIGSEGV|SIGABRT|tombstone|anogs|tersafe|lmkd' | tail -n 80; " +
       "echo '== tombstone'; T=$(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 40 | while read f; do grep -q -s $P \"$f\" && { echo \"$f\"; break; }; done); echo \"newest tombstone of any app: $(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 1)\"; if [ -n \"$T\" ]; then echo \"$T\"; echo \"tombstone_time=$(date -r \"$T\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c %y \"$T\" 2>/dev/null | cut -c1-19)\"; [ -n \"$(find \"$T\" -mmin +1440 2>/dev/null)\" ] && echo 'STALE: older than 24 h, NOT from the last session; do not treat as the current crash'; head -n 70 \"$T\"; else echo none; fi; " +
-      "echo '== process / exit reason (v0.50.0)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
+      "echo '== process / exit reason (v0.53.0)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
       "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
   }
 
@@ -3943,38 +4121,185 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
 </script>
 
 <script>
-/* liquid tab highlight (visual only; showView in the main script still owns tab state) */
+/* liquid tab highlight (visual only; showView in the main script still owns tab state).
+   v0.53: the capsule now follows the REAL position of the active tab, so it is always even and never touches the next tab. */
 (function () {
   var D = document, tabs = D.querySelector("#dock .tabs");
   if (!tabs) return;
-  var btns = Array.prototype.slice.call(tabs.querySelectorAll("button")), ind = D.createElement("i"), cur = -1;
+  var btns = Array.prototype.slice.call(tabs.querySelectorAll("button")), ind = D.createElement("i");
+  var L = 0, R = 0, last = -1, dir = 1, running = false, t0 = 0, prev = 0;
   ind.className = "ind"; ind.setAttribute("aria-hidden", "true");
   tabs.insertBefore(ind, tabs.firstChild);
-  function geo(i) {
-    var g = 2, W = tabs.clientWidth, S = btns.length - 1 + 2.7, u = (W - g * (btns.length - 1)) / S, l = 0, k;
-    for (k = 0; k < i; k++) l += u + g;
-    return { l: l, r: W - (l + 2.7 * u) };
+  function target() {
+    var on = null, k;
+    for (k = 0; k < btns.length; k++) if (btns[k].classList.contains("on")) on = btns[k];
+    if (!on || !tabs.clientWidth) return null;
+    var tr = tabs.getBoundingClientRect(), br = on.getBoundingClientRect();
+    return { l: br.left - tr.left, r: tr.right - br.right, i: btns.indexOf(on) };
   }
-  function place(anim) {
-    var i = -1, k;
-    for (k = 0; k < btns.length; k++) if (btns[k].classList.contains("on")) i = k;
-    if (i < 0 || !tabs.clientWidth) return;
-    var p = geo(i);
-    if (!anim || cur < 0) {
-      ind.style.transition = "none"; ind.style.left = p.l + "px"; ind.style.right = p.r + "px";
-      void ind.offsetWidth; ind.style.transition = "";
-    } else if (i !== cur) {
-      var f = i > cur, e = "cubic-bezier(.22,1,.36,1)";
-      ind.style.transition = "left " + (f ? ".55" : ".3") + "s " + e + ",right " + (f ? ".3" : ".55") + "s " + e;
-      ind.style.left = p.l + "px"; ind.style.right = p.r + "px";
-      ind.classList.remove("mv"); void ind.offsetWidth; ind.classList.add("mv");
+  function paint() { ind.style.left = L.toFixed(2) + "px"; ind.style.right = R.toFixed(2) + "px"; }
+  function snap() { var t = target(); if (!t) return; L = t.l; R = t.r; last = t.i; paint(); D.documentElement.classList.add("ind-on"); }
+  function tick(now) {
+    var t = target();
+    if (!t) { running = false; return; }
+    var dt = Math.min(48, now - prev) / 16.7; prev = now;
+    var kl = dir > 0 ? 0.15 : 0.36, kr = dir > 0 ? 0.36 : 0.15;      /* the leading edge runs ahead, the trailing edge follows: it stretches like a drop */
+    L += (t.l - L) * (1 - Math.pow(1 - kl, dt)); R += (t.r - R) * (1 - Math.pow(1 - kr, dt));
+    paint();
+    if (now - t0 < 700 || Math.abs(t.l - L) > 0.3 || Math.abs(t.r - R) > 0.3) requestAnimationFrame(tick);
+    else { L = t.l; R = t.r; paint(); running = false; }
+  }
+  function moved() {
+    var t = target();
+    if (!t) return;
+    if (last < 0) { snap(); return; }
+    if (t.i === last) return;
+    dir = t.i > last ? 1 : -1; last = t.i;
+    ind.classList.remove("mv"); void ind.offsetWidth; ind.classList.add("mv");
+    t0 = performance.now(); prev = t0;
+    if (!running) { running = true; requestAnimationFrame(tick); }
+  }
+  try { new MutationObserver(moved).observe(tabs, { attributes: true, attributeFilter: ["class"], subtree: true }); } catch (e) {}
+  tabs.addEventListener("click", function () { requestAnimationFrame(moved); });
+  if (window.ResizeObserver) new ResizeObserver(function () { if (!running) snap(); }).observe(tabs);
+  else window.addEventListener("resize", function () { if (!running) snap(); });
+  snap(); setTimeout(snap, 300); setTimeout(snap, 900);
+})();
+</script>
+
+<script>
+/* v0.53 organiser (visual only): every card becomes collapsible, gets a colour for its kind of setting, and each tab gets a legend. */
+(function () {
+  var D = document, CHEV = '<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>';
+  var CATS = {
+    look: { n: "Look", c: "#38bdf8", t: ["Presets", "Look", "Display"] },
+    stat: { n: "Stats", c: "#f472b6", t: ["Session summary", "Advice", "History"] },
+    tex: { n: "Textures", c: "#34d399", t: ["Textures", "My textures", "Texture groups", "Skip Manager", "Fine tuning"] },
+    sys: { n: "System", c: "#a78bfa", t: ["Startup", "Compatibility", "Renderer", "Game copy", "Save action & button size", "Interface"] },
+    dbg: { n: "Logs and tests", c: "#fbbf24", t: ["Logging", "Log", "Quick test"] },
+    danger: { n: "Reset", c: "#fb7185", t: ["Reset"] },
+    info: { n: "Info", c: "#94a3b8", t: ["About"] }
+  };
+  var ICONS = { "Interface": '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M9 9v11"/>', "My textures": '<path d="M6 3h12v18l-6-4-6 4z"/>' };
+  var st = {};
+  try { st = JSON.parse(localStorage.getItem("ct_open4") || "{}") || {}; } catch (e) { st = {}; }   /* v0.53: new key, so after an update every card starts closed */
+  function keep() { try { localStorage.setItem("ct_open4", JSON.stringify(st)); } catch (e) {} }
+  function catOf(title) { for (var k in CATS) if (CATS[k].t.indexOf(title) >= 0) return k; return ""; }
+  var cards = [];
+  try {
+    Array.prototype.forEach.call(D.querySelectorAll(".view > .card"), function (card) {
+      var view = card.parentNode.id, h2 = card.querySelector("h2"); if (!h2) return;
+      var title = h2.textContent.replace(/\s+/g, " ").trim();
+      var raw = title; Object.keys(CATS).forEach(function (k) { CATS[k].t.forEach(function (t) { if (title.indexOf(t) === 0 && t.length > raw.length - 40 && !catOf(raw)) raw = t; }); });
+      var tt = catOf(raw) ? raw : title.replace(/\d+ groups?$/, "").replace(/Active:.*$/, "").trim();
+      var cat = catOf(tt) || catOf(title);
+      if (!cat) return;
+      card.setAttribute("data-cat", cat); card.style.setProperty("--cat", CATS[cat].c);
+      var det = card.querySelector(":scope > details"), ch = card.querySelector(":scope > .ch");
+      if (!det && !ch && h2.parentNode === card) { ch = D.createElement("div"); ch.className = "ch"; card.insertBefore(ch, h2); ch.appendChild(h2); }
+      if (!det && ch) {                                    /* plain card: wrap it in the same details + summary the other cards use */
+        det = D.createElement("details");
+        var sum = D.createElement("summary"), body = D.createElement("div"), n = ch.nextSibling;
+        sum.className = "ch"; body.className = "body";
+        while (ch.firstChild) sum.appendChild(ch.firstChild);
+        sum.insertAdjacentHTML("beforeend", CHEV);
+        while (n) { var nx = n.nextSibling; body.appendChild(n); n = nx; }
+        det.appendChild(sum); det.appendChild(body); card.removeChild(ch); card.appendChild(det);
+      }
+      det = card.querySelector(":scope > details");
+      if (det) {                                           /* every collapsible card: closed unless you opened it, and it remembers */
+        var key = view + "|" + tt;
+        det.open = st[key] === 1;
+        det.setAttribute("data-key", key);
+        det.addEventListener("toggle", function () { st[key] = det.open ? 1 : 0; keep(); });
+      }
+      /* title with a small label of the kind of setting above it */
+      var hh = card.querySelector("h2");
+      if (hh && !hh.querySelector(".ttl")) {
+        var tn = null, i; for (i = 0; i < hh.childNodes.length; i++) if (hh.childNodes[i].nodeType === 3 && hh.childNodes[i].textContent.trim()) { tn = hh.childNodes[i]; break; }
+        if (tn) {
+          var w = D.createElement("span"); w.className = "ttl";
+          var em = D.createElement("em"); em.textContent = CATS[cat].n; var sp = D.createElement("span"); sp.textContent = tn.textContent.trim();
+          if (CATS[cat].n.toLowerCase() !== sp.textContent.toLowerCase()) w.appendChild(em);
+          w.appendChild(sp); hh.replaceChild(w, tn);
+        }
+        if (!hh.querySelector(".hi") && ICONS[tt]) {
+          var ic = D.createElement("span"); ic.className = "hi"; ic.setAttribute("aria-hidden", "true");
+          ic.innerHTML = '<svg viewBox="0 0 24 24">' + ICONS[tt] + "</svg>"; hh.insertBefore(ic, hh.firstChild);
+        }
+      }
+      cards.push({ card: card, det: card.querySelector(":scope > details"), cat: cat, view: view });
+    });
+  } catch (e) {}
+  function setAll(view, open, only) {
+    cards.forEach(function (c) {
+      if (c.view !== view || !c.det) return;
+      c.det.open = only ? c.cat === only : open;
+    });
+  }
+  /* legend row on the tabs that hold many cards */
+  ["v-adv", "v-tools"].forEach(function (vid) {
+    var v = D.getElementById(vid); if (!v) return;
+    var here = cards.filter(function (c) { return c.view === vid; });
+    if (!here.length) return;
+    var bar = D.createElement("div"); bar.className = "vbar";
+    var seen = {}, html = "";
+    here.forEach(function (c) { seen[c.cat] = (seen[c.cat] || 0) + 1; });
+    Object.keys(CATS).forEach(function (k) { if (seen[k]) html += '<button type="button" class="vc" data-c="' + k + '" style="--cat:' + CATS[k].c + '"><i></i>' + CATS[k].n + ' <small>' + seen[k] + '</small></button>'; });
+    html += '<span class="va"><button type="button" data-a="open">Open all</button><button type="button" data-a="close">Close all</button></span>';
+    bar.innerHTML = html; v.insertBefore(bar, v.firstChild);
+    bar.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("button") : null; if (!b) return;
+      var a = b.getAttribute("data-a"), c = b.getAttribute("data-c");
+      if (a) setAll(vid, a === "open");
+      else if (c) {
+        var on = b.classList.contains("on");
+        Array.prototype.forEach.call(bar.querySelectorAll(".vc"), function (x) { x.classList.remove("on"); });
+        if (on) setAll(vid, true); else { b.classList.add("on"); setAll(vid, false, c); }
+        var first = here.filter(function (x) { return x.cat === c; })[0];
+        if (first && !on) setTimeout(function () { try { first.card.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (er) {} }, 60);
+      }
+    });
+  });
+  /* remember the last tab */
+  try {
+    var dock = D.querySelectorAll("#dock .tabs button");
+    Array.prototype.forEach.call(dock, function (b) { b.addEventListener("click", function () { try { localStorage.setItem("ct_tab", b.getAttribute("data-v")); } catch (e) {} }); });
+    var lt = localStorage.getItem("ct_tab");
+    if (lt && lt !== "home") setTimeout(function () { var b = D.querySelector('#dock .tabs button[data-v="' + lt + '"]'); if (b) b.click(); }, 0);
+  } catch (e) {}
+  /* Interface card: explanations Full / Short, card size */
+  function radio(boxId, valId, key, labels, apply) {
+    var box = D.getElementById(boxId); if (!box) return;
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest(".step") : null; if (!b) return;
+      var v = b.getAttribute("data-v");
+      Array.prototype.forEach.call(box.querySelectorAll(".step"), function (x) { x.setAttribute("aria-checked", x === b ? "true" : "false"); });
+      D.getElementById(valId).textContent = labels[v];
+      apply(v); try { localStorage.setItem(key, v); } catch (er) {}
+    });
+  }
+  function paintRadio(boxId, valId, v, labels) {
+    var box = D.getElementById(boxId); if (!box) return;
+    Array.prototype.forEach.call(box.querySelectorAll(".step"), function (x) { x.setAttribute("aria-checked", x.getAttribute("data-v") === v ? "true" : "false"); });
+    D.getElementById(valId).textContent = labels[v];
+  }
+  var GL = { full: "Full", short: "Short" }, CL = { compact: "Compact", roomy: "Roomy" };
+  var gv = "full", cv = "compact";
+  try { gv = localStorage.getItem("ct_ui_guide") === "short" ? "short" : "full"; cv = localStorage.getItem("ct_ui_cards") === "roomy" ? "roomy" : "compact"; } catch (e) {}
+  paintRadio("uiGuide", "uiGuideV", gv, GL); paintRadio("uiCards", "uiCardsV", cv, CL);
+  radio("uiGuide", "uiGuideV", "ct_ui_guide", GL, function (v) { D.documentElement.classList.toggle("short", v === "short"); });
+  radio("uiCards", "uiCardsV", "ct_ui_cards", CL, function (v) { D.documentElement.classList.toggle("cc", v === "compact"); });
+  /* icon for the new card, and the finder opens its card when a search is running */
+  try {
+    var lc = D.getElementById("libCard");
+    if (lc && !lc.querySelector(".hi")) {
+      var hh2 = lc.querySelector("h2"), sp2 = D.createElement("span");
+      sp2.className = "hi"; sp2.setAttribute("aria-hidden", "true");
+      sp2.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
+      hh2.insertBefore(sp2, hh2.firstChild);
     }
-    cur = i; D.documentElement.classList.add("ind-on");
-  }
-  tabs.addEventListener("click", function () { requestAnimationFrame(function () { place(true); }); });
-  if (window.ResizeObserver) new ResizeObserver(function () { place(false); }).observe(tabs);
-  else window.addEventListener("resize", function () { place(false); });
-  place(false); setTimeout(function () { place(false); }, 300);
+  } catch (e) {}
 })();
 </script>
 </body>
