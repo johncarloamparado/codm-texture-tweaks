@@ -6,22 +6,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#09090b">
+<meta name="theme-color" content="#020712">
 <title>CODM Blocky Textures</title>
 <style>
 :root {
-  --bg: #09090b;
-  --card: rgba(24, 24, 27, 0.65);
+  --bg: #020712;
+  --card: rgba(8, 16, 36, 0.65);
   --card-border: rgba(255, 255, 255, 0.08);
   --fill: rgba(255, 255, 255, 0.04);
   --fill-hover: rgba(255, 255, 255, 0.08);
   --line: rgba(255, 255, 255, 0.1);
   --text: #f4f4f5;
   --mute: #a1a1aa;
-  --primary: #818cf8;
-  --primary-glow: rgba(129, 140, 248, 0.25);
-  --accent: #c084fc;
-  --ink: #09090b;
+  --primary: #4cc3ff;
+  --primary-glow: rgba(56, 189, 248, 0.25);
+  --accent: #22d3ee;
+  --ink: #020712;
   --warn: #fbbf24;
   --bad: #f87171;
   --ok: #34d399;
@@ -51,8 +51,8 @@ body.lock { overflow: hidden; position: fixed; left: 0; right: 0; width: 100%; }
 /* Background gradient */
 #bg-glow {
   position: fixed; top: -20%; left: -10%; width: 120%; height: 120%; z-index: -2;
-  background: radial-gradient(circle at 50% 0%, rgba(129, 140, 248, 0.15), transparent 60%),
-              radial-gradient(circle at 80% 80%, rgba(192, 132, 252, 0.1), transparent 50%);
+  background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15), transparent 60%),
+              radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.1), transparent 50%);
   pointer-events: none;
 }
 
@@ -102,7 +102,7 @@ h2 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
   background: rgba(251, 191, 36, 0.15); color: var(--warn);
   font-size: 11.5px; font-weight: 700;
 }
-.tag.n { background: rgba(129, 140, 248, 0.15); color: var(--primary); }
+.tag.n { background: rgba(56, 189, 248, 0.15); color: var(--primary); }
 .cap { margin: 4px 0 16px; color: var(--mute); font-size: 13px; line-height: 1.5; }
 .cap b { color: var(--text); font-weight: 600; }
 
@@ -112,7 +112,7 @@ h2 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
 .rh label, .rh .lb { font-weight: 700; font-size: 14.5px; }
 .val {
   flex: none; min-width: 64px; padding: 3px 12px; border-radius: 999px;
-  background: rgba(129, 140, 248, 0.15); color: var(--primary);
+  background: rgba(56, 189, 248, 0.15); color: var(--primary);
   font-size: 13px; font-weight: 700; text-align: center;
 }
 .desc { margin: 4px 0 10px; color: var(--mute); font-size: 13px; line-height: 1.4; }
@@ -136,7 +136,7 @@ h2 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
 .mode b { grid-area: ti; font-size: 14px; font-weight: 700; line-height: 1.2; }
 .mode small { grid-area: de; color: var(--mute); font-size: 11.5px; line-height: 1.25; transition: color 0.2s; }
 .mode:hover { background: var(--fill-hover); }
-.mode[aria-checked="true"] { border-color: var(--primary); background: rgba(129, 140, 248, 0.1); box-shadow: 0 4px 20px var(--primary-glow); }
+.mode[aria-checked="true"] { border-color: var(--primary); background: rgba(56, 189, 248, 0.1); box-shadow: 0 4px 20px var(--primary-glow); }
 .mode[aria-checked="true"] svg { color: var(--primary); }
 .mode[aria-checked="true"] small { color: rgba(244, 244, 245, 0.8); }
 .mode[aria-checked="true"]::after {
@@ -160,7 +160,7 @@ h2 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
 .step small { color: var(--mute); font-size: 11px; }
 .step:hover { background: var(--fill-hover); }
 .step[aria-checked="true"] { background: linear-gradient(135deg, var(--primary), var(--accent)); border-color: transparent; color: var(--ink); box-shadow: 0 4px 16px var(--primary-glow); }
-.step[aria-checked="true"] small { color: rgba(9, 9, 11, 0.75); }
+.step[aria-checked="true"] small { color: rgba(2, 7, 18, 0.75); }
 .steps[aria-disabled="true"] { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
 
 /* ---------- sliders ---------- */
@@ -183,7 +183,7 @@ input[type=range]::-webkit-slider-runnable-track {
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none; width: 28px; height: 28px; margin-top: -10px;
   border-radius: 50%; background: #fff; border: 0;
-  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2), 0 0 16px rgba(129, 140, 248, 0.6);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2), 0 0 16px rgba(56, 189, 248, 0.6);
   transition: transform 0.1s;
 }
 .grab:active + input[type=range]::-webkit-slider-thumb { transform: scale(1.1); }
@@ -246,8 +246,8 @@ input[type=text]:focus { outline: none; border-color: var(--primary); }
   border: 1px solid var(--line); background: var(--card); font-size: 13.5px; line-height: 1.5;
 }
 .banner.warn { border-color: rgba(251, 191, 36, 0.4); color: var(--warn); background: rgba(251, 191, 36, 0.05); }
-.banner.info { border-color: rgba(129, 140, 248, 0.4); color: #c7d2fe; background: rgba(129, 140, 248, 0.06); display: flex; align-items: center; gap: 12px; }
-.banner.info::before { content: ""; flex: none; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(129,140,248,0.3); border-top-color: var(--primary); animation: presp 0.7s linear infinite; }
+.banner.info { border-color: rgba(56, 189, 248, 0.4); color: #bfe9ff; background: rgba(56, 189, 248, 0.06); display: flex; align-items: center; gap: 12px; }
+.banner.info::before { content: ""; flex: none; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(56,189,248,0.3); border-top-color: var(--primary); animation: presp 0.7s linear infinite; }
 .banner.bad { border-color: rgba(248, 113, 113, 0.4); color: var(--bad); background: rgba(248, 113, 113, 0.05); }
 .banner .btn { margin-top: 12px; min-height: 42px; }
 
@@ -328,7 +328,7 @@ details .body { margin-top: 16px; }
   max-width: 528px; margin: 0 auto; height: var(--dock-h);
   display: flex; align-items: center; gap: 8px; padding: 8px;
   border-radius: 28px; border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(9, 9, 11, 0.85);
+  background: rgba(2, 7, 18, 0.85);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 #pendbar {
@@ -337,7 +337,7 @@ details .body { margin-top: 16px; }
   bottom: calc(var(--dock-h) + 28px + env(safe-area-inset-bottom, 0px));
   align-items: center; justify-content: space-between; gap: 10px;
   padding: 8px 8px 8px 16px; border-radius: 22px;
-  border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(24, 24, 27, 0.96); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(8, 16, 36, 0.96); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 body.pend #pendbar { display: flex; animation: vin 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
 #pendbar .pt { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--warn); font-size: 13px; font-weight: 700; line-height: 1.2; }
@@ -358,7 +358,7 @@ body.pend #dockcover { height: calc(var(--dock-h) + 16px + env(safe-area-inset-b
 #dockcover {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 39; pointer-events: none;
   height: calc(var(--dock-h) + 16px + env(safe-area-inset-bottom, 0px) + 28px);
-  background: linear-gradient(to top, var(--bg) 0, var(--bg) calc(100% - 28px), rgba(9, 9, 11, 0) 100%);
+  background: linear-gradient(to top, var(--bg) 0, var(--bg) calc(100% - 28px), rgba(2, 7, 18, 0) 100%);
 }
 #dock .tabs { flex: 1; min-width: 0; height: 100%; display: flex; gap: 4px; }
 #dock .tabs button {
@@ -369,7 +369,7 @@ body.pend #dockcover { height: calc(var(--dock-h) + 16px + env(safe-area-inset-b
 }
 #dock .tabs svg, .apply svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 #dock .tabs button:hover { color: var(--text); background: rgba(255,255,255,0.05); }
-#dock .tabs button.on { color: var(--primary); background: rgba(129, 140, 248, 0.15); }
+#dock .tabs button.on { color: var(--primary); background: rgba(56, 189, 248, 0.15); }
 .apply {
   flex: none; position: relative; height: 100%; padding: 0 16px;
   display: flex; align-items: center; gap: 8px;
@@ -403,15 +403,15 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 .opts { display: grid; gap: 10px; margin-top: 4px; }
 .opt { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--fill); cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
 .opt:hover { background: var(--fill-hover); }
-.opt.on { border-color: var(--primary); background: rgba(129, 140, 248, 0.1); box-shadow: 0 4px 20px var(--primary-glow); }
+.opt.on { border-color: var(--primary); background: rgba(56, 189, 248, 0.1); box-shadow: 0 4px 20px var(--primary-glow); }
 .opt input { flex: none; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--primary); }
 .opt .ot { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .opt .t { font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--text); }
 .opt .d { font-size: 12px; line-height: 1.5; color: var(--mute); }
 #boot {
   position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px;
-  background: radial-gradient(60% 40% at 50% 28%, rgba(129, 140, 248, 0.18), transparent 70%),
-              radial-gradient(50% 35% at 82% 88%, rgba(192, 132, 252, 0.13), transparent 70%), var(--ink);
+  background: radial-gradient(60% 40% at 50% 28%, rgba(56, 189, 248, 0.18), transparent 70%),
+              radial-gradient(50% 35% at 82% 88%, rgba(34, 211, 238, 0.13), transparent 70%), var(--ink);
   transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 #boot.done { opacity: 0; visibility: hidden; pointer-events: none; }
@@ -430,15 +430,15 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 #savew, #namew, #codew {
   position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center;
   padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
-  background: rgba(9, 9, 11, 0.82); overscroll-behavior: contain; touch-action: none;
+  background: rgba(2, 7, 18, 0.82); overscroll-behavior: contain; touch-action: none;
 }
 #savew.open, #namew.open, #codew.open { display: flex; }
 body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 .savebox {
   width: 100%; max-width: 350px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
   padding: 18px; border-radius: 26px; border: 1px solid var(--card-border);
-  background: linear-gradient(180deg, rgba(34, 34, 44, 0.98), rgba(22, 22, 28, 0.98));
-  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(129, 140, 248, 0.08);
+  background: linear-gradient(180deg, rgba(14, 26, 54, 0.98), rgba(7, 14, 32, 0.98));
+  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(56, 189, 248, 0.08);
 }
 .savebox .sh { display: flex; align-items: center; gap: 12px; }
 .savebox .sico { flex: none; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 6px 18px var(--primary-glow); }
@@ -455,7 +455,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
 .sbtn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .sbtn.open { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 6px 20px var(--primary-glow); }
 .sbtn.open em { font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.22); }
-.sbtn.only { background: rgba(129, 140, 248, 0.12); border-color: rgba(129, 140, 248, 0.45); color: #c7d2fe; }
+.sbtn.only { background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.45); color: #bfe9ff; }
 .sbtn.only svg { color: var(--primary); }
 .srec { display: block; margin: 7px 0 0; text-align: center; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); }
 .savebox .sopt p { font-size: 11.5px; }
@@ -477,7 +477,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
 .rg-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 16px 2px 0; }
 .rg-head b { font-size: 13px; font-weight: 700; letter-spacing: 0.01em; }
 .rg-head .rg-now { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); padding: 3px 9px; border-radius: 99px; background: var(--fill); border: 1px solid var(--line); transition: all 0.2s ease; }
-.rg-head .rg-now.on { color: #c7d2fe; background: rgba(129, 140, 248, 0.14); border-color: rgba(129, 140, 248, 0.45); }
+.rg-head .rg-now.on { color: #bfe9ff; background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.45); }
 .rg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
 .rg-btn { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: var(--fill); color: var(--text); font: inherit; text-align: left; cursor: pointer; overflow: hidden; transition: all 0.2s ease; }
 .rg-btn .rg-ic { width: 40px; height: 40px; margin-bottom: 8px; display: grid; place-items: center; border-radius: 13px; background: rgba(255, 255, 255, 0.06); color: var(--mute); transition: all 0.2s ease; }
@@ -488,7 +488,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
 .rg-btn .rg-tick svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .rg-btn:hover { background: var(--fill-hover); }
 .rg-btn:active { transform: scale(0.97); }
-.rg-btn[aria-checked="true"] { border-color: var(--primary); background: linear-gradient(145deg, rgba(129, 140, 248, 0.2), rgba(192, 132, 252, 0.07)); box-shadow: 0 6px 22px var(--primary-glow); }
+.rg-btn[aria-checked="true"] { border-color: var(--primary); background: linear-gradient(145deg, rgba(56, 189, 248, 0.2), rgba(34, 211, 238, 0.07)); box-shadow: 0 6px 22px var(--primary-glow); }
 .rg-btn[aria-checked="true"] .rg-ic { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 4px 14px var(--primary-glow); }
 .rg-btn[aria-checked="true"] .rg-tick { background: var(--primary); border-color: var(--primary); color: #fff; }
 .rg-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -502,17 +502,17 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
 .skip-item.off .skip-edit { opacity: 0.45; }
 .skip-in { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--primary); background: rgba(0, 0, 0, 0.3); color: var(--text); font-family: ui-monospace, monospace; font-size: 13.5px; font-weight: 600; }
 .skip-item.dragging { opacity: 0.35; }
-.skip-item.ghost { position: fixed; z-index: 90; margin: 0; pointer-events: none; border-color: var(--primary); background: #1f1f2b; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55); }
+.skip-item.ghost { position: fixed; z-index: 90; margin: 0; pointer-events: none; border-color: var(--primary); background: #0f1c3a; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55); }
 .skip-item.drop-before { box-shadow: 0 -3px 0 var(--primary); }
 .skip-item.drop-after { box-shadow: 0 3px 0 var(--primary); }
 .skip-item.drop-group { outline: 2px solid var(--ok); outline-offset: -2px; background: rgba(52, 211, 153, 0.08); }
-.skip-group { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 18px; border: 1px solid rgba(129, 140, 248, 0.35); background: rgba(129, 140, 248, 0.05); }
+.skip-group { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 18px; border: 1px solid rgba(56, 189, 248, 0.35); background: rgba(56, 189, 248, 0.05); }
 .sg-head { display: flex; align-items: center; gap: 10px; padding: 2px 2px 2px 8px; border-radius: 12px; }
 .sg-head.drop-group { outline: 2px solid var(--ok); outline-offset: -2px; background: rgba(52, 211, 153, 0.08); }
 .sg-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 0; border: 0; background: none; color: var(--text); font: inherit; font-weight: 700; font-size: 14px; text-align: left; cursor: text; }
 .sg-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sg-name svg { flex: none; width: 13px; height: 13px; stroke: var(--mute); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
-.sg-n { flex: none; font-size: 11px; font-weight: 700; color: var(--primary); background: rgba(129, 140, 248, 0.15); padding: 2px 8px; border-radius: 99px; }
+.sg-n { flex: none; font-size: 11px; font-weight: 700; color: var(--primary); background: rgba(56, 189, 248, 0.15); padding: 2px 8px; border-radius: 99px; }
 .sg-head .sw { width: auto; min-height: auto; padding: 0; border: none; flex: none; }
 .sg-body { display: flex; flex-direction: column; gap: 6px; }
 .drop-out { display: none; align-items: center; justify-content: center; min-height: 44px; border: 1.5px dashed var(--line); border-radius: 14px; color: var(--mute); font-size: 12.5px; }
@@ -526,20 +526,20 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
 .pre small { color: var(--mute); font-size: 11.5px; line-height: 1.3; }
 .pre:hover { background: var(--fill-hover); }
 .pre:active { transform: scale(0.97); }
-.pre.on { border-color: var(--primary); background: rgba(129, 140, 248, 0.1); box-shadow: 0 4px 20px var(--primary-glow); }
+.pre.on { border-color: var(--primary); background: rgba(56, 189, 248, 0.1); box-shadow: 0 4px 20px var(--primary-glow); }
 .plist { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .prow { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--fill); }
-.prow.on { border-color: var(--primary); background: rgba(129, 140, 248, 0.1); }
+.prow.on { border-color: var(--primary); background: rgba(56, 189, 248, 0.1); }
 .prow .pa { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .prow .pa b { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prow .pa small { color: var(--mute); font-size: 11.5px; line-height: 1.3; }
 .prow .ib.confirm { color: var(--bad); border-color: var(--bad); background: rgba(248, 113, 113, 0.1); }
-#codet { margin-top: 14px; width: 100%; box-sizing: border-box; min-height: 52px; max-height: 42vh; resize: none; overflow-y: auto; padding: 13px 14px; border-radius: 16px; border: 1px solid rgba(129,140,248,0.35); background: linear-gradient(180deg, rgba(129,140,248,0.08), rgba(0,0,0,0.3)); color: #dfe3ff; font-family: ui-monospace, monospace; font-size: 13.5px; line-height: 1.5; letter-spacing: 0.01em; word-break: break-all; transition: height 0.15s ease; }
+#codet { margin-top: 14px; width: 100%; box-sizing: border-box; min-height: 52px; max-height: 42vh; resize: none; overflow-y: auto; padding: 13px 14px; border-radius: 16px; border: 1px solid rgba(56,189,248,0.35); background: linear-gradient(180deg, rgba(56,189,248,0.08), rgba(0,0,0,0.3)); color: #d6f1ff; font-family: ui-monospace, monospace; font-size: 13.5px; line-height: 1.5; letter-spacing: 0.01em; word-break: break-all; transition: height 0.15s ease; }
 #codet:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
 #codet[readonly] { -webkit-user-select: none; user-select: none; caret-color: transparent; -webkit-tap-highlight-color: transparent; cursor: default; }
 #codet[readonly]::selection { background: transparent; color: inherit; }
 #codet.sel { -webkit-user-select: text; user-select: text; }
-#codet.sel::selection { background: rgba(129,140,248,0.45); }
+#codet.sel::selection { background: rgba(56,189,248,0.45); }
 #codew .codemsg:empty { display: none; }
 #codew .nrow { margin-top: 14px; }
 #codeCopy.done { border-color: rgba(52,211,153,0.55); color: var(--ok); background: rgba(52,211,153,0.1); }
@@ -556,7 +556,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
 .hrow { padding: 12px 0; border-top: 1px solid var(--line); font-size: 13px; }
 .hrow:first-child { border-top: 0; padding-top: 4px; }
 .hrow .h1 { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; }
-.hrow .h1 em { font-style: normal; font-weight: 700; font-size: 11px; color: var(--primary); background: rgba(129, 140, 248, 0.15); padding: 2px 8px; border-radius: 99px; }
+.hrow .h1 em { font-style: normal; font-weight: 700; font-size: 11px; color: var(--primary); background: rgba(56, 189, 248, 0.15); padding: 2px 8px; border-radius: 99px; }
 .hrow .h2 { margin-top: 2px; color: var(--mute); font-size: 12px; }
 .hrow .h3 { margin-top: 4px; font-variant-numeric: tabular-nums; }
 .hrow .h4 { margin-top: 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -598,7 +598,7 @@ html.compact .sbtn { min-height: 42px; }
 #logw {
   position: fixed; inset: 0; z-index: 60; display: none;
   padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px));
-  background: rgba(9, 9, 11, 0.95);
+  background: rgba(2, 7, 18, 0.95);
   overscroll-behavior: contain; touch-action: none;
 }
 #logw.open { display: flex; flex-direction: column; gap: 12px; }
@@ -626,11 +626,11 @@ html.compact .sbtn { min-height: 42px; }
 .opt .ot { flex: 1; min-width: 0; }
 .opt .d { overflow-wrap: anywhere; word-break: break-word; }
 .modes > *, .steps > *, .pgrid > * { min-width: 0; }
-.savebox .sico.fine { width: 46px; height: 46px; border-radius: 15px; position: relative; background: linear-gradient(145deg, #8b93ff 0%, #a78bfa 55%, #d08bff 100%); box-shadow: 0 8px 22px var(--primary-glow), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -6px 10px rgba(80,60,170,0.35); }
+.savebox .sico.fine { width: 46px; height: 46px; border-radius: 15px; position: relative; background: linear-gradient(145deg, #38bdf8 0%, #3b82f6 55%, #22d3ee 100%); box-shadow: 0 8px 22px var(--primary-glow), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -6px 10px rgba(10,50,120,0.35); }
 .savebox .sico.fine::after { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 1px solid rgba(255,255,255,0.22); pointer-events: none; }
-.savebox .sico.fine svg { width: 24px; height: 24px; fill: rgba(255,255,255,0.18); stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 2px rgba(40,20,120,0.45)); }
+.savebox .sico.fine svg { width: 24px; height: 24px; fill: rgba(255,255,255,0.18); stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 2px rgba(0,10,40,0.45)); }
 .pre, .prow { position: relative; }
-.pre.busy::after, .prow.busy::after { content: ""; position: absolute; top: 12px; right: 12px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(129,140,248,0.3); border-top-color: var(--primary); animation: presp 0.7s linear infinite; }
+.pre.busy::after, .prow.busy::after { content: ""; position: absolute; top: 12px; right: 12px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(56,189,248,0.3); border-top-color: var(--primary); animation: presp 0.7s linear infinite; }
 .prow.busy::after { right: auto; left: 8px; top: 8px; width: 10px; height: 10px; }
 @keyframes presp { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .pre.busy::after, .prow.busy::after { animation: none; } }
@@ -656,7 +656,160 @@ html.compact .sbtn { min-height: 42px; }
 .gf-prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); }
 .gf-conf { display: grid; gap: 8px; }
 .gf-conf .item { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--line); background: var(--fill); border-radius: 14px; padding: 10px 12px; font-size: 13px; }
+.gf-grp { border: 1px solid var(--line); border-radius: 14px; background: var(--fill); overflow: hidden; }
+.gf-grp > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; font-weight: 600; font-size: 14px; }
+.gf-grp > summary::-webkit-details-marker { display: none; }
+.gf-grp > summary small { color: var(--mute); font-weight: 400; font-size: 12.5px; }
+.gf-grp > summary::after { content: "▾"; margin-left: 6px; color: var(--mute); transition: transform .15s; }
+.gf-grp[open] > summary::after { transform: rotate(180deg); }
+.gf-grp .gf-conf { padding: 0 8px 8px; }
+.gf-form { display: grid; gap: 8px; }
+.gf-form label { font-size: 12.5px; color: var(--mute); display: grid; gap: 4px; }
+.gf-form input, .gf-form select, .gf-conf select { min-height: 42px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: inherit; font: inherit; font-size: 14px; padding: 0 12px; }
+.gf-form select option, .gf-conf select option { color: #111; }
+.gf-conf .item.lib { display: block; padding: 4px 8px 8px; }
+.gf-conf .item.lib .sw { border-top: 0; padding: 8px 4px; }
+.gf-conf .lib-row { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+.gf-conf .gf-name { flex: 1; min-width: 0; min-height: 40px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: inherit; font: inherit; font-size: 13px; padding: 0 12px; }
 .gf-conf .item button { min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: inherit; font: inherit; font-size: 13px; }
+
+/* ===== v0.53 cosmic blue redesign. Appended last, no logic touched. ===== */
+:root{--bg:#020712;--card:#0a1226;--card-border:rgba(86,190,255,.16);--fill:rgba(120,190,255,.05);--fill-hover:rgba(120,190,255,.1);--line:rgba(120,190,255,.15);--text:#eaf6ff;--mute:#8fa8c4;--primary:#4cc3ff;--accent:#2f7bff;--cyan:#67e8f9;--primary-glow:rgba(56,189,248,.2);--ink:#031020;--track:rgba(120,190,255,.16);--grad:linear-gradient(135deg,#2563eb,#0ea5c6);--ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.5,.64,1);
+--stars:radial-gradient(1.2px 1.2px at 18px 34px,#fff,transparent),radial-gradient(1px 1px at 96px 120px,#bfe9ff,transparent),radial-gradient(1.5px 1.5px at 170px 60px,#fff,transparent),radial-gradient(1px 1px at 60px 190px,#cfe8ff,transparent),radial-gradient(1px 1px at 200px 170px,#fff,transparent),radial-gradient(1.3px 1.3px at 130px 215px,#a5f3fc,transparent),radial-gradient(.8px .8px at 150px 20px,rgba(255,255,255,.7),transparent),radial-gradient(.8px .8px at 30px 130px,rgba(255,255,255,.7),transparent);
+--stars2:radial-gradient(1.6px 1.6px at 40px 60px,#fff,transparent),radial-gradient(1.2px 1.2px at 150px 200px,#cfeeff,transparent),radial-gradient(1.4px 1.4px at 250px 90px,#fff,transparent),radial-gradient(1px 1px at 280px 270px,#a5f3fc,transparent),radial-gradient(1.2px 1.2px at 90px 280px,#fff,transparent)}
+::selection{background:rgba(56,189,248,.4)}
+/* space: milky-way band, nebula, static + twinkling stars, and four meteors on different paths */
+#bg-glow{overflow:hidden;background-image:var(--stars),linear-gradient(118deg,transparent 32%,rgba(56,189,248,.06) 44%,rgba(147,210,255,.1) 50%,rgba(56,189,248,.05) 57%,transparent 68%),radial-gradient(70% 45% at 85% 8%,rgba(37,99,235,.22),transparent 70%),radial-gradient(60% 40% at 8% 45%,rgba(14,165,198,.16),transparent 70%),radial-gradient(60% 35% at 80% 92%,rgba(56,189,248,.1),transparent 70%);background-size:220px 220px,auto,auto,auto,auto}
+#bg-glow::before{content:"";position:absolute;inset:0;background-image:var(--stars2);background-size:310px 310px;animation:twk 5s ease-in-out infinite alternate}
+@keyframes twk{from{opacity:.2}to{opacity:1}}
+#bg-glow::after,body::before,body::after,html::before,#boot::before,#boot::after{content:"";position:absolute;width:150px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,rgba(130,215,255,.85) 75%,#fff);box-shadow:0 0 8px rgba(120,200,255,.55);opacity:0;pointer-events:none;animation:meteor 7s linear infinite}
+body::before,body::after,html::before{position:fixed;z-index:-1}
+#bg-glow::after{top:10%;left:80%;--a:145deg;--dx:-360px;--dy:252px;animation-delay:1s}
+body::before{top:5%;left:28%;--a:35deg;--dx:360px;--dy:252px;animation-duration:9s;animation-delay:3.5s}
+body::after{top:36%;left:96%;--a:145deg;--dx:-330px;--dy:231px;animation-duration:11s;animation-delay:6s}
+html::before{top:58%;left:15%;--a:35deg;--dx:310px;--dy:217px;animation-duration:13s;animation-delay:2s}
+@keyframes meteor{0%{opacity:0;transform:translate(0,0) rotate(var(--a))}4%{opacity:1}14%,100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--a))}}
+html.idle *,html.idle *::before,html.idle *::after,html.idle::before,html.idle body::before,html.idle body::after,html.idle #bg-glow::after,html.idle #boot::before,html.idle #boot::after{animation-play-state:paused!important}
+#dockcover{background:linear-gradient(to top,var(--bg) 0,var(--bg) calc(100% - 28px),transparent)}
+/* header */
+.logo{filter:drop-shadow(0 6px 16px rgba(56,189,248,.45));animation:flt 7s ease-in-out infinite}
+@keyframes flt{50%{transform:translateY(-3px)}}
+.eyebrow{letter-spacing:.3em;color:var(--cyan)}
+h1{background:linear-gradient(90deg,#fff 25%,#bfe9ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ver{border-color:rgba(86,190,255,.4);background:rgba(56,189,248,.12)}
+.chip{background:rgba(120,190,255,.06)}
+.chip.on{border-color:rgba(103,232,249,.4)}
+.chip.on i{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+/* cards: hairline border, rounded-square icons */
+.card{border:1px solid transparent;border-radius:24px;background:linear-gradient(180deg,rgba(10,20,44,.96),rgba(4,10,26,.96)) padding-box,linear-gradient(150deg,rgba(56,189,248,.5),rgba(37,99,235,.1) 35%,rgba(103,232,249,.06) 65%,rgba(56,189,248,.28)) border-box;box-shadow:0 12px 36px rgba(0,0,8,.5)}
+.view.active{animation:none}
+.view.active>.card{animation:cin .5s var(--ease) backwards}
+.view.active>.card:nth-child(2){animation-delay:.05s}.view.active>.card:nth-child(3){animation-delay:.1s}.view.active>.card:nth-child(4){animation-delay:.15s}.view.active>.card:nth-child(5){animation-delay:.2s}.view.active>.card:nth-child(n+6){animation-delay:.25s}
+@keyframes cin{from{opacity:0;transform:translateY(16px)}}
+.card h2{display:flex;align-items:center;gap:11px}
+.hi{flex:none;width:32px;height:32px;border-radius:11px;display:grid;place-items:center;color:#a5e6ff;background:linear-gradient(145deg,rgba(56,189,248,.26),rgba(37,99,235,.12));border:1px solid rgba(86,190,255,.32)}
+.hi svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.val,.tag{border:1px solid rgba(86,190,255,.28)}
+.bump{animation:bump .35s var(--spring)}
+@keyframes bump{40%{transform:scale(1.12)}}
+.mode,.step,.btn,.ib,.opt,.fix,.rg-btn,.pre,.prow{transition-property:transform,background-color,border-color,box-shadow,color,opacity;transition-duration:.2s;transition-timing-function:var(--ease)}
+/* tiles and chips */
+.mode svg{width:34px;height:34px;padding:7px;border-radius:11px;background:rgba(120,190,255,.08)}
+.mode[aria-checked="true"],.pre.on,.opt.on,.prow.on{border-color:rgba(86,190,255,.7);background:linear-gradient(150deg,rgba(56,189,248,.18),rgba(37,99,235,.06))}
+.mode[aria-checked="true"] svg{background:var(--grad);color:#fff;box-shadow:0 4px 14px var(--primary-glow)}
+.mode[aria-checked="true"]::after{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.step[aria-checked="true"]{background:var(--grad);color:#fff;box-shadow:0 6px 18px var(--primary-glow),inset 0 1px 0 rgba(255,255,255,.25)}
+.step[aria-checked="true"] small{color:rgba(255,255,255,.85)}
+.rg-btn[aria-checked="true"]{border-color:rgba(86,190,255,.7)}
+.rg-btn .rg-ic{border-radius:11px}
+.rg-btn[aria-checked="true"] .rg-ic,.rg-btn[aria-checked="true"] .rg-tick{background:var(--grad)}
+.rg-btn .rg-tick{transform:scale(.6);opacity:.4}
+.rg-btn[aria-checked="true"] .rg-tick{transform:none;opacity:1;transition:transform .4s var(--spring),opacity .2s}
+.fix[aria-checked="true"] svg{filter:drop-shadow(0 0 6px rgba(52,211,153,.6))}
+/* switches */
+.knob{width:52px;background:rgba(120,190,255,.16);box-shadow:inset 0 1px 3px rgba(0,0,0,.4);transition:background-color .25s}
+.knob::after{transition:transform .38s var(--spring),width .2s var(--ease)}
+.sw:active .knob::after{width:30px}
+.sw[aria-checked="true"] .knob{background:linear-gradient(135deg,#2563eb,#22d3ee);box-shadow:0 0 14px rgba(56,189,248,.35)}
+.sw[aria-checked="true"] .knob::after{transform:translateX(22px)}
+.sw[aria-checked="true"]:active .knob::after{transform:translateX(16px)}
+/* sliders (thumb stays 28px: the drag handle maths depends on it) */
+input[type=range]::-webkit-slider-runnable-track{height:10px;background:linear-gradient(90deg,#2563eb,#38bdf8 calc(var(--p)*.7),#67e8f9 var(--p),var(--track) var(--p));box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+input[type=range]::-webkit-slider-thumb{margin-top:-9px;background:#fff;box-shadow:0 0 0 5px rgba(56,189,248,.25),0 3px 12px rgba(37,99,235,.6)}
+.btn.primary,.sbtn.open,.savebox .sico{background:var(--grad)}
+.btn.primary,.sbtn.open{color:#fff;box-shadow:0 6px 20px var(--primary-glow),inset 0 1px 0 rgba(255,255,255,.25)}
+.banner{border-radius:18px}
+.tile{background:linear-gradient(180deg,rgba(120,190,255,.09),rgba(120,190,255,.02))}
+.tile b{font-size:24px}
+/* dock: adaptive tabs. Only the active tab shows its name, inside its own highlight; the others shrink to icons. */
+#dock{border-radius:30px;background:rgba(3,9,22,.92);border-color:rgba(86,190,255,.22);box-shadow:0 14px 44px rgba(0,0,10,.6),inset 0 1px 0 rgba(255,255,255,.06)}
+@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){#dock{background:rgba(3,9,22,.66);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4)}}
+#dock .tabs{gap:2px}
+#dock .tabs button{flex:1 1 0;flex-direction:row;gap:0;padding:0 4px;font-size:11.5px;letter-spacing:.02em;border:1px solid transparent;transition:flex-grow .42s var(--ease),background-color .25s,color .25s,border-color .25s}
+#dock .tabs button.on{flex-grow:2.7;color:#fff;background:linear-gradient(135deg,rgba(37,99,235,.55),rgba(14,165,198,.38));border-color:rgba(103,232,249,.35)}
+#dock .tabs button.on svg{color:#a5ecff}
+.tl{max-width:0;margin-left:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .42s var(--ease),margin-left .42s var(--ease),opacity .25s}
+#dock .tabs button.on .tl{max-width:72px;margin-left:7px;opacity:1}
+.apply{padding:0 14px;background:var(--grad);box-shadow:0 6px 20px var(--primary-glow),inset 0 1px 0 rgba(255,255,255,.28)}
+.apply::after{border-color:#0e8fb0}
+body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
+@keyframes apulse{50%{transform:scale(1.045)}}
+#pendbar{border-radius:24px;background:rgba(4,10,26,.97)}
+#toast{left:50%;right:auto;margin:0;width:max-content;max-width:calc(100% - 32px);border-radius:999px;padding:12px 22px;background:rgba(10,24,52,.97);color:var(--text);border:1px solid rgba(86,190,255,.4);transform:translate(-50%,16px) scale(.94);transition:opacity .25s,transform .45s var(--spring)}
+#toast.show{transform:translate(-50%,0)}
+/* dialogs */
+#savew,#namew,#codew,#logw{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.savebox{border:1px solid transparent;border-radius:28px;background:linear-gradient(180deg,#0d1c3e,#050c1f) padding-box,linear-gradient(150deg,rgba(56,189,248,.55),rgba(37,99,235,.12) 40%,rgba(103,232,249,.2)) border-box;animation:pop .45s var(--spring) backwards}
+#savew.open,#namew.open,#codew.open{animation:fade .2s ease backwards}
+@keyframes pop{from{opacity:0;transform:translateY(24px) scale(.94)}}@keyframes fade{from{opacity:0}}
+/* loading: logo blocks twinkle inside soft rounded ripples, meteors streak past */
+#boot{overflow:hidden;background:var(--stars),radial-gradient(60% 40% at 50% 30%,rgba(37,99,235,.28),transparent 70%),radial-gradient(50% 35% at 85% 90%,rgba(14,165,198,.16),transparent 70%),var(--bg);background-size:220px 220px,auto,auto,auto}
+#boot::before{top:12%;left:70%;--a:145deg;--dx:-300px;--dy:210px;animation-duration:3.2s}
+#boot::after{top:30%;left:20%;--a:35deg;--dx:300px;--dy:210px;animation-duration:4.4s;animation-delay:1.4s}
+.bootlogo{position:relative;margin:44px 0 26px}
+.bootlogo::before,.bootlogo::after{content:"";position:absolute;inset:-14px;border-radius:28px;border:1.5px solid rgba(56,189,248,.5);pointer-events:none;animation:ripple 2.4s ease-out infinite}
+.bootlogo::after{animation-delay:1.2s}
+@keyframes ripple{from{opacity:.8;transform:scale(.9)}to{opacity:0;transform:scale(1.5)}}
+.bootlogo .logo{animation:none;filter:drop-shadow(0 0 18px rgba(56,189,248,.55))}
+.bootlogo .logo rect{animation:tw 2.2s ease-in-out infinite}
+.bootlogo .logo rect:nth-child(2){animation-delay:.15s}.bootlogo .logo rect:nth-child(3){animation-delay:.3s}.bootlogo .logo rect:nth-child(4){animation-delay:.45s}.bootlogo .logo rect:nth-child(5){animation-delay:.6s}.bootlogo .logo rect:nth-child(6){animation-delay:.75s}.bootlogo .logo rect:nth-child(7){animation-delay:.9s}.bootlogo .logo rect:nth-child(8){animation-delay:1.05s}.bootlogo .logo rect:nth-child(9){animation-delay:1.2s}
+@keyframes tw{50%{opacity:.2}}
+#boot h2{background:linear-gradient(90deg,#fff,#bfe9ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bootbar{height:5px}
+.bootbar i{background:linear-gradient(90deg,#2563eb,#38bdf8,#67e8f9)}
+.bootmsg{animation:pulse2 1.8s ease-in-out infinite}
+@keyframes pulse2{50%{opacity:.55}}
+#boot.done *,#boot.done *::before,#boot.done *::after,#boot.done::before,#boot.done::after{animation-play-state:paused!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.bootbar i{width:100%}}
+
+/* ===== v0.54: seam fix, liquid tabs, new loading, original purple logo ===== */
+:root{--ss:220px 220px,220px 220px,220px 220px,220px 220px,220px 220px,220px 220px,220px 220px,220px 220px}
+#bg-glow{background-size:var(--ss),auto,auto,auto,auto}
+#boot{background-size:var(--ss),auto,auto}
+.logo{filter:drop-shadow(0 6px 16px rgba(167,139,250,.5))}
+.card{position:relative}
+.card::before{content:"";position:absolute;left:0;right:0;top:0;height:64px;border-radius:24px 24px 0 0;background:linear-gradient(180deg,rgba(120,200,255,.07),transparent);pointer-events:none}
+/* liquid tab highlight: the two edges move at different speeds, so it stretches and snaps like a drop */
+#dock .tabs{position:relative}
+#dock .tabs button{position:relative;z-index:1}
+#dock .tabs button:not(.on){color:var(--mute)}
+.ind-on #dock .tabs button.on{background:transparent;border-color:transparent}
+.ind{position:absolute;top:0;bottom:0;left:0;right:0;z-index:0;border-radius:22px;pointer-events:none;background:linear-gradient(135deg,rgba(37,99,235,.62),rgba(14,165,198,.42));border:1px solid rgba(103,232,249,.4);box-shadow:0 4px 18px rgba(56,189,248,.28),inset 0 1px 0 rgba(255,255,255,.22)}
+.ind.mv{animation:squish .6s var(--ease)}
+@keyframes squish{35%{transform:scale(1.05,.84)}}
+/* loading: blocks pop in one by one, ripples breathe out, title shimmers, bar glows */
+#boot{transition:opacity .55s ease,visibility .55s,transform .7s var(--ease)}
+#boot.done{transform:scale(1.08)}
+.bootlogo::before{border-color:rgba(167,139,250,.55)}
+.bootlogo .logo{filter:drop-shadow(0 0 22px rgba(167,139,250,.6))}
+#boot .bootlogo .logo rect{transform-box:fill-box;transform-origin:center;animation:blockin .7s var(--spring) backwards,tw 2.4s ease-in-out infinite}
+#boot .bootlogo .logo rect:nth-child(n){animation-delay:calc(var(--i,0)*80ms),calc(.9s + var(--i,0)*140ms)}
+#boot .bootlogo .logo rect:nth-child(2){--i:1}#boot .bootlogo .logo rect:nth-child(3){--i:2}#boot .bootlogo .logo rect:nth-child(4){--i:3}#boot .bootlogo .logo rect:nth-child(5){--i:4}#boot .bootlogo .logo rect:nth-child(6){--i:5}#boot .bootlogo .logo rect:nth-child(7){--i:6}#boot .bootlogo .logo rect:nth-child(8){--i:7}#boot .bootlogo .logo rect:nth-child(9){--i:8}
+@keyframes blockin{from{opacity:0;transform:scale(0) rotate(-40deg)}}
+#boot h2{background:linear-gradient(100deg,#8fb0d6 30%,#fff 50%,#8fb0d6 70%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 2.6s linear infinite}
+@keyframes shine{from{background-position:120% 0}to{background-position:-120% 0}}
+.bootbar{height:6px;border-radius:99px;box-shadow:0 0 18px rgba(56,189,248,.25)}
+.bootbar i{background:linear-gradient(90deg,#8b5cf6,#2563eb,#38bdf8,#67e8f9);box-shadow:0 0 12px rgba(56,189,248,.7)}
 </style>
 </head>
 <body>
@@ -886,15 +1039,15 @@ html.compact .sbtn { min-height: 42px; }
     </section>
 
     <section class="card" id="grassCard">
-      <div class="ch"><h2>Grass &amp; smoke</h2><span class="tag n" id="grassTag" hidden style="margin-left:auto"></span></div>
-      <p class="cap">Two fixes for the pixel look. Keep smoke soft leaves smoke, dust and muzzle flash smooth. Remove grass makes ONE texture invisible. The finder switches off half of the textures at a time and halves the list until only the grass is left.</p>
+      <div class="ch"><h2>Textures</h2><span class="tag n" id="grassTag" hidden style="margin-left:auto"></span></div>
+      <p class="cap">Keep smoke soft leaves transparent textures smooth. The texture finder finds one single texture on this phone by switching off half of the list at a time, and keeps what it finds in My textures.</p>
       <button class="sw" id="alpha" role="switch" aria-checked="true" type="button">
         <span><span class="t">Keep smoke soft</span><span class="d">Textures with an alpha channel (smoke, dust, muzzle flash, leaves) stay as the game made them. Off = they turn into blocks too.</span></span>
         <span class="knob"></span>
       </button>
       <div class="row">
-        <div class="rh"><span class="lb">Remove grass</span><span class="val" id="grassV">Off</span></div>
-        <p class="desc" id="grassD">Finds the grass texture on this phone. Play one match with logs on first so the list can fill in (needs the v0.47 module). Stay in the match until you have landed and can see grass, about 3 minutes. Use a mode without rank points.</p>
+        <div class="rh"><span class="lb">Texture finder</span><span class="val" id="grassV">Off</span></div>
+        <p class="desc" id="grassD">Needs the v0.50 module and a list: play one match with logs on, stay in it until the thing you are looking for is on screen, then tap Refresh list. Use a mode without rank points.</p>
         <div class="gf" id="gf"></div>
       </div>
     </section>
@@ -1079,22 +1232,14 @@ html.compact .sbtn { min-height: 42px; }
 <div id="dockcover" aria-hidden="true"></div>
 <nav id="dock" aria-label="Main">
   <div class="tabs">
-    <button type="button" data-v="home" class="on" aria-current="page">
-      <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
-      Home
-    </button>
-    <button type="button" data-v="stats">
-      <svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>
-      Stats
-    </button>
-    <button type="button" data-v="adv">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-      Advanced
-    </button>
-    <button type="button" data-v="tools">
-      <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/></svg>
-      Tools
-    </button>
+    <button type="button" data-v="home" aria-label="Home" class="on" aria-current="page">
+      <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg><span class="tl">Home</span></button>
+    <button type="button" data-v="stats" aria-label="Stats">
+      <svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span class="tl">Stats</span></button>
+    <button type="button" data-v="adv" aria-label="Advanced">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="tl">Advanced</span></button>
+    <button type="button" data-v="tools" aria-label="Tools">
+      <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/></svg><span class="tl">Tools</span></button>
   </div>
   <button class="apply" id="stop" type="button" aria-label="Save settings">
     <svg viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></svg>
@@ -1206,7 +1351,7 @@ html.compact .sbtn { min-height: 42px; }
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4", forcegl: "1",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0", alpha: "1",
-    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.47.0",
+    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.50.0",
     st: "ver=v0.41|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
     startline: "=== start v0.41 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
     ftall: "FT fps=57.1 avg=17.5ms p50=16.9 p99=36.2 max=48.0 >33ms=2 >50ms=0 n=285 cap=0 bias=0 scale=100 t=60.0 fz=0\nFT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=65.0 fz=1\nFT fps=58.4 avg=17.1ms p50=16.8 p99=30.2 max=41.0 >33ms=1 >50ms=0 n=292 cap=0 bias=0 scale=100 t=70.0 fz=0\nFT fps=56.0 avg=17.9ms p50=17.2 p99=38.9 max=52.0 >33ms=2 >50ms=1 n=280 cap=0 bias=0 scale=100 t=75.0 fz=0",
@@ -1361,6 +1506,7 @@ html.compact .sbtn { min-height: 42px; }
       "echo -n 'bloff='; [ -f $D/bltoff.txt ] && cat $D/bltoff.txt | tr '\\n' '|' || true; echo; " +
       "echo -n 'bldel='; [ -f $D/bltdel.txt ] && cat $D/bltdel.txt | tr '\\n' '|' || true; echo; " +
       "echo -n 'texg='; [ -f $D/codm_tex.log ] && grep -E '^TEXG ' $D/codm_tex.log | tail -n 200 | tr '\\n' '|' || true; echo; " +
+      "echo -n 'texlib='; [ -f $D/texlib.txt ] && cat $D/texlib.txt | tr '\\n' '|' || true; echo; " +
       "echo -n 'gcand='; [ -f $D/codm_tex.log ] && grep -E '^GRASSCAND ' $D/codm_tex.log | sort -u | tail -n 700 | tr '\\n' '|' || true; echo; " +
       "echo -n 'ft='; [ -f $D/codm_tex.log ] && grep -E '^FT ' $D/codm_tex.log | tail -n 1 || true; echo; " +
       "L=$D/codm_tex.log; if [ -f $L ]; then S=$(grep -n '^=== start' $L | tail -n 1 | cut -d: -f1); [ -n \"$S\" ] || S=1; " +
@@ -1390,7 +1536,7 @@ html.compact .sbtn { min-height: 42px; }
         var i = ln.indexOf("=");
         if (i < 0) return;
         var k = ln.slice(0, i), v = ln.slice(i + 1);
-        if (k === "skip" || k === "grass" || k === "texg" || k === "gcand" || k === "bloff" || k === "bldel" || k === "ftall") v = v.replace(/\|/g, "\n").replace(/\n$/, "");
+        if (k === "skip" || k === "grass" || k === "texg" || k === "gcand" || k === "texlib" || k === "bloff" || k === "bldel" || k === "ftall") v = v.replace(/\|/g, "\n").replace(/\n$/, "");
         s[k] = v.trim();
       });
       /* If the first root route could not list /data/adb/modules, ask again through the other routes before anyone sees a warning */
@@ -1879,6 +2025,7 @@ html.compact .sbtn { min-height: 42px; }
       else gOld = true;                                    /* a v0.44 line ("format size") matched too many textures */
     });
     gCand = parseCands(s.gcand || "");
+    gLoadLib(s.texlib || "");
     gLoadState();
     parseGroups(s.skip || "", s.texg || "");
     cur.skip = nl(skipLines()); cur.bloff = nk(blOff); cur.bldel = nk(blDel); cur.grass = nk(grassSel) + "#" + gRange;
@@ -2021,7 +2168,7 @@ html.compact .sbtn { min-height: 42px; }
       var key = g.fmt + "|" + g.sz, sk = !!skipSet[key];
       if (sk) off++;
       h += '<button class="sw" type="button" role="switch" data-k="' + key + '" aria-checked="' + (sk ? "false" : "true") + '">' +
-        '<span><span class="t">' + esc(fmtName(g.fmt)) + ", " + g.sz + ' px' + (grassInGroup(g) ? " · grass removed" : "") + '</span><span class="d">' +
+        '<span><span class="t">' + esc(fmtName(g.fmt)) + ", " + g.sz + ' px' + (grassInGroup(g) ? " · texture hidden" : "") + '</span><span class="d">' +
         (g.n ? g.n + " seen · " + g.ap + " changed" + (alphaKept(g) ? " · kept soft" : "") : "Not seen in the current log") +
         '</span></span><span class="knob"></span></button>';
     });
@@ -2050,17 +2197,19 @@ html.compact .sbtn { min-height: 42px; }
       return sh(cmd).then(function (r) { r.ok = r.stdout.indexOf("OK") >= 0; return r; });
     });
   }
-  function grassDone(r, msg) {
-    var p = r.ok && updatePend();
-    toast(!r.ok ? "Could not save Remove grass." : (p ? msg + " Tap Save to apply it." : "Remove grass is back to how it was."));
-  }
-  /* ---------- Remove grass finder (v0.47): switch off half of the textures, then half again ----------
+  /* ---------- Texture finder (v0.50): switch off half of the textures, then half again ----------
      The module writes one GRASSCAND line per distinct texture (format, size, mips, fingerprint). The finder sorts a set of them
-     by fingerprint and writes ONE range line to grass.txt that switches off a slice of that list. Step 1 switches off the whole
-     set: if the grass is still there then, the finder cannot find it and says so. After that every answer halves the search. */
+     by fingerprint and writes ONE range line to grass.txt that switches off a slice of that list. Test 1 switches off the whole
+     set: if nothing changes on screen then, the finder cannot find it and says so. After that every answer halves the search.
+     Found textures are kept in My textures (texlib.txt), in groups, each with its own on / off switch. */
   var gCand = [];
-  var gst = null;           /* { keep, mode, filt, U, a, b, ta, tb, phase, hist } ; U = candidate keys sorted by fingerprint, [a,b) = still possible, [ta,tb) = switched off now */
+  var gst = null;           /* { keep, mode, filt, U, a, b, ta, tb, phase, hist, name, grp } ; U = candidate keys sorted by fingerprint, [a,b) = still possible, [ta,tb) = switched off now */
   var gNote = "";
+  var GROUPS = [["plants", "Plants"], ["effects", "Effects"], ["other", "Other"]];
+  var gForm = { name: "", grp: "plants" };
+  var gOpen = {};           /* which My textures groups are open */
+  function grpName(id) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][0] === id) return GROUPS[i][1]; return "Other"; }
+  function grpOk(id) { return GROUPS.some(function (g) { return g[0] === id; }) ? id : "other"; }
   function parseCands(txt) {
     var seen = {}, out = [];
     (txt || "").split("\n").forEach(function (l) {
@@ -2092,16 +2241,53 @@ html.compact .sbtn { min-height: 42px; }
   }
   function hashOf(k) { return k.split("|")[3]; }
   /* candidates that pass a filter, sorted by fingerprint (16 hex digits: plain text order is number order) */
-  function universe(filt, keep) {
+  function universe(filt, skipKeys) {
     var skip = {};
-    keep.forEach(function (k) { skip[k] = 1; });
+    skipKeys.forEach(function (k) { skip[k] = 1; });
     return gCand.filter(function (c) {
       return !skip[c.key] && !guarded(c) && (!filt.fmt || c.fmt === filt.fmt) && (!filt.side || Math.max(c.w, c.h) === filt.side) &&
         (filt.minlv <= 0 || c.lv === 0 || c.lv >= filt.minlv);
     }).map(function (c) { return c.key; }).sort(function (x, y) { var a = hashOf(x), b = hashOf(y); return a < b ? -1 : (a > b ? 1 : 0); });
   }
-  var G_LIKELY = { fmt: 37497, side: 512, minlv: 0 };     /* the group that hid the grass in the v0.44 test (it also hid characters and reticles) */
+  var G_QUICK = { fmt: 37497, side: 512, minlv: 0 };     /* ETC2 sRGBA, 512 px: a common size for big sprite sheets (it hid grass in an early test) */
   var G_ALL = { fmt: 0, side: 0, minlv: 2 };             /* every texture with mips; menu images have none */
+  /* ---- My textures (texlib.txt: "fmt w h hash group|name"). On / off = whether the texture is in grass.txt ---- */
+  var gLib = [];
+  function libClean(n) { return String(n || "").replace(/[^A-Za-z0-9 _.\-]/g, "").replace(/\s+/g, " ").trim().slice(0, 24); }
+  function libHas(k) { return gLib.some(function (e) { return e.key === k; }); }
+  function libKeys() { return gLib.map(function (e) { return e.key; }); }
+  function libAdd(k, name, grp) {
+    if (libHas(k)) return false;
+    grp = grpOk(grp || "other");
+    var n = 1;
+    while (gLib.some(function (e) { return e.name === grpName(grp) + " " + n; })) n++;
+    gLib.push({ key: k, name: libClean(name) || (grpName(grp) + " " + n), grp: grp });
+    return true;
+  }
+  function gLoadLib(txt) {
+    gLib = [];
+    (txt || "").split("\n").forEach(function (l) {
+      var m = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+([0-9a-fA-F]+)\s*(.*)$/.exec(l);
+      if (!m) return;
+      var key = m[1] + "|" + m[2] + "|" + m[3] + "|" + m[4].toLowerCase();
+      if (libHas(key)) return;
+      var rest = m[5], grp = "", name = rest, bar = rest.indexOf("|");
+      if (bar >= 0) { grp = grpOk(rest.slice(0, bar).trim()); name = rest.slice(bar + 1); }
+      else grp = /^grass/i.test(rest) ? "plants" : "other";        /* v0.48 lines had no group */
+      gLib.push({ key: key, name: libClean(name) || "Texture", grp: grp });
+    });
+    var added = false;
+    Object.keys(grassSel).forEach(function (k) { if (libAdd(k, "", "other")) added = true; });      /* a rule already in grass.txt joins the library */
+    if (added && !demo) writeLib();
+  }
+  function writeLib() {
+    var lines = gLib.map(function (e) { return e.key.split("|").join(" ") + " " + e.grp + "|" + e.name; });
+    if (demo) { fake.texlib = lines.join("\n"); return Promise.resolve({ ok: true }); }
+    var cmd = "D=" + D + "; [ -d $D ] || { echo NODIR; exit 1; }; " +
+      (lines.length ? "printf '%s\\n' " + lines.map(function (l) { return "'" + l + "'"; }).join(" ") + " > $D/texlib.txt; " : ": > $D/texlib.txt; ") +
+      "chmod 666 $D/texlib.txt 2>/dev/null; chcon --reference=$D $D/texlib.txt 2>/dev/null; echo OK";
+    return queued(function () { return sh(cmd).then(function (r) { r.ok = r.stdout.indexOf("OK") >= 0; return r; }); });
+  }
   function gSave() { try { if (gst) localStorage.setItem("ct_gst2", JSON.stringify(gst)); else localStorage.removeItem("ct_gst2"); } catch (e) {} }
   /* what grass.txt must contain for the current test slice: { single: key | "", line: "range ..." | "" } */
   function gRuleFor(t) {
@@ -2131,36 +2317,38 @@ html.compact .sbtn { min-height: 42px; }
   }
   function gSnap() { gst.hist.push({ a: gst.a, b: gst.b, ta: gst.ta, tb: gst.tb, phase: gst.phase }); }
   function gConfirm(k) {
-    var keep = gst.keep.concat([k]); gst = null; gNote = "";
-    setRules(keep, "", "Grass found.");
-    toast("Found it: " + keyText(k) + ". Tap Save to keep it.");
+    var keep = gst.keep.concat([k]), nm = gst.name, gp = gst.grp; gst = null; gNote = "";
+    gOpen[gp] = true;
+    if (libAdd(k, nm, gp)) { gForm.name = ""; writeLib(); }
+    setRules(keep, "", "Texture found.");
+    toast("Found it: " + keyText(k) + ". It is in My textures. Tap Save to keep it.");
   }
   function gFail(why) {
     var keep = gst.keep, mode = gst.mode, n = gst.U.length; gst = null;
     gNote = why === "check"
-      ? "Even with all " + n + " textures of this set switched off, the grass was still there. " + (mode === "likely" ? "Try “all textures with mips”. " : "") +
-        "If that fails too, the grass is not one of these textures, or switching off does not work on your phone: tap Tools → Export report and send it with a note that you tested this."
-      : "The last texture did not hide the grass. The grass may be made of several textures, or the test was not clear. Try “all textures with mips”, or send your report.";
+      ? "Even with all " + n + " textures of this set switched off, nothing changed on screen. " + (mode === "quick" ? "Try “Wide search”. " : "") +
+        "If that fails too, the texture is not one of these, or switching off does not work on your phone: tap Tools → Export report and send it with a note that you tested this."
+      : "The last texture did not change anything. The thing you are looking for may be made of several textures, or the test was not clear. Try “Wide search”, or send your report.";
     setRules(keep, "", "Search stopped.");
     toast("Search stopped. Read the note in the card.");
   }
   function gStart(filt, mode) {
     var keep = Object.keys(grassSel);
-    var U = universe(filt, keep);
+    var U = universe(filt, libKeys().concat(keep));
     if (!U.length) { toast("No textures in the list yet. Play one match with logs on, then tap Refresh list."); return; }
     gNote = "";
-    gst = { keep: keep, mode: mode, filt: filt, U: U, a: 0, b: U.length, ta: 0, tb: U.length, phase: "check", hist: [] };
+    gst = { keep: keep, mode: mode, filt: filt, U: U, a: 0, b: U.length, ta: 0, tb: U.length, phase: "check", hist: [], name: libClean(gForm.name), grp: grpOk(gForm.grp) };
     gApply("Test 1 is ready: ALL textures of the set are off.");
   }
-  function gYes() {                                       /* the grass is gone (or mostly) */
+  function gYes() {                                       /* what I am looking for is gone (or mostly) */
     gSnap();
     if (gst.phase === "check") gst.phase = "bisect";
-    else { gst.a = gst.ta; gst.b = gst.tb; }              /* the grass is inside the part that was switched off */
+    else { gst.a = gst.ta; gst.b = gst.tb; }              /* it is inside the part that was switched off */
     if (gst.b - gst.a === 1) { gConfirm(gst.U[gst.a]); return; }
     gst.ta = gst.a; gst.tb = gst.a + Math.ceil((gst.b - gst.a) / 2);
     gApply("Narrowing it down.");
   }
-  function gNo() {                                        /* the grass is still there */
+  function gNo() {                                        /* nothing changed */
     gSnap();
     if (gst.phase === "check") { gFail("check"); return; }
     if (gst.phase === "verify") { gFail("verify"); return; }
@@ -2177,21 +2365,40 @@ html.compact .sbtn { min-height: 42px; }
   }
   function grassDone(r, msg) {
     var p = r.ok && updatePend();
-    toast(!r.ok ? "Could not save Remove grass." : (p ? msg + " Tap Save to apply it." : "Remove grass is back to how it was."));
+    toast(!r.ok ? "Could not save the texture list." : (p ? msg + " Tap Save to apply it." : "Texture list is back to how it was."));
   }
   function log2c(n) { return n <= 1 ? 0 : Math.ceil(Math.log(n) / Math.LN2); }
-  function startButtons(prefix) {
-    var keep = Object.keys(grassSel), nl_ = universe(G_LIKELY, keep).length, na = universe(G_ALL, keep).length;
-    return (nl_ ? '<button class="btn good" id="gfStartL" type="button">' + prefix + 'likely textures (' + nl_ + ', about ' + (log2c(nl_) + 1) + ' tests)</button>' : "") +
-      (na ? '<button class="btn" id="gfStartA" type="button">' + prefix + 'all textures with mips (' + na + ', about ' + (log2c(na) + 1) + ' tests)</button>' : "");
+  function startForm() {
+    var skip = libKeys().concat(Object.keys(grassSel)), nq = universe(G_QUICK, skip).length, na = universe(G_ALL, skip).length;
+    return '<div class="gf-form"><label>What are you looking for? (name, optional)<input type="text" id="gfName" maxlength="24" value="' + esc(gForm.name) + '" placeholder="for example: green grass"></label>' +
+      '<label>Group<select id="gfGroup">' + GROUPS.map(function (g) { return '<option value="' + g[0] + '"' + (gForm.grp === g[0] ? " selected" : "") + '>' + g[1] + '</option>'; }).join("") + '</select></label></div>' +
+      (nq ? '<button class="btn good" id="gfStartQ" type="button">Quick search · 512 px ETC2 sRGBA (' + nq + ', about ' + (log2c(nq) + 1) + ' tests)</button>' : "") +
+      (na ? '<button class="btn" id="gfStartA" type="button">Wide search · everything with mips (' + na + ', about ' + (log2c(na) + 1) + ' tests)</button>' : "");
+  }
+  function libHtml() {
+    var h = '<div class="gf-now' + (gLib.some(function (e) { return grassSel[e.key]; }) ? " on" : "") + '"><b>My textures · ' + gLib.filter(function (e) { return grassSel[e.key]; }).length + ' of ' + gLib.length + ' on</b><small>Each one is a single texture found by its fingerprint. Switch it off to see it again. Tap Save to apply.</small></div>';
+    GROUPS.forEach(function (g) {
+      var items = gLib.filter(function (e) { return e.grp === g[0]; });
+      if (!items.length) return;
+      var on = items.filter(function (e) { return grassSel[e.key]; }).length;
+      h += '<details class="gf-grp" data-grp="' + g[0] + '"' + (gOpen[g[0]] ? " open" : "") + '><summary><span>' + g[1] + '</span><small>' + on + ' of ' + items.length + ' on</small></summary><div class="gf-conf">' +
+        items.map(function (e) {
+          var isOn = !!grassSel[e.key];
+          return '<div class="item lib"><button class="sw" type="button" role="switch" data-toggle="' + e.key + '" aria-checked="' + (isOn ? "true" : "false") + '">' +
+            '<span><span class="t">' + esc(e.name) + '</span><span class="d">' + esc(keyText(e.key)) + (isOn ? " · hidden" : " · normal") + '</span></span><span class="knob"></span></button>' +
+            '<div class="lib-row"><input class="gf-name" type="text" maxlength="24" data-name="' + e.key + '" value="' + esc(e.name) + '" aria-label="Name">' +
+            '<select data-grpsel="' + e.key + '" aria-label="Group">' + GROUPS.map(function (x) { return '<option value="' + x[0] + '"' + (e.grp === x[0] ? " selected" : "") + '>' + x[1] + '</option>'; }).join("") + '</select>' +
+            '<button type="button" data-forget="' + e.key + '">Forget</button></div></div>';
+        }).join("") + '</div></details>';
+    });
+    return h;
   }
   function renderGrass() {
     var box = $("gf"); if (!box) return;
     var keys = Object.keys(grassSel), n = keys.length;
     var tag = $("grassTag");
     $("grassV").textContent = (n || gRange) ? "On" : "Off";
-    var shown = gst ? gst.keep.length : n;
-    tag.hidden = !(n || gRange); tag.textContent = gst ? "testing" : n + " texture" + (n === 1 ? "" : "s") + " removed";
+    tag.hidden = !(n || gRange); tag.textContent = gst ? "testing" : n + " hidden";
     var h = "";
     if (gst) {
       var N = gst.U.length, R = gst.b - gst.a, T = gst.tb - gst.ta;
@@ -2200,47 +2407,71 @@ html.compact .sbtn { min-height: 42px; }
       else if (gst.phase === "verify") what = "Last check · 1 texture is switched off";
       else what = T + " of " + R + " possible textures are switched off · about " + steps + " test" + (steps === 1 ? "" : "s") + " left";
       var pct = gst.phase === "check" ? 5 : Math.round((1 - log2c(R) / Math.max(1, log2c(N))) * 100);
-      h += '<div class="gf-now on"><b>' + (gst.phase === "check" ? "Check: everything off" : "Testing " + T + " texture" + (T === 1 ? "" : "s")) + '</b><small>' + esc(what) + '</small>' +
+      h += '<div class="gf-now on"><b>' + (gst.phase === "check" ? "Check: everything off" : "Testing " + T + " texture" + (T === 1 ? "" : "s")) + '</b><small>' + (gst.name ? "Looking for: " + esc(gst.name) + " · " : "") + esc(what) + '</small>' +
         (T <= 4 ? '<ul class="gf-list">' + gst.U.slice(gst.ta, gst.tb).map(function (k) { return "<li>" + esc(keyText(k)) + "</li>"; }).join("") + '</ul>' : "") +
         '<div class="gf-prog"><i style="width:' + Math.max(4, Math.min(100, pct)) + '%"></i></div></div>' +
-        '<ol class="gf-steps"><li>Tap <b>Save</b> at the bottom (CODM restarts).</li><li>Open a match and look at the grass. ' +
+        '<ol class="gf-steps"><li>Tap <b>Save</b> at the bottom (CODM restarts).</li><li>Open a match and look at the thing you are searching for. ' +
         (gst.phase === "check" ? "Menus and some effects may look wrong in this first test, that is normal." : "") + '</li><li>Come back here and tap ONE answer.</li></ol>' +
-        '<button class="btn good" id="gfYes" type="button">✓ Grass is gone (or mostly)</button>' +
-        '<button class="btn" id="gfNo" type="button">✗ Grass is still there</button>' +
+        '<button class="btn good" id="gfYes" type="button">✓ It is gone (or mostly)</button>' +
+        '<button class="btn" id="gfNo" type="button">✗ No change</button>' +
         '<div class="grid2"><button class="btn" id="gfBack" type="button"' + (gst.hist.length ? "" : " disabled") + '>← Back</button>' +
         '<button class="btn quiet" id="gfOff" type="button">Cancel</button></div>' +
-        '<p class="pnote">' + (gst.phase === "check" ? "If the grass is still there in this test, tell me: it means the grass is not in this set, or switching off does not work. " : "") +
+        '<p class="pnote">' + (gst.phase === "check" ? "If nothing changes in this first test, tell me: the texture is not in this set, or switching off does not work. " : "") +
         'Every answer cuts the list in half.</p>';
-    } else if (n) {
-      h += '<div class="gf-now on"><b>' + n + ' texture' + (n === 1 ? "" : "s") + ' made invisible</b><small>Only these exact textures. Anything else with the same format and size is untouched.</small></div><div class="gf-conf">' +
-        keys.map(function (k) { return '<div class="item"><span>' + esc(keyText(k)) + '</span><button type="button" data-restore="' + k + '">Restore</button></div>'; }).join("") + '</div>' +
-        (gNote ? '<div class="gf-now"><small>' + esc(gNote) + '</small></div>' : "") + startButtons("Find another: ") +
-        '<button class="btn quiet" id="gfOff" type="button">Restore all textures</button>';
-    } else if (gCand.length) {
-      h += (gNote ? '<div class="gf-now on"><b>Search stopped</b><small>' + esc(gNote) + '</small></div>' : "") +
-        '<div class="gf-now"><b>' + gCand.length + ' texture' + (gCand.length === 1 ? "" : "s") + ' in the list</b><small>Test 1 switches off the whole set. If the grass is gone, every next answer cuts the list in half until one texture is left.</small></div>' +
-        startButtons("Find the grass: ") +
-        '<button class="btn quiet" id="gfRef" type="button">Refresh list</button>';
     } else {
-      h += '<div class="gf-now"><b>No texture list yet</b><small>Install v0.47, turn logging on, play one match where grass is visible, then tap Refresh list.</small></div><button class="btn" id="gfRef" type="button">Refresh list</button>';
+      if (gLib.length) h += libHtml();
+      if (gNote) h += '<div class="gf-now on"><b>Search stopped</b><small>' + esc(gNote) + '</small></div>';
+      if (gCand.length) {
+        h += '<div class="gf-now"><b>New search · ' + gCand.length + ' texture' + (gCand.length === 1 ? "" : "s") + ' in the list</b><small>Test 1 switches off the whole set. If what you look for is gone, every next answer cuts the list in half until one texture is left.</small></div>' + startForm() +
+          '<button class="btn quiet" id="gfRef" type="button">Refresh list</button>' + (n ? '<button class="btn quiet" id="gfOff" type="button">Turn all off</button>' : "");
+      } else {
+        h += '<div class="gf-now"><b>No texture list yet</b><small>Install v0.50, turn logging on, play one match where you can see what you look for, then tap Refresh list.</small></div><button class="btn" id="gfRef" type="button">Refresh list</button>';
+      }
     }
     box.innerHTML = h;
   }
   $("gf").addEventListener("click", function (e) {
     var t = e.target.closest ? e.target.closest("button") : null;
     if (!t || t.disabled) return;
-    if (t.getAttribute("data-restore")) {
-      var k = t.getAttribute("data-restore"); delete grassSel[k];
-      setRules(Object.keys(grassSel), "", "Texture restored."); return;
+    var sw = t.closest ? t.closest("[data-toggle]") : null;
+    var tk = t.getAttribute("data-toggle") || (sw ? sw.getAttribute("data-toggle") : "");
+    if (tk) {
+      if (gst) { toast("Finish or cancel the test first."); return; }
+      if (grassSel[tk]) delete grassSel[tk]; else grassSel[tk] = 1;
+      setRules(Object.keys(grassSel), "", grassSel[tk] ? "Texture is hidden." : "Texture is back."); return;
     }
-    if (t.id === "gfStartL") gStart(G_LIKELY, "likely");
-    else if (t.id === "gfStartA") gStart(G_ALL, "all");
+    var fk = t.getAttribute("data-forget");
+    if (fk) {
+      if (gst) { toast("Finish or cancel the test first."); return; }
+      gLib = gLib.filter(function (x) { return x.key !== fk; }); delete grassSel[fk]; writeLib();
+      setRules(Object.keys(grassSel), "", "Texture forgotten, it is back to normal."); return;
+    }
+    if (t.id === "gfStartQ") gStart(G_QUICK, "quick");
+    else if (t.id === "gfStartA") gStart(G_ALL, "wide");
     else if (t.id === "gfYes" && gst) gYes();
     else if (t.id === "gfNo" && gst) gNo();
     else if (t.id === "gfBack") gBack();
-    else if (t.id === "gfOff") { gst = null; gNote = ""; setRules([], "", ""); }
+    else if (t.id === "gfOff") {
+      if (gst) { var kp = gst.keep; gst = null; gNote = ""; setRules(kp, "", "Test cancelled."); }
+      else { gNote = ""; setRules([], "", "All off."); }
+    }
     else if (t.id === "gfRef") refresh().then(function () { toast("List refreshed."); });
   });
+  $("gf").addEventListener("change", function (e) {
+    var el = e.target; if (!el || !el.getAttribute) return;
+    if (el.id === "gfName") { gForm.name = libClean(el.value); return; }
+    if (el.id === "gfGroup") { gForm.grp = grpOk(el.value); return; }
+    var k = el.getAttribute("data-name"), gk = el.getAttribute("data-grpsel");
+    if (k) {
+      for (var i = 0; i < gLib.length; i++) if (gLib[i].key === k) { gLib[i].name = libClean(el.value) || gLib[i].name; el.value = gLib[i].name; }
+      writeLib(); renderGrass(); toast("Name saved.");
+    } else if (gk) {
+      for (var j = 0; j < gLib.length; j++) if (gLib[j].key === gk) { gLib[j].grp = grpOk(el.value); gOpen[gLib[j].grp] = true; }
+      writeLib(); renderGrass(); toast("Moved to " + grpName(grpOk(el.value)) + ".");
+    }
+  });
+  $("gf").addEventListener("input", function (e) { if (e.target && e.target.id === "gfName") gForm.name = libClean(e.target.value); });
+  $("gf").addEventListener("toggle", function (e) { var d = e.target; if (d && d.getAttribute && d.getAttribute("data-grp")) gOpen[d.getAttribute("data-grp")] = d.open; }, true);
   $("alpha").addEventListener("click", function () {
     var on = !getSw("alpha");
     setSw("alpha", on);
@@ -2720,7 +2951,7 @@ html.compact .sbtn { min-height: 42px; }
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.47.0'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.50.0'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -2744,7 +2975,7 @@ html.compact .sbtn { min-height: 42px; }
       "echo '== crash log (only CODM-related lines; other apps crashing, e.g. e.android:clean / android:channel, are hidden)'; C=$(timeout 8 logcat -b crash -d -t 400 2>&1); echo \"$C\" | grep -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | tail -n 80; echo \"(hidden non-CODM crash lines: $(echo \"$C\" | grep -v -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | grep -c .))\"; " +
       "echo '== logcat'; timeout 10 logcat -d -t 6000 2>/dev/null | grep -i -E 'garena|codm|libunity|zygisk|lsplt|FATAL|SIGSEGV|SIGABRT|tombstone|anogs|tersafe|lmkd' | tail -n 80; " +
       "echo '== tombstone'; T=$(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 40 | while read f; do grep -q -s $P \"$f\" && { echo \"$f\"; break; }; done); echo \"newest tombstone of any app: $(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 1)\"; if [ -n \"$T\" ]; then echo \"$T\"; echo \"tombstone_time=$(date -r \"$T\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c %y \"$T\" 2>/dev/null | cut -c1-19)\"; [ -n \"$(find \"$T\" -mmin +1440 2>/dev/null)\" ] && echo 'STALE: older than 24 h, NOT from the last session; do not treat as the current crash'; head -n 70 \"$T\"; else echo none; fi; " +
-      "echo '== process / exit reason (v0.47.0)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
+      "echo '== process / exit reason (v0.50.0)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
       "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
   }
 
@@ -3652,6 +3883,98 @@ html.compact .sbtn { min-height: 42px; }
     .then(bootDone, bootDone)
     .then(function () { clearTimeout(bootHintT); clearTimeout(bootSkipT); });
   refreshLogStat();
+})();
+</script>
+
+<script>
+/* v0.53 UI enhancer: visual only (section icons, haptics, number pop). Settings logic is in the script above. */
+(function () {
+  var D = document, H = D.documentElement;
+  function buzz(n) { try { if (navigator.vibrate) navigator.vibrate(n); } catch (e) {} }
+  var T = '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>', G = '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>', I = '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>';
+  var IC = {
+    "Presets": '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+    "Look": '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    "Display": '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    "Session summary": '<path d="M5 20V11M12 20V4M19 20v-6"/>',
+    "Advice": '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+    "History": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    "Startup": '<path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/>',
+    "Fine tuning": T, "Save action & button size": T, "Texture groups": G, "About": I,
+    "Compatibility": '<path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 0 1-10 0zM12 16v5"/>',
+    "Textures": '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
+    "Skip Manager": '<path d="M4 6h16M7 12h10M10 18h4"/>',
+    "Renderer": '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+    "Logging": '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+    "Quick test": '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
+    "Game copy": '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',
+    "Log": '<path d="m5 8 4 4-4 4M12 17h7"/>',
+    "Reset": '<path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/>'
+  };
+  try {
+    Array.prototype.forEach.call(D.querySelectorAll(".card h2"), function (h) {
+      var p = IC[h.textContent.trim()];
+      if (!p || h.querySelector(".hi")) return;
+      var s = D.createElement("span");
+      s.className = "hi"; s.setAttribute("aria-hidden", "true");
+      s.innerHTML = '<svg viewBox="0 0 24 24">' + p + "</svg>";
+      h.insertBefore(s, h.firstChild);
+    });
+  } catch (e) {}
+  D.addEventListener("pointerdown", function (e) {
+    var t = e.target.closest ? e.target.closest(".btn,.step,.mode,.fix,.pre,.rg-btn,.apply,.sw,.opt,.ib,.sbtn,#dock .tabs button") : null;
+    if (t && !t.disabled) buzz(t.matches(".sw") ? 12 : 7);
+  }, { passive: true });
+  var last = 0;
+  D.addEventListener("input", function (e) {
+    if (e.target && e.target.type === "range" && Date.now() - last > 60) { last = Date.now(); buzz(3); }
+  }, { passive: true });
+  try {
+    var mo = new MutationObserver(function (ms) {
+      ms.forEach(function (m) {
+        var el = m.target.nodeType === 3 ? m.target.parentNode : m.target;
+        if (el && el.classList) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+      });
+    });
+    Array.prototype.forEach.call(D.querySelectorAll(".val,.tile b"), function (el) { mo.observe(el, { childList: true, characterData: true, subtree: true }); });
+  } catch (e) {}
+  D.addEventListener("visibilitychange", function () { H.classList.toggle("idle", D.hidden); });
+})();
+</script>
+
+<script>
+/* liquid tab highlight (visual only; showView in the main script still owns tab state) */
+(function () {
+  var D = document, tabs = D.querySelector("#dock .tabs");
+  if (!tabs) return;
+  var btns = Array.prototype.slice.call(tabs.querySelectorAll("button")), ind = D.createElement("i"), cur = -1;
+  ind.className = "ind"; ind.setAttribute("aria-hidden", "true");
+  tabs.insertBefore(ind, tabs.firstChild);
+  function geo(i) {
+    var g = 2, W = tabs.clientWidth, S = btns.length - 1 + 2.7, u = (W - g * (btns.length - 1)) / S, l = 0, k;
+    for (k = 0; k < i; k++) l += u + g;
+    return { l: l, r: W - (l + 2.7 * u) };
+  }
+  function place(anim) {
+    var i = -1, k;
+    for (k = 0; k < btns.length; k++) if (btns[k].classList.contains("on")) i = k;
+    if (i < 0 || !tabs.clientWidth) return;
+    var p = geo(i);
+    if (!anim || cur < 0) {
+      ind.style.transition = "none"; ind.style.left = p.l + "px"; ind.style.right = p.r + "px";
+      void ind.offsetWidth; ind.style.transition = "";
+    } else if (i !== cur) {
+      var f = i > cur, e = "cubic-bezier(.22,1,.36,1)";
+      ind.style.transition = "left " + (f ? ".55" : ".3") + "s " + e + ",right " + (f ? ".3" : ".55") + "s " + e;
+      ind.style.left = p.l + "px"; ind.style.right = p.r + "px";
+      ind.classList.remove("mv"); void ind.offsetWidth; ind.classList.add("mv");
+    }
+    cur = i; D.documentElement.classList.add("ind-on");
+  }
+  tabs.addEventListener("click", function () { requestAnimationFrame(function () { place(true); }); });
+  if (window.ResizeObserver) new ResizeObserver(function () { place(false); }).observe(tabs);
+  else window.addEventListener("resize", function () { place(false); });
+  place(false); setTimeout(function () { place(false); }, 300);
 })();
 </script>
 </body>
