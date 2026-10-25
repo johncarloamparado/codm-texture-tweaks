@@ -47,7 +47,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.53.0"
+#define VERSION "v0.55.5"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -466,7 +466,8 @@ static std::vector<GrRule> g_grass;                  /* grass.txt, read once at 
 /* v0.46.1: "range LO HI FMT SIDE MINLV" = every candidate texture whose fingerprint is between LO and HI (hex, inclusive), with
    format FMT (0 = any blankable format), longest side SIDE (0 = any) and at least MINLV mip levels (0 = any). Lets the WebUI
    switch off half of all textures at once and bisect down to the grass. */
-struct GrRange { uint64_t lo, hi; int fmt, side, minlv; };
+/* v0.55: optional extra fields "MINSIDE MAXSIDE SHAPE" (longest side at least / at most, 0 = any; SHAPE 1 = square only, 2 = not square). */
+struct GrRange { uint64_t lo, hi; int fmt, side, minlv, minside, maxside, shape; };
 static std::vector<GrRange> g_range;
 static std::atomic<int> g_grass_on{0};
 static std::atomic<int> g_alpha_kept{0}, g_grass_n{0}, g_grass_guard{0}, g_grass_noalpha{0}, g_grass_pbo{0}, g_grass_nobound{0};
@@ -525,6 +526,10 @@ static bool grass_rule_match(int fmt, int w, int h, uint64_t hash, int lv = 0) {
         if (hash < r.lo || hash > r.hi) continue;
         if (r.fmt && r.fmt != fmt) continue;
         if (r.side && r.side != std::max(w, h)) continue;
+        if (r.minside && std::max(w, h) < r.minside) continue;
+        if (r.maxside && std::max(w, h) > r.maxside) continue;
+        if (r.shape == 1 && w != h) continue;
+        if (r.shape == 2 && w == h) continue;
         if (r.minlv > 0 && lv > 0 && lv < r.minlv) continue;       /* lv 0 = unknown, never excluded */
         return true;
     }
@@ -1777,9 +1782,10 @@ static void load_cfg() {
     if (f) {
         char ln[128];
         while (g_grass.size() < 64 && fgets(ln, sizeof ln, f)) {
-            int a = 0, b = 0, c = 0; unsigned long long hh = 0, h2 = 0; int fm = 0, sd = 0, ml = 0;
+            int a = 0, b = 0, c = 0; unsigned long long hh = 0, h2 = 0; int fm = 0, sd = 0, ml = 0, mn = 0, mx = 0, sh = 0;
             if (strncmp(ln, "range ", 6) == 0) {
-                if (sscanf(ln + 6, "%llx %llx %i %i %i", &hh, &h2, &fm, &sd, &ml) == 5 && h2 >= hh && g_range.size() < 8) g_range.push_back({(uint64_t)hh, (uint64_t)h2, fm, sd, ml});
+                int rk = sscanf(ln + 6, "%llx %llx %i %i %i %i %i %i", &hh, &h2, &fm, &sd, &ml, &mn, &mx, &sh);
+                if (rk >= 5 && h2 >= hh && g_range.size() < 8) g_range.push_back({(uint64_t)hh, (uint64_t)h2, fm, sd, ml, rk >= 6 ? mn : 0, rk >= 7 ? mx : 0, rk >= 8 ? sh : 0});
                 else L("GRASSRULE range ignored (cannot read it): %.60s", ln);
                 continue;
             }
@@ -1790,7 +1796,7 @@ static void load_cfg() {
         }
         fclose(f);
         for (auto &r : g_grass) L("GRASSRULE loaded fmt=%d %dx%d h=%016llx\n", r.fmt, r.w, r.h, (unsigned long long)r.hash);
-        for (auto &r : g_range) L("GRASSRULE range loaded %016llx-%016llx fmt=%d side=%d minlv=%d\n", (unsigned long long)r.lo, (unsigned long long)r.hi, r.fmt, r.side, r.minlv);
+        for (auto &r : g_range) L("GRASSRULE range loaded %016llx-%016llx fmt=%d side=%d minlv=%d minside=%d maxside=%d shape=%d\n", (unsigned long long)r.lo, (unsigned long long)r.hi, r.fmt, r.side, r.minlv, r.minside, r.maxside, r.shape);
     }
     g_grass_on = (g_grass.empty() && g_range.empty()) ? 0 : 1;
     if (FILE *ff = fopen(FULLF, "r")) {
