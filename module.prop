@@ -1,6 +1,6 @@
 id=codm_tex_logger
 name=CODM Blocky Textures
-version=v0.57.2
-versionCode=70
+version=v0.57.4
+versionCode=72
 author=Q9 Papyrus
 description=Texture filtering, render scale and frame-time diagnostics for Call of Duty: Mobile. Includes a WebUI for KernelSU / SukiSU Ultra / APatch (Magisk: open it with KsuWebUI or MMRL).

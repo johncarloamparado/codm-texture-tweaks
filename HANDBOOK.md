@@ -11,10 +11,11 @@ Source layout: `main.cpp` (native module), `webroot/index.html` (WebUI), `module
 | Minor release or bug-fix only | `v0.0.N` as written in the task, used here as `v0.N.P` (P counts the fixes made after `v0.N`) | `v0.57.1` | +1 |
 
 - `v0.57` is a major feature release: exact-rules-only `grass.txt`, 4096 limit, selection based Texture Finder.
-- `versionCode` always goes up by exactly 1 per release (`v0.57.2` = 70, `v0.57.1` = 69, `v0.57` = 68; the last release before it, `v0.56.0`, was 67).
+- `versionCode` always goes up by exactly 1 per release (`v0.57.4` = 72, `v0.57.3` = 71, `v0.57.2` = 70, `v0.57.1` = 69, `v0.57` = 68; the last release before it, `v0.56.0`, was 67).
 - Note: the task text says bug-fix-only releases use `v0.0.N`. Read literally that would reset the number to `v0.0.1`, which sorts before every earlier release and would break the "newer version" checks in root managers. So the handbook uses `v0.N.P` (the next fix of `v0.57` is `v0.57.1`). Change this table if the literal form is really wanted.
 - The version text must be changed together in: `VERSION` in `main.cpp`, `version` and `versionCode` in `module.prop`, the `echo 'UI: ...'` line in `webroot/index.html`, and the version checks in `tests/host_test_cfg.cpp` (it looks for the text `v0.57`).
 - Zip name: `codm_Blocky_v<version>.zip`.
+- Every release: update the demo `fake` version in `webroot/index.html` too, update this handbook and the handoff text, and hand over three files: the zip, `preview_index_v<version>.html` and the handoff txt.
 
 ## grass.txt (the list of hidden textures)
 
@@ -25,7 +26,15 @@ Source layout: `main.cpp` (native module), `webroot/index.html` (WebUI), `module
 - The module builds one sorted vector when the settings are loaded and uses a binary search in the upload hooks (no allocation, read-only after load).
 - Guarded textures (scope / reticle atlas, lobby buttons) are never changed, whatever grass.txt says.
 
+## WebUI behaviour that must not change by accident (v0.57.3)
+
+- **A finder test is never ended by a switch.** In the test window (`#twOv`) a switch, `ON all`, `OFF all` and `Save` only *pause* the test (`gst.paused` / `gPend.paused`, kept in `ct_gst2` / `ct_gset`). While paused, grass.txt holds the person's own switches and may differ from the test list: `gLoadState` / `gLoadPend` skip the "grass.txt matches the test" check for a paused test. `Back to the test` (`gResume`, id `gfResume`) writes the test rules again. When the switches become exactly the test list again (ON all, or switching the last one back, `gSameSet`), the test runs again by itself (v0.57.4). `End the test` (`gEndTest`, id `gfEnd`) is the only way to end it on purpose, besides the old Cancel (`gfOff`). The answers (hidden / still there / back) are refused while paused.
+- **My textures only holds what the person saved.** `gLoadLib` must never add rules from grass.txt as "Unnamed N" (during a test grass.txt holds hundreds of test rules). Rules that are hidden but not saved are listed in the Texture browser ("Hidden now, not saved"); `tbUnsaved()` leaves out the textures of a running, not paused test.
+- **Delete in My textures.** Every row has `Delete` (`data-forget`, also turns the texture back to normal). Two bulk buttons (`data-libdel`, two taps, 5 s to confirm): `Delete unnamed that are OFF`, `Delete all that are OFF`. Bulk delete never touches entries that are ON.
+- **Size filter = width OR height.** In the Texture browser and in the test window a size of 64 matches `64xN` and `Nx64` (`hasSide`, `sideCounts`). The number in the option list counts every texture that has that width or height. The finder search setup (smallest / largest texture to hide) still works on the longest side, on purpose (it is a range).
+
 ## Rules for the code
+
 
 - No `thread_local` object with a destructor in `main.cpp` (the Zygisk loaded `.so` aborts). `tests/run_host_tests.sh` has a lint for it.
 - Never read the data pointer of a texture upload while a pixel unpack buffer is bound.
