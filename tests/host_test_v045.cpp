@@ -27,8 +27,8 @@ int main(){
   char line[512]; snprintf(line,sizeof line,"37497 512 512 %016llx\n0x9279 256 256 0xdeadbeef\n37497 512\nbad\n37497 0 512 1\n# c\n",(unsigned long long)hA);
   wr(GRASSF,line); load_cfg();
   CHECK(g_grass.size()==2); CHECK(g_grass_on.load()==1);
-  CHECK(g_grass[0].fmt==37497&&g_grass[0].w==512&&g_grass[0].h==512&&g_grass[0].hash==hA);
-  CHECK(g_grass[1].hash==0xdeadbeefULL);
+  CHECK(grass_rule_match(37497,512,512,hA));   /* g_grass is sorted since v0.57: look rules up, not by index */
+  CHECK(grass_rule_match(0x9279,256,256,0xdeadbeefULL));
   wr(GRASSF,"37497 512\n"); load_cfg(); CHECK(g_grass.empty()); CHECK(g_grass_on.load()==0);   /* v0.44 file = off */
   /* the rule names texture A only */
   snprintf(line,sizeof line,"37497 512 512 %016llx\n",(unsigned long long)hA); wr(GRASSF,line); load_cfg(); CHECK(g_grass_on.load()==1);
