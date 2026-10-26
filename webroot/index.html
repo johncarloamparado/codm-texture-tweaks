@@ -683,19 +683,17 @@ html.compact .sbtn { min-height: 42px; }
 ::selection{background:rgba(56,189,248,.4)}
 /* space: milky-way band, nebula, static + twinkling stars, and four meteors on different paths */
 #bg-glow{overflow:hidden;background-image:var(--stars),linear-gradient(118deg,transparent 32%,rgba(56,189,248,.06) 44%,rgba(147,210,255,.1) 50%,rgba(56,189,248,.05) 57%,transparent 68%),radial-gradient(70% 45% at 85% 8%,rgba(37,99,235,.22),transparent 70%),radial-gradient(60% 40% at 8% 45%,rgba(14,165,198,.16),transparent 70%),radial-gradient(60% 35% at 80% 92%,rgba(56,189,248,.1),transparent 70%);background-size:220px 220px,auto,auto,auto,auto}
-#bg-glow::before{content:"";position:absolute;inset:0;background-image:var(--stars2);background-size:310px 310px;animation:twk 5s ease-in-out infinite alternate}
+#bg-glow::before{content:"";position:absolute;inset:0;background-image:var(--stars2);background-size:310px 310px;opacity:.75}
 @keyframes twk{from{opacity:.2}to{opacity:1}}
-#bg-glow::after,body::before,body::after,html::before,#boot::before,#boot::after{content:"";position:absolute;width:150px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,rgba(130,215,255,.85) 75%,#fff);box-shadow:0 0 8px rgba(120,200,255,.55);opacity:0;pointer-events:none;animation:meteor 7s linear infinite}
-body::before,body::after,html::before{position:fixed;z-index:-1}
+#bg-glow::after,body::before,#boot::before,#boot::after{content:"";position:absolute;width:150px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,rgba(130,215,255,.85) 75%,#fff);opacity:0;will-change:transform,opacity;pointer-events:none;animation:meteor 7s linear infinite}
+body::before{position:fixed;z-index:-1}
 #bg-glow::after{top:10%;left:80%;--a:145deg;--dx:-360px;--dy:252px;animation-delay:1s}
 body::before{top:5%;left:28%;--a:35deg;--dx:360px;--dy:252px;animation-duration:9s;animation-delay:3.5s}
-body::after{top:36%;left:96%;--a:145deg;--dx:-330px;--dy:231px;animation-duration:11s;animation-delay:6s}
-html::before{top:58%;left:15%;--a:35deg;--dx:310px;--dy:217px;animation-duration:13s;animation-delay:2s}
 @keyframes meteor{0%{opacity:0;transform:translate(0,0) rotate(var(--a))}4%{opacity:1}14%,100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--a))}}
 html.idle *,html.idle *::before,html.idle *::after,html.idle::before,html.idle body::before,html.idle body::after,html.idle #bg-glow::after,html.idle #boot::before,html.idle #boot::after{animation-play-state:paused!important}
 #dockcover{background:linear-gradient(to top,var(--bg) 0,var(--bg) calc(100% - 28px),transparent)}
 /* header */
-.logo{filter:drop-shadow(0 6px 16px rgba(56,189,248,.45));animation:flt 7s ease-in-out infinite}
+.logo{filter:drop-shadow(0 6px 16px rgba(56,189,248,.45))}
 @keyframes flt{50%{transform:translateY(-3px)}}
 .eyebrow{letter-spacing:.3em;color:var(--cyan)}
 h1{background:linear-gradient(90deg,#fff 25%,#bfe9ff);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -745,8 +743,7 @@ input[type=range]::-webkit-slider-thumb{margin-top:-9px;background:#fff;box-shad
 .tile{background:linear-gradient(180deg,rgba(120,190,255,.09),rgba(120,190,255,.02))}
 .tile b{font-size:24px}
 /* dock: adaptive tabs. Only the active tab shows its name, inside its own highlight; the others shrink to icons. */
-#dock{border-radius:30px;background:rgba(3,9,22,.92);border-color:rgba(86,190,255,.22);box-shadow:0 14px 44px rgba(0,0,10,.6),inset 0 1px 0 rgba(255,255,255,.06)}
-@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){#dock{background:rgba(3,9,22,.66);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4)}}
+#dock{border-radius:30px;background:rgba(3,9,22,.95);border-color:rgba(86,190,255,.22);box-shadow:0 14px 44px rgba(0,0,10,.6),inset 0 1px 0 rgba(255,255,255,.06)}
 #dock .tabs{gap:2px}
 #dock .tabs button{flex:1 1 0;flex-direction:row;gap:0;padding:0 4px;font-size:11.5px;letter-spacing:.02em;border:1px solid transparent;transition:flex-grow .42s var(--ease),background-color .25s,color .25s,border-color .25s}
 #dock .tabs button.on{flex-grow:2.7;color:#fff;background:linear-gradient(135deg,rgba(37,99,235,.55),rgba(14,165,198,.38));border-color:rgba(103,232,249,.35)}
@@ -761,7 +758,6 @@ body.pend .apply{animation:apulse 1.8s ease-in-out infinite}
 #toast{left:50%;right:auto;margin:0;width:max-content;max-width:calc(100% - 32px);border-radius:999px;padding:12px 22px;background:rgba(10,24,52,.97);color:var(--text);border:1px solid rgba(86,190,255,.4);transform:translate(-50%,16px) scale(.94);transition:opacity .25s,transform .45s var(--spring)}
 #toast.show{transform:translate(-50%,0)}
 /* dialogs */
-#savew,#namew,#codew,#logw{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .savebox{border:1px solid transparent;border-radius:28px;background:linear-gradient(180deg,#0d1c3e,#050c1f) padding-box,linear-gradient(150deg,rgba(56,189,248,.55),rgba(37,99,235,.12) 40%,rgba(103,232,249,.2)) border-box;animation:pop .45s var(--spring) backwards}
 #savew.open,#namew.open,#codew.open{animation:fade .2s ease backwards}
 @keyframes pop{from{opacity:0;transform:translateY(24px) scale(.94)}}@keyframes fade{from{opacity:0}}
@@ -890,7 +886,7 @@ html.short #uiCard .cap{display:block!important}
 .tb-filters .grid2 { margin-top: 0; }
 
 /* v0.55: themed picker + sheets, finder test window, search setup */
-.sh-ov{position:fixed;inset:0;z-index:120;display:flex;align-items:flex-end;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:rgba(2,7,18,.7);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);opacity:0;transition:opacity .18s}
+.sh-ov{position:fixed;inset:0;z-index:120;display:flex;align-items:flex-end;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:rgba(2,7,18,.86);opacity:0;transition:opacity .18s}
 .sh-ov.pk-ov{z-index:130}
 .sh-ov.on{opacity:1}
 .sh{width:100%;max-width:560px;max-height:calc(92vh - 12px);display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,#0e1b3a 0%,#0a1428 100%);border:1px solid rgba(86,190,255,.22);border-radius:24px;box-shadow:0 -14px 44px rgba(0,0,0,.55),0 0 36px rgba(56,189,248,.08);color:var(--text,#eaf6ff);transform:translateY(28px);transition:transform .24s var(--ease,ease)}
@@ -1456,7 +1452,7 @@ html.cc.md .opt{padding:12px 13px}
 
     <section class="card">
       <div class="ch"><h2>Game copy</h2></div>
-      <p class="cap">If you use Dual Apps or a second user, pick which copy of CODM these settings belong to. Auto uses the copy that ran most recently.</p>
+      <p class="cap">If you use Dual Apps or a second user, pick which copy of CODM these settings belong to. Auto keeps the copy you used before. It only moves to another one if that copy is gone.</p>
       <div class="opts" id="copyOpts" role="radiogroup" aria-label="Game copy"></div>
       <button class="btn" id="copyScan" type="button" style="margin-top:10px">Scan again</button>
     </section>
@@ -1533,6 +1529,7 @@ html.cc.md .opt{padding:12px 13px}
       <div class="kv"><span>Contributors</span><b>zynn, Shari</b></div>
       <div class="kv"><span>Module mode</span><b id="aMode">—</b></div>
       <div class="kv"><span>Settings folder</span><b id="aDir" style="font-size:12px;font-weight:500;word-break:break-all;text-align:right">—</b></div>
+      <div class="kv"><span>Settings backup</span><b id="aBk" style="font-size:12px;font-weight:500;word-break:break-all;text-align:right">—</b></div>
       <p class="pnote">The module always runs in mode 4: it hooks the game's engine the moment it loads, with no background polling. If this value ever shows anything else, it is corrected automatically.</p>
     </section>
 
@@ -1667,9 +1664,9 @@ html.cc.md .opt{padding:12px 13px}
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4", forcegl: "1",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0", alpha: "1",
-    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.57.3",
-    st: "ver=v0.57.4|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
-    startline: "=== start v0.57.4 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
+    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.58",
+    st: "ver=v0.58|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
+    startline: "=== start v0.58 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
     ftall: "FT fps=57.1 avg=17.5ms p50=16.9 p99=36.2 max=48.0 >33ms=2 >50ms=0 n=285 cap=0 bias=0 scale=100 t=60.0 fz=0\nFT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=65.0 fz=1\nFT fps=58.4 avg=17.1ms p50=16.8 p99=30.2 max=41.0 >33ms=1 >50ms=0 n=292 cap=0 bias=0 scale=100 t=70.0 fz=0\nFT fps=56.0 avg=17.9ms p50=17.2 p99=38.9 max=52.0 >33ms=2 >50ms=1 n=280 cap=0 bias=0 scale=100 t=75.0 fz=0",
     ftn: "4",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
@@ -1774,10 +1771,6 @@ html.cc.md .opt{padding:12px 13px}
     while ((m = re.exec(line))) o[m[1]] = m[2];
     return o;
   }
-  function num(v, d) {
-    var n = parseFloat(v);
-    return isNaN(n) ? "—" : (d ? n.toFixed(d) : String(Math.round(n)));
-  }
 
   /* ---------- shell ---------- */
   function wrap(cmd) {
@@ -1814,6 +1807,7 @@ html.cc.md .opt{padding:12px 13px}
   function queued(fn) {
     var p = wq.then(fn);
     wq = p.then(null, function () {});
+    p.then(backupSoon, function () {});
     return p;
   }
 
@@ -1826,12 +1820,13 @@ html.cc.md .opt{padding:12px 13px}
     "grep -qi -E '^name=.*(zygisk ?next|rezygisk|neozygisk|zygisksu)' $p 2>/dev/null && Z=\"$Z$i,\"; done; " +
     "M=$(magisk --sqlite \"SELECT value FROM settings WHERE key='zygisk'\" 2>/dev/null | head -n 1); [ \"$M\" = 'value=1' ] && Z=\"${Z}magisk,\"; " +
     "echo \"zyg=$Z\"; ";
+  var zygCache = { v: "", t: 0 };      /* the Zygisk check walks every module: once per 90 s is enough */
   function readState() {
     if (demo) {
       return Promise.resolve(Object.assign({ nodir: false }, fake));
     }
     var cmd =
-      "D=" + D + "; " + ZYG_SCRIPT +
+      "D=" + D + "; " + (zygCache.v && Date.now() - zygCache.t < 90000 ? "echo zyg=" + zygCache.v + "; " : ZYG_SCRIPT) +
       "[ -d $D ] || { echo NODIR; exit 0; }; " +
       "for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm alpha mode hookdelay hooksafe forcegl; do " +
       "  if [ -f $D/$f.txt ]; then printf '%s=' $f; cat $D/$f.txt; else printf '%s=\\n' $f; fi; " +
@@ -1856,7 +1851,7 @@ html.cc.md .opt{padding:12px 13px}
       /* status file written by the game process + evidence that the module really ran / is installed right */
       "M=/data/adb/modules/codm_tex_logger; " +
       "echo -n 'st='; [ -f $D/codm_tex.status ] && tr '\\n' '|' < $D/codm_tex.status; echo; " +
-      "echo inj=$(timeout 5 logcat -d -s codm_tex 2>/dev/null | grep -c postAppSpecialize); " +
+      "if [ -f $D/codm_tex.status ]; then echo inj=0; else echo inj=$(timeout 5 logcat -d -s codm_tex 2>/dev/null | grep -c postAppSpecialize); fi; " +
       "echo so=$({ [ -f $M/zygisk/arm64-v8a.so ] || [ -f $M/zygisk/armeabi-v7a.so ]; } && echo 1 || echo 0); " +
       "echo moddis=$([ -f $M/disable ] && echo 1 || echo 0); " +
       "echo pend=$([ -d /data/adb/modules_update/codm_tex_logger ] && echo 1 || echo 0)";
@@ -1876,6 +1871,7 @@ html.cc.md .opt{padding:12px 13px}
       });
       /* If the first root route could not list /data/adb/modules, ask again through the other routes before anyone sees a warning */
       if (!s.zyg && !(s.st || s.nv || parseInt(s.inj, 10) > 0)) return zygFallback(s);
+      if (s.zyg) zygCache = { v: s.zyg, t: Date.now() };
       return s;
     }).then(function (s) {
       if (s.nodir) return s;
@@ -1886,23 +1882,33 @@ html.cc.md .opt{padding:12px 13px}
      call, so one answer stays small. If a chunk cannot be read, the list is marked incomplete and the page says so. */
   var CCHUNK = 400, CMAXCHUNKS = 60;
   var gCandInfo = { total: 0, partial: false };
+  var candCache = { sig: "", res: null };
   function loadCandText() {
-    var pre = "D=" + D + "; L=$D/codm_tex.log; ";
-    return sh(pre + "[ -f $L ] && grep -E '^GRASSCAND ' $L | sort -u | wc -l || echo 0", 15000).then(function (r) {
-      var total = parseInt(String(r.stdout).trim().split(/\s+/).pop(), 10) || 0, want = Math.ceil(total / CCHUNK), n = Math.min(want, CMAXCHUNKS);
-      var out = [], i = 0, bad = false;
-      function chunk(a, b, again) {
-        return sh(pre + "grep -E '^GRASSCAND ' $L | sort -u | sed -n '" + a + "," + b + "p'", 20000).then(function (c) {
-          if (c.errno !== 0 && !c.stdout) return again ? chunk(a, b, false) : null;
-          return c.stdout;
+    var CT = "/data/local/tmp/ct_cand_u" + USER, pre = "D=" + D + "; L=$D/codm_tex.log; T=" + CT + "; ";
+    /* same log (size + time) as the last read: nothing to do */
+    return sh(pre + "stat -c '%Y.%s' $L 2>/dev/null || echo 0", 6000).then(function (g) {
+      var sig = D + "|" + String(g.stdout).trim();
+      if (candCache.res && candCache.sig === sig) return candCache.res;
+      return sh(pre + "[ -f $L ] || { echo 0; exit 0; }; grep -E '^GRASSCAND ' $L | sort -u > $T 2>/dev/null; if [ -s $T ]; then wc -l < $T; else grep -E '^GRASSCAND ' $L | sort -u | wc -l; fi", 20000).then(function (r) {
+        var total = parseInt(String(r.stdout).trim().split(/\s+/).pop(), 10) || 0, want = Math.ceil(total / CCHUNK), n = Math.min(want, CMAXCHUNKS);
+        var out = [], i = 0, bad = false;
+        function chunk(a, b, again) {
+          return sh(pre + "if [ -s $T ]; then sed -n '" + a + "," + b + "p' $T; else grep -E '^GRASSCAND ' $L | sort -u | sed -n '" + a + "," + b + "p'; fi", 20000).then(function (c) {
+            if (c.errno !== 0 && !c.stdout) return again ? chunk(a, b, false) : null;
+            return c.stdout;
+          });
+        }
+        function next() {
+          if (i >= n) return Promise.resolve();
+          var a = i * CCHUNK + 1, b = a + CCHUNK - 1; i++;
+          return chunk(a, b, true).then(function (t) { if (t === null) { bad = true; return; } out.push(t); return next(); });
+        }
+        return next().then(function () {
+          var res = { text: out.join("\n"), total: total, partial: bad || want > n };
+          if (!res.partial) candCache = { sig: sig, res: res };
+          return res;
         });
-      }
-      function next() {
-        if (i >= n) return Promise.resolve();
-        var a = i * CCHUNK + 1, b = a + CCHUNK - 1; i++;
-        return chunk(a, b, true).then(function (t) { if (t === null) { bad = true; return; } out.push(t); return next(); });
-      }
-      return next().then(function () { return { text: out.join("\n"), total: total, partial: bad || want > n }; });
+      });
     });
   }
   function zygFallback(s) {
@@ -2260,6 +2266,7 @@ html.cc.md .opt{padding:12px 13px}
     $("ver").textContent = s.ver || "";
     $("aVer").textContent = s.ver || "—";
     $("aDir").textContent = D + (USER ? "  (user " + USER + ")" : "");
+    if ($("aBk")) { if (demo) $("aBk").textContent = "—"; else uiShow(); }
     if (s.nodir) {
       $("status").innerHTML = '<span class="chip msg">Game folder not found.</span>';
       $("aDir").textContent = "not found";
@@ -2544,9 +2551,6 @@ html.cc.md .opt{padding:12px 13px}
   }
 
   /* ---------- Keep smoke soft + Remove grass (v0.44) ---------- */
-  function fmtBlankable(f) {
-    return (f >= 0x9276 && f <= 0x9279) || (f >= 0x93b0 && f <= 0x93bd) || (f >= 0x93d0 && f <= 0x93dd);
-  }
   function fmtAlphaSoft(f) { return f >= 0x9276 && f <= 0x9279; }
   function alphaKept(g) { return getSw("alpha") && fmtAlphaSoft(g.fmt); }
   function grassLines() {
@@ -4133,48 +4137,191 @@ html.cc.md .opt{padding:12px 13px}
   $("fixReticle").addEventListener("click", function () { setRG("reticle"); });
   $("fixGrass").addEventListener("click", function () { setRG("grass"); });
 
-  /* Finds the game's files folder. Handles other Android users (dual apps / clone),
-     the mirror path, and shells that need nsenter or su to see /data/data. */
+  /* Finds the game's files folder. Handles other Android users (dual apps / clone), the mirror path, and shells that need nsenter or su
+     to see /data/data.  v0.58: the choice is STICKY. The folder that was used before stays the one in use (kept in the page and in
+     /data/adb/codm_tex_cfg), the shell route that worked is tried first, and a folder is never swapped just because another path shows a
+     newer log. It only moves when the old one is gone or clearly empty while another one holds the settings. */
+  var CFGDIR = "/data/adb/codm_tex_cfg";
   var PROBE = "P=" + PKG + "; for d in /data/data/$P/files /data/user/*/$P/files /data_mirror/data_ce/null/*/$P/files; do " +
-    "[ -d \"$d\" ] && echo \"C|$d|$(stat -c %Y \"$d/codm_tex.log\" 2>/dev/null || echo 0)|$(stat -c %Y \"$d/codm_tex.status\" 2>/dev/null || echo 0)\"; done";
+    "[ -d \"$d\" ] && { n=0; for f in flat grass skip texlib fps scale mode; do [ -f \"$d/$f.txt\" ] && n=$((n+1)); done; " +
+    "echo \"C|$d|$(stat -c %Y \"$d/codm_tex.log\" 2>/dev/null || echo 0)|$(stat -c %Y \"$d/codm_tex.status\" 2>/dev/null || echo 0)|$n|$([ -f \"$d/.ct_keep\" ] && echo 1 || echo 0)\"; }; done; " +
+    "for f in " + CFGDIR + "/pin_u*; do [ -f \"$f\" ] && echo \"K|$(basename $f)|$(cat $f)\"; done";
+  var pinLS = {}, pinF = {}, pinU = "";
+  try { pinLS = JSON.parse(localStorage.getItem("ct_pin") || "{}") || {}; pinU = localStorage.getItem("ct_pinu") || ""; } catch (e) { pinLS = {}; }
   function userOf(p) {
     var m = /\/data\/user\/(\d+)\//.exec(p) || /\/data_mirror\/data_ce\/null\/(\d+)\//.exec(p);
     return m ? parseInt(m[1], 10) : 0;
   }
-  /* one entry per Android user (/data/data and /data/user/0 are the same folder) */
+  function prioOf(p) { return p.indexOf("/data/data/") === 0 ? 0 : p.indexOf("/data/user/") === 0 ? 1 : 2; }
+  /* all paths of one Android user are the same folder seen from different places; keep every path, best first */
+  function pickPath(alts, u) {
+    var want = pinF[u] || pinLS[u] || "";
+    function score(c) { return (c.t > 0 ? 4 : 0) + (c.k ? 2 : 0) + (c.n > 0 ? 1 : 0); }
+    return alts.slice().sort(function (a, b) {
+      return (score(b) - score(a)) || ((b.p === want ? 1 : 0) - (a.p === want ? 1 : 0)) || (prioOf(a.p) - prioOf(b.p)) || (b.t - a.t);
+    })[0];
+  }
   function parseCopies(out) {
     var by = {};
     out.split("\n").forEach(function (l) {
       var a = l.split("|");
+      if (a[0] === "K") { var mk = /^pin_u(\d+)$/.exec(a[1] || ""); if (mk && a[2]) pinF[mk[1]] = a[2].trim(); return; }
       if (a[0] !== "C" || !a[1]) return;
-      var t = Math.max(parseInt(a[2], 10) || 0, parseInt(a[3], 10) || 0), u = userOf(a[1]);
-      if (!by[u] || t > by[u].t) by[u] = { p: a[1], t: t, u: u };
+      var u = userOf(a[1]);
+      (by[u] = by[u] || []).push({ p: a[1], u: u, t: Math.max(parseInt(a[2], 10) || 0, parseInt(a[3], 10) || 0), n: parseInt(a[4], 10) || 0, k: a[5] === "1" });
     });
-    return Object.keys(by).map(function (k) { return by[k]; }).sort(function (x, y) { return x.u - y.u; });
+    return Object.keys(by).map(function (k) {
+      var b = pickPath(by[k], parseInt(k, 10));
+      return { p: b.p, t: b.t, u: b.u, n: b.n };
+    }).sort(function (x, y) { return x.u - y.u; });
   }
   function chooseCopy(list) {
     if (!list.length) return null;
     if (dirPick !== "auto") {
       for (var i = 0; i < list.length; i++) if (String(list[i].u) === dirPick) return list[i];
     }
+    if (pinU) for (var j = 0; j < list.length; j++) if (String(list[j].u) === pinU) return list[j];     /* the copy used last time stays the one used */
     var best = list[0];
     list.forEach(function (c) { if (c.t > best.t) best = c; });
     return best;
   }
+  /* remember the choice, in the page and in a small file outside the game folder */
+  function rememberDir(b) {
+    var changed = pinLS[b.u] !== b.p || pinU !== String(b.u);
+    pinLS[b.u] = b.p; pinU = String(b.u);
+    try { localStorage.setItem("ct_pin", JSON.stringify(pinLS)); localStorage.setItem("ct_pinu", pinU); } catch (e) {}
+    if (pinF[b.u] !== b.p && !demo) {
+      pinF[b.u] = b.p;
+      sh("mkdir -p " + CFGDIR + " 2>/dev/null; echo '" + b.p + "' > " + CFGDIR + "/pin_u" + b.u, 5000);
+    }
+    return changed;
+  }
   function findDir() {
     if (demo) return Promise.resolve(true);
-    var tries = [0, 1, 2], i = 0;
+    var order = [0, 1, 2], i = 0;
+    try { var sv = parseInt(localStorage.getItem("ct_wr"), 10); if (sv >= 0 && sv <= 2) order = [sv].concat(order.filter(function (x) { return x !== sv; })); } catch (e) {}
     function next() {
-      if (i >= tries.length) { WR = 0; return Promise.resolve(false); }
-      WR = tries[i++];
+      if (i >= order.length) { WR = 0; return Promise.resolve(false); }
+      WR = order[i++];
       return sh(PROBE).then(function (r) {
         var list = parseCopies(r.stdout), b = chooseCopy(list);
-        if (b) { COPIES = list; D = b.p; USER = b.u; return true; }
+        if (b) {
+          COPIES = list; D = b.p; USER = b.u; rememberDir(b);
+          try { localStorage.setItem("ct_wr", String(WR)); } catch (e) {}
+          return healSettings().then(uiRestore).then(function () { return true; });
+        }
         return next();
       });
     }
     return next();
   }
+
+  /* ---------- v0.58: backup of the settings, outside the game folder ----------
+     Some phones / game updates leave the game folder empty or point the page at another copy of it, and CODM then starts with defaults.
+     A small marker file (.ct_keep) lives in the game folder. If the marker is gone but the backup has it, the folder was emptied or
+     replaced: the saved settings are copied back (and the page says so). The backup follows every save. */
+  var CFGLIST = "flat testtex ttsize ttsm blk bias near scale fps fz th core minsz delay style sedge alpha mode hookdelay forcegl skip grass bltoff bltdel texlib";
+  var healed = "", healMsg = "", bkT = 0;
+  function bkDir() { return CFGDIR + "/u" + USER; }
+  function healSettings() {
+    if (demo || healed === D) return Promise.resolve();
+    healed = D;
+    var cmd = "D=" + D + "; B=" + bkDir() + "; S=.ct_keep; [ -d $D ] || exit 0; mkdir -p $B 2>/dev/null; " +
+      "if [ ! -f $D/$S ]; then n=0; if [ -f $B/$S ]; then for f in " + CFGLIST + "; do if [ -f $B/$f.txt ]; then cp -f $B/$f.txt $D/$f.txt 2>/dev/null; chmod 666 $D/$f.txt 2>/dev/null; chcon --reference=$D $D/$f.txt 2>/dev/null; n=$((n+1)); fi; done; fi; " +
+      "echo RESTORED=$n; : > $D/$S; chmod 666 $D/$S 2>/dev/null; chcon --reference=$D $D/$S 2>/dev/null; fi; " +
+      "rm -f $D/*.txt.new 2>/dev/null; " +
+      "for f in " + CFGLIST + "; do if [ -f $D/$f.txt ]; then cmp -s $D/$f.txt $B/$f.txt 2>/dev/null || cp -f $D/$f.txt $B/$f.txt 2>/dev/null; fi; done; : > $B/$S; echo HEALED";
+    return sh(cmd, 15000).then(function (r) {
+      var m = /RESTORED=(\d+)/.exec(r.stdout);
+      if (m && parseInt(m[1], 10) > 0) healMsg = "The game folder had lost its settings. " + m[1] + " files were put back from the backup. Tap Save to apply.";
+    });
+  }
+  /* after any save: copy what changed into the backup (a moment later, once, even after many quick taps) */
+  function backupSoon() {
+    if (demo) return;
+    clearTimeout(bkT);
+    bkT = setTimeout(function () {
+      var cmd = "D=" + D + "; B=" + bkDir() + "; S=.ct_keep; [ -f $D/$S ] || exit 0; mkdir -p $B 2>/dev/null; " +
+        "for f in " + CFGLIST + "; do if [ -f $D/$f.txt ]; then cmp -s $D/$f.txt $B/$f.txt 2>/dev/null || cp -f $D/$f.txt $B/$f.txt 2>/dev/null; else rm -f $B/$f.txt; fi; done; : > $B/$S; echo SYNCED";
+      uiFlush().then(function () { sh(cmd, 15000); });
+    }, 1800);
+  }
+
+  /* ---------- v0.58: backup of the WebUI's own settings (everything the page keeps in the browser) ----------
+     Export name, open cards, tab, filters, finder test (paused too), my presets, names and groups copy, history, interface choices, ...
+     All the ct_* keys are packed into ONE small file next to the settings backup (ui.b64). Nothing big goes in: logs are never copied, a value
+     over 150 KB is skipped, and the history is dropped first if the whole thing passes 300 KB. It is only written when something changed.
+     If the browser data was wiped (no ct_ui_stamp), the keys that are missing are put back and the page reloads once. Keys that exist are never overwritten.
+     Not saved on purpose: ct_pin / ct_pinu / ct_wr (found again by themselves) and hooksafe, fullsize, scale_crash (crash flags the game makes by itself). */
+  var UI_SKIP = /^(ct_pin|ct_pinu|ct_wr|ct_ui_stamp|ct_ui_msg)$/;
+  var uiDirty = false, uiBusy = false, uiReady = false, uiLast = "", uiInfo = "";
+  function uiShow() { var e = $("aBk"); if (e && !demo) e.textContent = bkDir() + (uiInfo ? "  ·  page settings: " + uiInfo : ""); }
+  function uiBackupSoon() { if (demo || !uiReady) return; uiDirty = true; backupSoon(); }
+  (function () {
+    try {
+      var SP = Storage.prototype, si = SP.setItem, ri = SP.removeItem;
+      SP.setItem = function (k, v) { si.call(this, k, v); if (this === localStorage && /^ct_/.test(k) && !UI_SKIP.test(k)) uiBackupSoon(); };
+      SP.removeItem = function (k) { ri.call(this, k); if (this === localStorage && /^ct_/.test(k) && !UI_SKIP.test(k)) uiBackupSoon(); };
+    } catch (e) {}
+  })();
+  function uiPack() {
+    var o = {}, n = 0, i, k, v;
+    try {
+      for (i = 0; i < localStorage.length; i++) {
+        k = localStorage.key(i);
+        if (!/^ct_/.test(k) || UI_SKIP.test(k)) continue;
+        v = localStorage.getItem(k);
+        if (v === null || v.length > 150000) continue;
+        o[k] = v; n++;
+      }
+      var j = JSON.stringify(o);
+      if (j.length > 300000 && o.ct_hist) { delete o.ct_hist; n--; j = JSON.stringify(o); }
+      return { b: btoa(unescape(encodeURIComponent(j))), n: n };
+    } catch (e) { return null; }
+  }
+  function uiFlush() {
+    if (demo || !uiReady || !uiDirty) return Promise.resolve();
+    if (uiBusy) return Promise.resolve();                       /* the running write asks for another round when it ends */
+    var pk = uiPack();
+    uiDirty = false;
+    if (!pk || pk.b === uiLast) return Promise.resolve();
+    uiBusy = true;
+    var B = bkDir(), i, p = sh("mkdir -p " + B + " 2>/dev/null; : > " + B + "/ui.tmp", 8000);
+    for (i = 0; i < pk.b.length; i += 48000) (function (c) {      /* pieces, so no shell command gets near the argument limit */
+      p = p.then(function () { return sh("printf %s '" + c + "' >> " + B + "/ui.tmp", 8000); });
+    })(pk.b.slice(i, i + 48000));
+    return p.then(function () { return sh("mv -f " + B + "/ui.tmp " + B + "/ui.b64 && echo UIOK", 8000); }).then(function (r) {
+      uiBusy = false;
+      if (r.stdout.indexOf("UIOK") >= 0) { uiLast = pk.b; uiInfo = pk.n + " items, " + Math.max(1, Math.round(pk.b.length / 1024)) + " KB"; uiShow(); }
+      else uiDirty = true;
+      if (uiDirty && r.stdout.indexOf("UIOK") >= 0) backupSoon();
+    });
+  }
+  function uiRestore() {
+    if (demo || uiReady) return Promise.resolve();
+    var stamp = ""; try { stamp = localStorage.getItem("ct_ui_stamp") || ""; } catch (e) {}
+    function start() { uiReady = true; uiDirty = true; backupSoon(); }
+    if (stamp) { start(); return Promise.resolve(); }
+    return sh("cat " + bkDir() + "/ui.b64 2>/dev/null", 10000).then(function (r) {
+      var n = 0, o = null;
+      try { o = JSON.parse(decodeURIComponent(escape(atob(r.stdout.replace(/\s+/g, ""))))); } catch (e) { o = null; }
+      if (o && typeof o === "object") {
+        Object.keys(o).forEach(function (k) {
+          if (!/^ct_/.test(k) || UI_SKIP.test(k) || typeof o[k] !== "string") return;
+          try { if (localStorage.getItem(k) === null) { localStorage.setItem(k, o[k]); n++; } } catch (e) {}
+        });
+      }
+      var ok = false;
+      try { localStorage.setItem("ct_ui_stamp", String(Date.now())); ok = !!localStorage.getItem("ct_ui_stamp"); } catch (e) {}
+      start();
+      if (n > 0 && ok) {
+        try { localStorage.setItem("ct_ui_msg", String(n)); } catch (e) {}
+        location.reload();
+        return new Promise(function () {});                   /* the page starts again with the keys back */
+      }
+    });
+  }
+  document.addEventListener("visibilitychange", function () { if (document.hidden && uiDirty) uiFlush(); });
   function refresh() { return findDir().then(readState).then(render); }
 
   /* One shell script is used both for the on-screen view and for the exported codm_diag.txt */
@@ -4184,7 +4331,7 @@ html.cc.md .opt{padding:12px 13px}
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.57.4'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.58'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -4200,6 +4347,7 @@ html.cc.md .opt{padding:12px 13px}
       "if [ -f $D/codm_tex.status ]; then for k in ver stage dir dir_writable hooksafe safe_why live live_fps abi lib hook gfx forcegl vk_blocked cand skip_rule skip_minsz skip_delay applied why0 cfg_bad cfg_missing injected started updated nl_hook adle_first first_cws first_sbg chain_foreign maps_nonsys maps_anon_exec alpha alpha_kept grass_rules grass_n grass_guard grass_noalpha grass_pbo grass_cand grass_early; do echo \"status.$k=$(sed -n 's/^'$k'=//p' $D/codm_tex.status)\"; done; else echo 'status file: none (module has not run in CODM since install/update)'; fi; " +
       "echo \"settings_files_owned_by_game=$(ls -ln $D/*.txt 2>/dev/null | awk '$3!=0' | wc -l) (0 = only root wrote them: the game process never created or repaired any)\"; " +
       "echo '== game dir'; ls -ldZ /data/data/$P /data/data/$P/files 2>&1; ls -ldZ /data/user/*/$P 2>&1; " +
+      "echo '== folder candidates (C|path|log time|status time|files|marker, K|pin)'; " + PROBE + "; echo '== settings backup'; ls -la " + bkDir() + " 2>&1 | head -n 40; " +
       "echo '== settings folder'; echo \"$D\"; ls -la $D 2>&1 | grep -v -i -E 'login|token|jwt|ticket|passwd|account' | head -n 60; " +
       "echo '== settings'; for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm alpha mode hookdelay hooksafe forcegl; do echo \"$f=$(cat $D/$f.txt 2>/dev/null)\"; done; " +
       "for f in skip grass bltoff bltdel; do echo \"-- $f.txt\"; cat $D/$f.txt 2>/dev/null; done; " +
@@ -4616,6 +4764,11 @@ html.cc.md .opt{padding:12px 13px}
     fill(el);
   });
 
+  $("rptName").addEventListener("change", function () {
+    var v = ($("rptName").value || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 24);
+    $("rptName").value = v;
+    try { localStorage.setItem("ct_name", v); } catch (e) {}
+  });
   $("exp").addEventListener("click", function () {
     if (demo) {
       toast("Demo mode — nothing exported.");
@@ -4712,7 +4865,6 @@ html.cc.md .opt{padding:12px 13px}
   }
   function rgCode() { var m = rgMode(); return m === "reticle" ? 1 : (m === "grass" ? 2 : 0); }
   function curVec() { return PK.map(function (k) { return parseInt(cur[k], 10) || 0; }).concat([rgCode()]); }
-  function sameVec(a, b) { for (var i = 0; i < 10; i++) if (a[i] !== b[i]) return false; return true; }
   /* highlight follows the Look card only (look, strength, pixel size, edge blend). Display, filter and quick fixes are separate. */
   function sameLook(a, b) { for (var i = 0; i < 6; i++) if (a[i] !== b[i]) return false; return true; }
   function vecText(v) {
@@ -5046,7 +5198,7 @@ html.cc.md .opt{padding:12px 13px}
   function paintCopies() {
     var box = $("copyOpts");
     if (!box) return;
-    var rows = [{ v: "auto", t: "Auto", d: "The copy that ran most recently." }];
+    var rows = [{ v: "auto", t: "Auto", d: "The copy used before (it stays put)." }];
     COPIES.forEach(function (c) {
       rows.push({ v: String(c.u), t: c.u === 0 ? "Main (user 0)" : "Copy · user " + c.u,
         d: (c.t > 0 ? "Last ran " + fmtDate(c.t * 1000) : "Never ran") + " · " + c.p });
@@ -5064,7 +5216,7 @@ html.cc.md .opt{padding:12px 13px}
     dirPick = e.target.value;
     try { localStorage.setItem("ct_dir", dirPick); } catch (e2) {}
     base = null;
-    refresh().then(function () { toast(dirPick === "auto" ? "Using the copy that ran most recently." : "Using game copy: user " + dirPick + "."); });
+    refresh().then(function () { toast(dirPick === "auto" ? "Using the copy used before." : "Using game copy: user " + dirPick + "."); });
   });
   $("copyScan").addEventListener("click", function () { refresh().then(function () { toast(COPIES.length + " game cop" + (COPIES.length === 1 ? "y" : "ies") + " found."); }); });
 
@@ -5097,7 +5249,8 @@ html.cc.md .opt{padding:12px 13px}
     .then(function (d) { bootStep("Reading your settings…"); return readState(d); })
     .then(function (st) { bootStep("Almost ready…"); return render(st); })
     .then(bootDone, bootDone)
-    .then(function () { clearTimeout(bootHintT); clearTimeout(bootSkipT); });
+    .then(function () { clearTimeout(bootHintT); clearTimeout(bootSkipT); if (healMsg) { var hm = healMsg; healMsg = ""; setTimeout(function () { toast(hm); }, 900); }
+      try { var um = localStorage.getItem("ct_ui_msg"); if (um) { localStorage.removeItem("ct_ui_msg"); setTimeout(function () { toast(um + " page settings were put back from the backup."); }, 1600); } } catch (e) {} });
   refreshLogStat();
 })();
 </script>
@@ -5217,7 +5370,7 @@ html.cc.md .opt{padding:12px 13px}
     if (running || D.hidden || performance.now() - lastTap < 900) return;
     var t = target();
     if (t) { L = t.l; R = t.r; last = t.i; paint(); }
-  }, 500);
+  }, 2000);
 })();
 </script>
 
