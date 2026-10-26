@@ -194,7 +194,7 @@ with sync_playwright() as p:
           if (%(failchunk)d && a > 400) { out = ""; err = 1; }                 /* this chunk can never be read (also not on the retry) */
           else out = uniq.slice(a - 1, b).join("\\n") + "\\n";
         }
-        else if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nst=ver=v0.57.2|stage=started|\\n";
+        else if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nst=ver=v0.57.4|stage=started|\\n";
         else if (cmd.indexOf("echo OK") >= 0) { out = "OK\\n"; window.__last = cmd; }
         setTimeout(function () { window[cb](err, out, ""); }, 0);
       } };
@@ -247,7 +247,7 @@ with sync_playwright() as p:
       window.addEventListener("unhandledrejection", function(e){ window.__rej.push(String(e.reason)); });
       window.ksu = { exec: function(cmd, opts, cb){
         var out = "";
-        if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nbias=0\\nscale=\\nfps=\\nfz=1\\nth=1\\ncore=1\\nnear=1\\nblk=%(blk)s\\nminsz=64\\ndelay=0\\nstyle=%(style)s\\nsedge=1\\nflat=%(flat)s\\ntesttex=%(tt)s\\nttsize=0\\nttsm=0\\nalpha=1\\nmode=4\\nhookdelay=0\\nhooksafe=0\\nforcegl=1\\nver=v0.57.2\\nst=ver=v0.57.2|stage=started|\\n";
+        if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nbias=0\\nscale=\\nfps=\\nfz=1\\nth=1\\ncore=1\\nnear=1\\nblk=%(blk)s\\nminsz=64\\ndelay=0\\nstyle=%(style)s\\nsedge=1\\nflat=%(flat)s\\ntesttex=%(tt)s\\nttsize=0\\nttsm=0\\nalpha=1\\nmode=4\\nhookdelay=0\\nhooksafe=0\\nforcegl=1\\nver=v0.57.4\\nst=ver=v0.57.4|stage=started|\\n";
         else if (cmd.indexOf("echo OK") >= 0) out = "OK\\n";
         setTimeout(function(){ window[cb](0, out, ""); }, 0);
       } };
@@ -284,6 +284,134 @@ with sync_playwright() as p:
     pg.fill("#tbQ", "ETC2"); pg.wait_for_timeout(400)
     check("search still works inside the window", pg.evaluate("document.getElementById('tbList').children.length") > 0 and (lambda m: m and int(m.group(1)) < int(m.group(2)))(re.search(r"Filter: (\d+) of (\d+)", pg.inner_text("#tbCount"))), pg.inner_text("#tbCount")[:80])
     check("no JS errors (window)", not errs, errs)
+    pg.close()
+
+    # 16. v0.57.3: OFF all / switches in the test window PAUSE the test (it is not lost); no automatic "Unnamed" entries; Delete buttons; Size = width OR height
+    pg = new(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    pg.goto(PAGE + "?demo=300"); pg.wait_for_timeout(900)
+    pg.click("#dock [data-v=adv]"); pg.wait_for_timeout(300)
+    pg.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)"); pg.wait_for_timeout(300)
+    open_tb(pg)
+    pg.select_option("#tbFmt", "37497"); pg.wait_for_timeout(400)
+    tap(pg, "#tbbSelF"); tap(pg, "#tbbTestS")
+    R0 = len(rules(pg))
+    check("16a test is running with %d rules" % R0, R0 > 5 and "Check: everything off" in pg.inner_text("#gf"), pg.inner_text("#gf")[:80])
+    pg.evaluate("document.getElementById('twOpen').click()"); pg.wait_for_timeout(300)
+    tap(pg, "#twOv [data-tw=off]"); pg.wait_for_timeout(300)
+    check("16b OFF all: nothing is hidden any more", len(rules(pg)) == 0, len(rules(pg)))
+    check("16c OFF all: the test is NOT lost (state kept, paused)", pg.evaluate("(function(){var s=JSON.parse(localStorage.getItem('ct_gst2')||'null');return !!s&&s.paused===true&&s.U.length>0})()"))
+    check("16d window offers Back to the test and End the test", pg.evaluate("!document.getElementById('twPauseRow').hidden"))
+    check("16e finder card says Test paused", "Test paused" in pg.inner_text("#gf") and pg.evaluate("!!document.getElementById('gfResume')") and not pg.evaluate("!!document.getElementById('gfYes')"))
+    pg.evaluate("document.querySelector('#twOv [data-tw=close]').click()"); pg.wait_for_timeout(300)
+    pg.reload(); pg.wait_for_timeout(900)
+    pg.click("#dock [data-v=adv]"); pg.wait_for_timeout(300)
+    pg.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)"); pg.wait_for_timeout(300)
+    check("16f paused test survives a reload (grass.txt differs from the test list on purpose)", "Test paused" in pg.inner_text("#gf"), pg.inner_text("#gf")[:100])
+    tap(pg, "#gfResume"); pg.wait_for_timeout(300)
+    check("16g Back to the test: the test rules are back and the answers show again", len(rules(pg)) == R0 and pg.evaluate("!!document.getElementById('gfYes')") and "Check: everything off" in pg.inner_text("#gf"), (len(rules(pg)), R0))
+    check("16h state is not paused any more", pg.evaluate("JSON.parse(localStorage.getItem('ct_gst2')).paused") in (False, None))
+    pg.evaluate("document.getElementById('twOpen').click()"); pg.wait_for_timeout(300)
+    k0 = pg.evaluate("document.querySelector('#twOv .tw-row').dataset.k")
+    tap(pg, '#twOv [data-twsw="%s"]' % k0); pg.wait_for_timeout(300)
+    check("16i one switch pauses too (that texture is back, the rest of the test stays hidden)", len(rules(pg)) == R0 - 1 and "Test paused" in pg.inner_text("#gf"), (len(rules(pg)), R0))
+    pg.evaluate("document.querySelector('#twOv [data-tw=close]').click()"); pg.wait_for_timeout(300)
+    tap(pg, "#gfEnd"); pg.wait_for_timeout(300)
+    check("16j End the test: switches stay, the finder test is gone", len(rules(pg)) == R0 - 1 and pg.evaluate("localStorage.getItem('ct_gst2')") is None and not pg.evaluate("!!document.getElementById('gfResume')"))
+    check("16k no JS errors (pause)", not errs, errs)
+    # 16k2 (v0.57.4): ON all, or putting the switches back by hand, makes the test run again
+    pg.close()
+    pg = new(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    pg.goto(PAGE + "?demo=300"); pg.wait_for_timeout(900)
+    pg.click("#dock [data-v=adv]"); pg.wait_for_timeout(300)
+    pg.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)"); pg.wait_for_timeout(300)
+    open_tb(pg)
+    pg.select_option("#tbFmt", "37497"); pg.wait_for_timeout(400)
+    tap(pg, "#tbbSelF"); tap(pg, "#tbbTestS")
+    R1 = len(rules(pg))
+    pg.evaluate("document.getElementById('twOpen').click()"); pg.wait_for_timeout(300)
+    tap(pg, "#twOv [data-tw=off]"); pg.wait_for_timeout(300)
+    pg.evaluate("document.querySelector('#twOv [data-tw=close]').click()"); pg.wait_for_timeout(300)
+    check("16k2 paused after OFF all and closing the window", "Test paused" in pg.inner_text("#gf"))
+    pg.evaluate("document.getElementById('twOpen').click()"); pg.wait_for_timeout(300)
+    tap(pg, "#twOv [data-tw=on]"); pg.wait_for_timeout(300)
+    check("16k3 ON all: same as the test list, so the test runs again", len(rules(pg)) == R1 and pg.evaluate("document.getElementById('twPauseRow').hidden") and pg.evaluate("JSON.parse(localStorage.getItem('ct_gst2')).paused") in (False, None), (len(rules(pg)), R1))
+    pg.evaluate("document.querySelector('#twOv [data-tw=close]').click()"); pg.wait_for_timeout(300)
+    check("16k4 finder card shows the running test again", "Test paused" not in pg.inner_text("#gf") and pg.evaluate("!!document.getElementById('gfYes')"))
+    pg.evaluate("document.getElementById('twOpen').click()"); pg.wait_for_timeout(300)
+    k1 = pg.evaluate("document.querySelector('#twOv .tw-row').dataset.k")
+    tap(pg, '#twOv [data-twsw="%s"]' % k1); pg.wait_for_timeout(300)
+    check("16k5 one switch off: paused", len(rules(pg)) == R1 - 1 and not pg.evaluate("document.getElementById('twPauseRow').hidden"))
+    tap(pg, '#twOv [data-twsw="%s"]' % k1); pg.wait_for_timeout(300)
+    check("16k6 that switch back on: the test runs again", len(rules(pg)) == R1 and pg.evaluate("document.getElementById('twPauseRow').hidden"), (len(rules(pg)), R1))
+    check("16k7 no JS errors (resume by switches)", not errs, errs)
+    pg.close()
+
+    # 16l. a running test (many rules in grass.txt) must not fill My textures with "Unnamed N" when the page is refreshed
+    pg = new(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    ks = ["37497|512|512|%016x" % (0x2000 + i) for i in range(30)]
+    st = json.dumps({"v": 2, "keep": [], "U": ks, "a": 0, "b": 30, "ta": 0, "tb": 30, "phase": "check", "hist": [], "name": "", "grp": "plants"})
+    errs = open_adv(pg, "?demo=5&grass=" + ";".join(k.replace("|", " ") for k in ks), "localStorage.setItem('ct_gst2', %s);" % json.dumps(st))
+    check("16l test rules do not become Unnamed entries", pg.evaluate("window.__ct.lib().length") == 0 and "Unnamed" not in pg.inner_text("#gl"), pg.evaluate("window.__ct.lib().length"))
+    pg.close()
+    # a rule hidden by hand (not in the test) is not added either; it is listed as hidden, not saved
+    pg = new(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    errs = open_adv(pg, "?demo=5&grass=37497%20512%20512%20aaaabbbbccccdddd")
+    check("16m a loose rule stays out of My textures", pg.evaluate("window.__ct.lib().length") == 0)
+    check("16n ...and is listed as hidden, not saved", "1 not saved" in pg.inner_text("#tbTag") if pg.evaluate("!!document.getElementById('tbTag')") else True)
+    pg.close()
+
+    # 16o. Delete buttons in My textures
+    pg = new(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    tl = ";".join(["37497 512 512 %016x other|Unnamed %d" % (0x3000 + i, i + 1) for i in range(5)] + ["37497 512 512 %016x plants|Green grass" % 0x4000])
+    gr = "37497 512 512 %016x" % 0x3000          # the first unnamed one is ON
+    errs = open_adv(pg, "?demo=5&texlib=" + tl.replace(" ", "%20").replace("|", "|") + "&grass=" + gr.replace(" ", "%20"))
+    check("16o list has 6 entries before", pg.evaluate("window.__ct.lib().length") == 6, pg.evaluate("window.__ct.lib().length"))
+    check("16p Forget is now called Delete", "Forget" not in pg.inner_text("#gl") and pg.evaluate("document.querySelectorAll('#gl [data-forget]').length") == 6 and pg.evaluate("document.querySelector('#gl [data-forget]').textContent") == "Delete")
+    check("16q bulk buttons show the numbers (4 unnamed OFF, 5 OFF)", "(4)" in pg.evaluate("document.querySelector('[data-libdel=unnamed]').textContent") and "(5)" in pg.evaluate("document.querySelector('[data-libdel=off]').textContent"), pg.evaluate("document.querySelector('#gl .lib-bulk').innerText"))
+    tap(pg, "[data-libdel=unnamed]")
+    check("16r first tap only asks again", pg.evaluate("window.__ct.lib().length") == 6 and "Tap again" in pg.evaluate("document.querySelector('[data-libdel=unnamed]').textContent"))
+    tap(pg, "[data-libdel=unnamed]"); pg.wait_for_timeout(300)
+    check("16s second tap deletes the 4 unnamed that are OFF; the ON one and the named one stay", pg.evaluate("window.__ct.lib().length") == 2 and len(rules(pg)) == 1, (pg.evaluate("window.__ct.lib().length"), rules(pg)))
+    check("16t the file texlib.txt follows", len([l for l in pg.evaluate("window.__ct.fakeTexlib()").split("\n") if l.strip()]) == 2, pg.evaluate("window.__ct.fakeTexlib()"))
+    tap(pg, "[data-libdel=off]"); tap(pg, "[data-libdel=off]"); pg.wait_for_timeout(300)
+    check("16u Delete all OFF removes the named OFF one too; the ON one stays", pg.evaluate("window.__ct.lib().length") == 1 and len(rules(pg)) == 1)
+    tap(pg, "#gl [data-forget]"); pg.wait_for_timeout(300)
+    check("16v Delete on a row removes it and shows the texture again", pg.evaluate("window.__ct.lib().length") == 0 and len(rules(pg)) == 0)
+    check("16w no JS errors (delete)", not errs, errs)
+    pg.close()
+
+    # 16x. Size filter: the number can be the width OR the height (64 = 64xN and Nx64)
+    pg = new(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    errs = open_adv(pg, "?demo=600")
+    vl = pg.evaluate("window.__ct.visList()")
+    for z in (64, 128):
+        exp = sum(1 for c in vl if c["w"] == z or c["h"] == z)
+        old_way = sum(1 for c in vl if max(c["w"], c["h"]) == z)
+        pg.select_option("#tbSide", str(z)); pg.wait_for_timeout(400)
+        got = int(re.search(r"Filter: (\d+) of", pg.inner_text("#tbCount")).group(1))
+        opt = pg.evaluate("s=>[...document.querySelectorAll('#tbSide option')].find(o=>o.value==s).textContent", str(z))
+        check("16x size %d: filter shows every texture with %d as width or height (%d, longest-side rule would give %d)" % (z, z, exp, old_way), got == exp and exp > old_way, (got, exp, old_way))
+        check("16y size %d: the option count is the same (%s)" % (z, opt), ("(%d)" % exp) in opt, opt)
+        rows = pg.evaluate("[...document.querySelectorAll('#tbList .tb-row b')].map(e=>e.textContent)")
+        ok = all(re.search(r"·\s*(\d+)×(\d+)", r) and (int(re.search(r"·\s*(\d+)×(\d+)", r).group(1)) == z or int(re.search(r"·\s*(\d+)×(\d+)", r).group(2)) == z) for r in rows)
+        check("16z size %d: every row shown is %dxN or Nx%d" % (z, z, z), ok and len(rows) > 0, rows[:3])
+    pg.select_option("#tbSide", "0"); pg.wait_for_timeout(300)
+    # the same in the test window
+    pg.select_option("#tbFmt", "37497"); pg.wait_for_timeout(400)
+    tap(pg, "#tbbSelF"); tap(pg, "#tbbTestS")
+    tk = [c for c in vl if c["fmt"] == 37497]
+    pg.evaluate("document.getElementById('twOpen').click()"); pg.wait_for_timeout(300)
+    pg.select_option("#twSide", "64"); pg.wait_for_timeout(300)
+    exp = sum(1 for c in tk if c["w"] == 64 or c["h"] == 64)
+    cnt = pg.inner_text("#twCnt")
+    check("16A test window: size 64 shows %d of %d (width or height)" % (exp, len(tk)), ("Showing %d of %d" % (exp, len(tk))) in cnt, cnt)
+    check("16B no JS errors (size)", not errs, errs)
     pg.close()
     b.close()
 
