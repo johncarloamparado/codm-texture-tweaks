@@ -26,7 +26,12 @@ def open_adv(pg, q, init=None):
     pg.click("#dock [data-v=adv]"); pg.wait_for_timeout(300)
     pg.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)")
     pg.wait_for_timeout(200)
+    open_tb(pg)
     return errs
+
+def open_tb(pg):
+    """the Texture browser lives in a window now: tap the button to open it (no-op when it is already open)"""
+    pg.evaluate("document.getElementById('tbOpen').click()"); pg.wait_for_timeout(350)
 
 def tap(pg, sel): pg.evaluate("s=>document.querySelector(s).click()", sel); pg.wait_for_timeout(120)
 
@@ -189,7 +194,7 @@ with sync_playwright() as p:
           if (%(failchunk)d && a > 400) { out = ""; err = 1; }                 /* this chunk can never be read (also not on the retry) */
           else out = uniq.slice(a - 1, b).join("\\n") + "\\n";
         }
-        else if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nst=ver=v0.57|stage=started|\\n";
+        else if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nst=ver=v0.57.2|stage=started|\\n";
         else if (cmd.indexOf("echo OK") >= 0) { out = "OK\\n"; window.__last = cmd; }
         setTimeout(function () { window[cb](err, out, ""); }, 0);
       } };
@@ -203,6 +208,7 @@ with sync_playwright() as p:
         q.goto(PAGE); q.wait_for_timeout(2500)
         q.click("#dock [data-v=adv]"); q.wait_for_timeout(300)
         q.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)"); q.wait_for_timeout(300)
+        open_tb(q)
         return q, errs
     pg, errs = mock_page(4300)
     uniqn = pg.evaluate("window.__uniqLines")
@@ -232,6 +238,52 @@ with sync_playwright() as p:
     pg, errs = mock_page(1200, failchunk=1)
     txt = pg.inner_text("#tbCount")
     check("a chunk that cannot be read is reported, not hidden", "INCOMPLETE" in txt, txt)
+    pg.close()
+
+    # 14. regression (v0.57): render() must run to the end, so the Look card and the status chip follow the saved files.
+    #     A leftover reference to a removed variable (gOld) stopped render() half way: Look stayed on "Off" although flat=4 was saved.
+    STATE = """
+    (function(){ window.__rej = [];
+      window.addEventListener("unhandledrejection", function(e){ window.__rej.push(String(e.reason)); });
+      window.ksu = { exec: function(cmd, opts, cb){
+        var out = "";
+        if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nbias=0\\nscale=\\nfps=\\nfz=1\\nth=1\\ncore=1\\nnear=1\\nblk=%(blk)s\\nminsz=64\\ndelay=0\\nstyle=%(style)s\\nsedge=1\\nflat=%(flat)s\\ntesttex=%(tt)s\\nttsize=0\\nttsm=0\\nalpha=1\\nmode=4\\nhookdelay=0\\nhooksafe=0\\nforcegl=1\\nver=v0.57.2\\nst=ver=v0.57.2|stage=started|\\n";
+        else if (cmd.indexOf("echo OK") >= 0) out = "OK\\n";
+        setTimeout(function(){ window[cb](0, out, ""); }, 0);
+      } };
+    })();
+    """
+    for (flat, tt, blk, want) in [(4, 0, 0, "Flat +4"), (0, 1, 0, "True Pixelated"), (0, 0, 8, "Pixel Blocks"), (0, 0, 0, "Look off"), (0, 0, 0, "Detail Cut +2")]:
+        q = new(); q.add_init_script(STATE % {"flat": flat, "tt": tt, "blk": blk, "style": 2 if "Detail" in want else 0})
+        q.goto(PAGE); q.wait_for_timeout(2500)
+        chip = q.inner_text("#status")
+        seg = q.evaluate("Array.from(document.querySelectorAll('#lookSeg [aria-checked=true]')).map(b=>b.innerText.trim())")
+        rej = q.evaluate("window.__rej")
+        check("saved flat=%d testtex=%d blk=%d: status chip says '%s'" % (flat, tt, blk, want), want in chip, chip)
+        check("  Look card shows the same one (%s) and render() did not throw" % want, len(seg) == 1 and not rej, (seg, rej))
+        q.close()
+
+    # 15. v0.57.2: the Texture browser is closed until the violet button is tapped; it opens in its own window and scrolls by itself
+    pg = new(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    pg.goto(PAGE + "?demo=300"); pg.wait_for_timeout(900)
+    pg.click("#dock [data-v=adv]"); pg.wait_for_timeout(300)
+    pg.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)"); pg.wait_for_timeout(300)
+    vis = lambda sel: pg.evaluate("s=>{var e=document.querySelector(s);return !!e&&e.getClientRects().length>0}", sel)
+    check("browser list is hidden until the button is tapped", not vis("#tbList") and vis("#tbOpen"))
+    check("button shows the numbers", "textures" in pg.inner_text("#tbOpenSum"), pg.inner_text("#tbOpenSum"))
+    tap(pg, "#tbOpen"); pg.wait_for_timeout(450)
+    check("window opens with the list and the filters inside", vis("#tbOv") and vis("#tbList") and vis("#tbQ") and pg.evaluate("!!document.querySelector('#tbOv #tb')"))
+    n1 = pg.evaluate("document.getElementById('tbList').children.length")
+    pg.evaluate("var l=document.getElementById('tbSheetBody');l.scrollTop=l.scrollHeight"); pg.wait_for_timeout(500)
+    n2 = pg.evaluate("document.getElementById('tbList').children.length")
+    check("scrolling to the end of the window loads the next 40", n1 == 40 and n2 == 80, (n1, n2))
+    tap(pg, "#tbOv [data-tbx]"); pg.wait_for_timeout(450)
+    check("Close puts the browser back and removes the window", not vis("#tbList") and not pg.evaluate("!!document.getElementById('tbOv')") and pg.evaluate("!!document.querySelector('#tbHold #tb')"))
+    tap(pg, "#tbOpen"); pg.wait_for_timeout(450)
+    pg.fill("#tbQ", "ETC2"); pg.wait_for_timeout(400)
+    check("search still works inside the window", pg.evaluate("document.getElementById('tbList').children.length") > 0 and (lambda m: m and int(m.group(1)) < int(m.group(2)))(re.search(r"Filter: (\d+) of (\d+)", pg.inner_text("#tbCount"))), pg.inner_text("#tbCount")[:80])
+    check("no JS errors (window)", not errs, errs)
     pg.close()
     b.close()
 
