@@ -1082,9 +1082,21 @@ html.cc.md .opt{padding:12px 13px}
 .tb-row .tw-ck{width:24px;height:24px;min-width:24px}
 .tb-main small.tb-fp{font-family:ui-monospace,Menlo,monospace;font-size:11px;opacity:.8;overflow-wrap:anywhere}
 
-/* ===== v0.57: the Texture browser list is a window of its own: it scrolls inside, the page stays short ===== */
-#tbList{max-height:min(56vh,430px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:8px;border:1px solid var(--line);border-radius:16px;background:rgba(0,10,30,.35);scrollbar-width:thin}
-#tbList:empty{display:none}
+/* ===== v0.57.2: the Texture browser opens in its own window (tap the violet button), like the finder test window ===== */
+.tb-open{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 14px;border-radius:16px;border:1px solid rgba(167,139,250,.6);background:linear-gradient(135deg,rgba(124,58,237,.32),rgba(79,70,229,.2));color:var(--text);text-align:left;cursor:pointer;box-shadow:0 4px 18px rgba(124,58,237,.18);font:inherit}
+.tb-open:active{transform:scale(.99)}
+.tb-open-ic{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#8b5cf6,#6366f1);box-shadow:0 2px 10px rgba(99,102,241,.45)}
+.tb-open-ic svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tb-open-tx{flex:1;min-width:0;display:grid;gap:2px}
+.tb-open-tx b{font-size:15px;font-weight:650}
+.tb-open-tx small{font-size:12px;color:#c4b5fd;line-height:1.35}
+.tb-open-chev{flex:none;color:#c4b5fd;font-size:26px;line-height:1}
+#tbOv .sh{max-height:calc(96vh - 8px);border-color:rgba(167,139,250,.4);box-shadow:0 -14px 44px rgba(0,0,0,.55),0 0 36px rgba(139,92,246,.14)}
+#tbOv .sh-h{padding:6px 14px 4px}
+#tbOv .sh-h b{font-size:15.5px;color:#ddd6fe}
+#tbOv .tb-sheetbody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 12px calc(14px + env(safe-area-inset-bottom,0px))}
+#tbOv #tb{display:grid;gap:8px}
+#tbList{display:grid;gap:8px}
 </style>
 </head>
 <body>
@@ -1330,7 +1342,8 @@ html.cc.md .opt{padding:12px 13px}
     <section class="card" id="tbCard">
       <div class="ch"><h2>Texture browser</h2><span class="tag n" id="tbTag" hidden style="margin-left:auto"></span></div>
       <p class="cap">Every texture the module has seen on this phone. Search or filter the list, tick the textures you want, then test, hide, show or save exactly those. The small switch hides just one texture. Tap Save at the bottom to try it in the game. If it worked, save it with a name.</p>
-      <div class="gf" id="tb"></div>
+      <button type="button" class="tb-open" id="tbOpen" aria-haspopup="dialog"><span class="tb-open-ic"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span><span class="tb-open-tx"><b>Open texture list</b><small id="tbOpenSum">Tap to open the window</small></span><span class="tb-open-chev" aria-hidden="true">&rsaquo;</span></button>
+      <div id="tbHold" hidden><div class="gf" id="tb"></div></div>
     </section>
 
     <section class="card" id="libCard">
@@ -1654,9 +1667,9 @@ html.cc.md .opt{padding:12px 13px}
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4", forcegl: "1",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0", alpha: "1",
-    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.57",
-    st: "ver=v0.57|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
-    startline: "=== start v0.57 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
+    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.57.2",
+    st: "ver=v0.57.2|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
+    startline: "=== start v0.57.2 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
     ftall: "FT fps=57.1 avg=17.5ms p50=16.9 p99=36.2 max=48.0 >33ms=2 >50ms=0 n=285 cap=0 bias=0 scale=100 t=60.0 fz=0\nFT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=65.0 fz=1\nFT fps=58.4 avg=17.1ms p50=16.8 p99=30.2 max=41.0 >33ms=1 >50ms=0 n=292 cap=0 bias=0 scale=100 t=70.0 fz=0\nFT fps=56.0 avg=17.9ms p50=17.2 p99=38.9 max=52.0 >33ms=2 >50ms=1 n=280 cap=0 bias=0 scale=100 t=75.0 fz=0",
     ftn: "4",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
@@ -2387,7 +2400,6 @@ html.cc.md .opt{padding:12px 13px}
     renderGroups();
     renderGrass();
     renderBrowser();
-    if (gOld && !demo) { writeGrass(); toast("Old v0.44 grass rule removed: it hit too many textures."); }
     renderSkipList();
     updateLookUI();
     renderPresets();
@@ -3199,6 +3211,7 @@ html.cc.md .opt{padding:12px 13px}
     tbCountUpd();
   }
   function tbCountUpd() {
+    tbOpenerUpd();
     var cnt = $("tbCount"); if (!cnt) return;
     var T = tbVis().length, F = tbCache.list.length, n = Object.keys(grassSel).length;
     cnt.textContent = "Filter: " + F + " of " + T + " candidates · showing " + tbCache.shown + " · " + n + " / " + MAXR + " rules in use" + (gCandInfo.partial ? " · LIST INCOMPLETE (some of the log could not be read, tap Refresh list)" : "");
@@ -3207,7 +3220,7 @@ html.cc.md .opt{padding:12px 13px}
     var box = $("tb"); if (!box) return;
     var vis = tbVis();
     if (!vis.length) {
-      tbReady = false;
+      tbReady = false; tbOpenerUpd();
       box.innerHTML = '<div class="gf-now"><b>No texture list yet</b><small>Turn logging on, play one match where you can see what you look for, then tap Refresh list.</small></div><button class="btn" id="tbRef" type="button">Refresh list</button>';
       return;
     }
@@ -3226,6 +3239,7 @@ html.cc.md .opt{padding:12px 13px}
     box.innerHTML = head;
     tbReady = true;
     renderBrowserList();
+    tbOpenerUpd();
   }
   function tbMoreBtn() {
     var more = $("tbMore"), all = tbCache.list;
@@ -3246,11 +3260,38 @@ html.cc.md .opt{padding:12px 13px}
     list.insertAdjacentHTML("beforeend", tbCache.list.slice(a, b).map(tbRowHtml).join(""));
     tbCache.shown = b; tbMoreBtn(); tbCountUpd();
   }
-  /* v0.57: scrolling to the end of the list window loads the next batch by itself ("Show more" stays as a fallback) */
+  /* v0.57.2: the browser lives in a window (#tbOv). Scrolling to its end loads the next batch by itself ("Show more" stays as a fallback). */
   document.addEventListener("scroll", function (e) {
     var el = e.target;
-    if (el && el.id === "tbList" && el.scrollTop + el.clientHeight >= el.scrollHeight - 160 && tbCache && tbCache.list && tbCache.shown < tbCache.list.length) tbShowMore();
+    if (el && el.id === "tbSheetBody" && el.scrollTop + el.clientHeight >= el.scrollHeight - 200 && tbCache && tbCache.list && tbCache.shown < tbCache.list.length) tbShowMore();
   }, true);
+  var tbOvEl = null;
+  function tbOpenerUpd() {
+    var sm = $("tbOpenSum"); if (!sm) return;
+    if (!tbReady) { sm.textContent = "No list yet: open it, then tap Refresh list"; return; }
+    var T = tbVis().length, n = Object.keys(bsel).length, h = Object.keys(grassSel).length;
+    sm.textContent = T + " textures · " + h + " hidden · " + n + " selected" + (gCandInfo && gCandInfo.partial ? " · LIST INCOMPLETE" : "");
+  }
+  function tbSheetOpen() {
+    if (tbOvEl) return;
+    var ov = document.createElement("div"); ov.className = "sh-ov"; ov.id = "tbOv";
+    ov.innerHTML = '<div class="sh" role="dialog" aria-modal="true" aria-label="Texture browser"><div class="sh-grab"></div>' +
+      '<div class="sh-h"><b>Texture browser</b><button type="button" class="sh-x" data-tbx="1" aria-label="Close">Close</button></div>' +
+      '<div class="tb-sheetbody" id="tbSheetBody"></div></div>';
+    ov.addEventListener("click", function (e) { if (e.target === ov || (e.target.closest && e.target.closest("[data-tbx]"))) tbSheetClose(); });
+    document.body.appendChild(ov);
+    $("tbSheetBody").appendChild($("tb"));              /* the real browser moves into the window: same ids, same handlers */
+    tbOvEl = ov; document.body.style.overflow = "hidden";
+    requestAnimationFrame(function () { ov.classList.add("on"); });
+  }
+  function tbSheetClose() {
+    var o = tbOvEl; if (!o) return; tbOvEl = null;
+    var hold = $("tbHold"), tb = $("tb"); if (hold && tb) hold.appendChild(tb);
+    o.classList.remove("on"); document.body.style.overflow = "";
+    setTimeout(function () { if (o.parentNode) o.parentNode.removeChild(o); }, 200);
+    tbOpenerUpd();
+  }
+  (function () { var b = $("tbOpen"); if (b) b.addEventListener("click", tbSheetOpen); })();
   function tbUnsaved() { return Object.keys(grassSel).filter(function (k) { return !libHas(k); }); }
   function renderBrowserSoft() {                           /* only what changed: rows keep their place while you tap */
     var tag = $("tbTag"), un = tbUnsaved();
@@ -3300,7 +3341,7 @@ html.cc.md .opt{padding:12px 13px}
     writeLib(); renderGrass(); renderGroups();
     toast(keys.length > 1 && asSet ? "Saved " + keys.length + " textures as one set in My textures." : "Saved in My textures.");
   }
-  function openCardOf(id) { var e = $(id); if (!e) return; var d = e.closest ? e.closest("details") : null; if (d) d.open = true; try { e.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (er) {} }
+  function openCardOf(id) { tbSheetClose(); var e = $(id); if (!e) return; var d = e.closest ? e.closest("details") : null; if (d) d.open = true; try { e.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (er) {} }
   function tbBarAct(a) {
     var sel = Object.keys(bsel), I = tbSelInfo(), busy = !!(gst || gPend);
     if (a === "selfilt") { tbCache.list.forEach(function (c) { bsel[c.key] = 1; }); renderBrowserSoft(); tbNote("Selected all " + tbCache.list.length + " filtered textures. " + Object.keys(bsel).length + " selected in total."); return; }
@@ -3391,7 +3432,7 @@ html.cc.md .opt{padding:12px 13px}
   document.addEventListener("mousedown", function (e) { if (selOf(e)) e.preventDefault(); }, true);
   document.addEventListener("click", function (e) { var s = selOf(e); if (s) { e.preventDefault(); pkOpen(s); } }, true);
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { if (pkOv) pkClose(); else if (twOv) twClose(); return; }
+    if (e.key === "Escape") { if (pkOv) pkClose(); else if (twOv) twClose(); else if (tbOvEl) tbSheetClose(); return; }
     var s = e.target;
     if (s && s.tagName === "SELECT" && (e.key === "Enter" || e.key === " ") && !s.hasAttribute("data-native")) { e.preventDefault(); pkOpen(s); }
   }, true);
@@ -4048,7 +4089,7 @@ html.cc.md .opt{padding:12px 13px}
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.57'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.57.2'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
