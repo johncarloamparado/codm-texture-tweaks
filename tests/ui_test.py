@@ -188,13 +188,13 @@ with sync_playwright() as p:
         var out = "", err = 0, m;
         window.__cmds.push(cmd.length);
         if (cmd.indexOf("for d in /data/data/$P/files") >= 0) out = "C|/data/data/com.garena.game.codm/files|100|100\\n";
-        else if (cmd.indexOf("sort -u | wc -l") >= 0) out = uniq.length + "\\n";
-        else if ((m = /sed -n '(\\d+),(\\d+)p'/.exec(cmd)) && cmd.indexOf("GRASSCAND") >= 0) {
+        else if (cmd.indexOf("sort -u > $T") >= 0) out = uniq.length + "\\n";
+        else if ((m = /sed -n '(\\d+),(\\d+)p' [$]T/.exec(cmd)) && cmd.indexOf("ct_cand") >= 0) {
           var a = +m[1], b = +m[2]; window.__chunks.push(b - a + 1);
           if (%(failchunk)d && a > 400) { out = ""; err = 1; }                 /* this chunk can never be read (also not on the retry) */
           else out = uniq.slice(a - 1, b).join("\\n") + "\\n";
         }
-        else if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nst=ver=v0.57.4|stage=started|\\n";
+        else if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nst=ver=v0.58|stage=started|\\n";
         else if (cmd.indexOf("echo OK") >= 0) { out = "OK\\n"; window.__last = cmd; }
         setTimeout(function () { window[cb](err, out, ""); }, 0);
       } };
@@ -247,7 +247,7 @@ with sync_playwright() as p:
       window.addEventListener("unhandledrejection", function(e){ window.__rej.push(String(e.reason)); });
       window.ksu = { exec: function(cmd, opts, cb){
         var out = "";
-        if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nbias=0\\nscale=\\nfps=\\nfz=1\\nth=1\\ncore=1\\nnear=1\\nblk=%(blk)s\\nminsz=64\\ndelay=0\\nstyle=%(style)s\\nsedge=1\\nflat=%(flat)s\\ntesttex=%(tt)s\\nttsize=0\\nttsm=0\\nalpha=1\\nmode=4\\nhookdelay=0\\nhooksafe=0\\nforcegl=1\\nver=v0.57.4\\nst=ver=v0.57.4|stage=started|\\n";
+        if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nbias=0\\nscale=\\nfps=\\nfz=1\\nth=1\\ncore=1\\nnear=1\\nblk=%(blk)s\\nminsz=64\\ndelay=0\\nstyle=%(style)s\\nsedge=1\\nflat=%(flat)s\\ntesttex=%(tt)s\\nttsize=0\\nttsm=0\\nalpha=1\\nmode=4\\nhookdelay=0\\nhooksafe=0\\nforcegl=1\\nver=v0.57.5\\nst=ver=v0.57.4|stage=started|\\n";
         else if (cmd.indexOf("echo OK") >= 0) out = "OK\\n";
         setTimeout(function(){ window[cb](0, out, ""); }, 0);
       } };
@@ -413,6 +413,95 @@ with sync_playwright() as p:
     check("16A test window: size 64 shows %d of %d (width or height)" % (exp, len(tk)), ("Showing %d of %d" % (exp, len(tk))) in cnt, cnt)
     check("16B no JS errors (size)", not errs, errs)
     pg.close()
+
+    # 17. v0.57.5: the settings folder is sticky; a newer log on another path never swaps it; a backup follows saves; emptied folder is restored
+    FOLD = """
+    (function(){ window.__sent = [];
+      var cands = %(cands)s, heal = %(heal)s;
+      window.ksu = { exec: function(cmd, opts, cb){
+        var out = ""; window.__sent.push(cmd);
+        if (cmd.indexOf("for d in /data/data/$P/files") >= 0) out = cands;
+        else if (cmd.indexOf("RESTORED=") >= 0) out = heal;
+        else if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nbias=0\\nflat=0\\nver=v0.58\\nst=ver=v0.57.5|stage=started|\\n";
+        else if (cmd.indexOf("echo OK") >= 0) out = "OK\\n";
+        setTimeout(function(){ window[cb](0, out, ""); }, 0);
+      } };
+    })();
+    """
+    A = "C|/data/data/com.garena.game.codm/files|100|100|8|1\\n"
+    M = "C|/data_mirror/data_ce/null/0/com.garena.game.codm/files|900|900|8|1\\n"
+    def fold(cands, heal="HEALED\\n"):
+        q = new(); q.add_init_script(FOLD % {"cands": json.dumps(cands.replace("\\n", "\n")), "heal": json.dumps(heal.replace("\\n", "\n"))})
+        q.goto(PAGE); q.wait_for_timeout(2300); return q
+    q = fold(A + M)
+    check("17a same folder on two paths, the mirror has the newer log: the usual /data/data path stays", q.inner_text("#aDir").startswith("/data/data/"), q.inner_text("#aDir"))
+    check("17b the choice is written to a pin file outside the game folder", q.evaluate("window.__sent.some(c => c.indexOf('codm_tex_cfg/pin_u0') >= 0 && c.indexOf('/data/data/') >= 0)"))
+    q.close()
+    q = fold(A + M + "K|pin_u0|/data_mirror/data_ce/null/0/com.garena.game.codm/files\\n")
+    check("17c a pinned folder stays in use even if another path would sort first", q.inner_text("#aDir").startswith("/data_mirror/"), q.inner_text("#aDir"))
+    q.close()
+    q = fold("C|/data/data/com.garena.game.codm/files|0|0|0|0\\n" + M + "K|pin_u0|/data/data/com.garena.game.codm/files\\n")
+    check("17d the pinned folder is left only when it is empty and another path holds the settings", q.inner_text("#aDir").startswith("/data_mirror/"), q.inner_text("#aDir"))
+    q.close()
+    q = fold(A, heal="RESTORED=7\\nHEALED\\n")
+    msg = q.inner_text("#toast")
+    check("17e emptied folder: files are put back from the backup and the page says so", "7 files were put back" in msg, msg)
+    check("17f the restore only runs once per folder", q.evaluate("window.__sent.filter(c => c.indexOf('RESTORED=') >= 0).length") == 1)
+    q.evaluate("document.querySelector('#lookSeg').children[1].click()"); q.wait_for_timeout(2800)
+    check("17g after a save the backup is synced a moment later, and the last command of the page is that sync", q.evaluate("window.__sent.filter(c => c.indexOf('SYNCED') >= 0).length") >= 1 and q.evaluate("window.__sent[window.__sent.length - 1].indexOf('SYNCED') >= 0"), q.evaluate("window.__sent.length"))
+    q.close()
+
+    # 18. v0.58: the page's own settings (export name, tab, filters, finder test ...) are backed up outside the game folder and come back after a wipe
+    import base64
+    UIM = """
+    (function(){ window.__sent = [];
+      sessionStorage.setItem('__loads', String((parseInt(sessionStorage.getItem('__loads') || '0', 10)) + 1));
+      %(pre)s
+      var uidata = %(uidata)s;
+      window.ksu = { exec: function(cmd, opts, cb){
+        var out = ""; window.__sent.push(cmd);
+        if (cmd.indexOf("for d in /data/data/$P/files") >= 0) out = "C|/data/data/com.garena.game.codm/files|100|100|8|1\\n";
+        else if (cmd.indexOf("RESTORED=") >= 0) out = "HEALED\\n";
+        else if (cmd.indexOf("cat ") === 0 && cmd.indexOf("ui.b64") >= 0) out = uidata;
+        else if (cmd.indexOf("UIOK") >= 0) out = "UIOK\\n";
+        else if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nbias=0\\nflat=0\\nver=v0.58\\nst=ver=v0.58|stage=started|\\n";
+        else if (cmd.indexOf("echo OK") >= 0) out = "OK\\n";
+        setTimeout(function(){ window[cb](0, out, ""); }, 0);
+      } };
+    })();
+    """
+    def b64(d): return base64.b64encode(json.dumps(d).encode()).decode()
+    def uipage(uidata="", pre=""):
+        q = new(); q.add_init_script(UIM % {"uidata": json.dumps(uidata), "pre": pre}); q.goto(PAGE); q.wait_for_timeout(3200); return q
+    def packed(q):
+        parts = q.evaluate("(function(){ var a = window.__sent, st = -1, i; for (i = 0; i < a.length; i++) if (a[i].indexOf('ui.tmp') >= 0 && a[i].indexOf(': > ') >= 0) st = i; return st < 0 ? [] : a.slice(st + 1).filter(c => c.indexOf('printf %s') === 0 && c.indexOf('ui.tmp') >= 0); })()")
+        raw = "".join(c.split("'")[1] for c in parts)
+        return json.loads(base64.b64decode(raw).decode()) if raw else None
+    q = uipage(b64({"ct_name": "Juan", "ct_tab": "tools", "ct_pin": "{}", "ct_savemode": "open"}))
+    check("18a wiped browser data: saved export name and other page settings come back from the backup", q.evaluate("localStorage.getItem('ct_name')") == "Juan" and q.evaluate("localStorage.getItem('ct_savemode')") == "open", q.evaluate("localStorage.getItem('ct_name')"))
+    check("18b the box shows the restored name and the page says it was put back", q.input_value("#rptName") == "Juan" and "page settings were put back" in q.inner_text("#toast"), q.inner_text("#toast"))
+    check("18c it reloads once only (no reload loop) and does not read the backup again", q.evaluate("sessionStorage.getItem('__loads')") == "2" and q.evaluate("window.__sent.filter(c => c.indexOf('ui.b64') >= 0 && c.indexOf('cat ') === 0).length") == 0)
+    check("18d routing keys (ct_pin) are not put back from the backup", q.evaluate("localStorage.getItem('ct_pin')") != "{}")
+    q.close()
+    q = uipage(b64({"ct_name": "Juan", "ct_tab": "tools"}), pre="if (!localStorage.getItem('ct_zz')) { localStorage.setItem('ct_zz', '1'); localStorage.setItem('ct_name', 'Keep'); }")
+    check("18e keys that already exist are never overwritten; only the missing ones are put back", q.evaluate("localStorage.getItem('ct_name')") == "Keep" and q.evaluate("localStorage.getItem('ct_tab')") == "tools")
+    q.close()
+    q = uipage("")
+    check("18f no backup yet: nothing is restored and the page does not reload", q.evaluate("sessionStorage.getItem('__loads')") == "1")
+    d = packed(q)
+    check("18g the first launch writes the backup once", d is not None, d)
+    q.evaluate("localStorage.setItem('ct_name', 'Maria'); localStorage.setItem('ct_big', 'x'.repeat(160000)); localStorage.setItem('ct_pin', '{\"0\":\"/x\"}')"); q.wait_for_timeout(2800)
+    d = packed(q)
+    check("18h a change in the page is written to the backup a moment later", d is not None and d.get("ct_name") == "Maria", d and list(d.keys()))
+    check("18i a value over 150 KB and the routing keys are left out", d is not None and "ct_big" not in d and "ct_pin" not in d and "ct_ui_stamp" not in d)
+    n0 = q.evaluate("window.__sent.filter(c => c.indexOf('ui.tmp') >= 0 && c.indexOf(': > ') >= 0).length")
+    q.evaluate("localStorage.setItem('ct_name', 'Maria')"); q.wait_for_timeout(2800)
+    check("18j nothing changed = nothing is written again", q.evaluate("window.__sent.filter(c => c.indexOf('ui.tmp') >= 0 && c.indexOf(': > ') >= 0).length") == n0)
+    q.evaluate("(function(){ var e = document.getElementById('rptName'); e.value = 'Ana bel!'; e.dispatchEvent(new Event('change', {bubbles: true})); })()"); q.wait_for_timeout(300)
+    check("18k the export name is saved as soon as it is typed (cleaned), not only when exporting", q.evaluate("localStorage.getItem('ct_name')") == "Anabel", q.evaluate("localStorage.getItem('ct_name')"))
+    check("18l no shell command is bigger than 60 KB", q.evaluate("Math.max.apply(null, window.__sent.map(c => c.length))") < 60000)
+    q.close()
+
     b.close()
 
 print("\n%d passed, %d failed" % (passed, len(fails)))
