@@ -49,7 +49,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.57"
+#define VERSION "v0.57.2"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */

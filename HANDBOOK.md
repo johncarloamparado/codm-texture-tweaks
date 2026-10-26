@@ -11,7 +11,7 @@ Source layout: `main.cpp` (native module), `webroot/index.html` (WebUI), `module
 | Minor release or bug-fix only | `v0.0.N` as written in the task, used here as `v0.N.P` (P counts the fixes made after `v0.N`) | `v0.57.1` | +1 |
 
 - `v0.57` is a major feature release: exact-rules-only `grass.txt`, 4096 limit, selection based Texture Finder.
-- `versionCode` always goes up by exactly 1 per release (`v0.57` = 68; the last release before it, `v0.56.0`, was 67).
+- `versionCode` always goes up by exactly 1 per release (`v0.57.2` = 70, `v0.57.1` = 69, `v0.57` = 68; the last release before it, `v0.56.0`, was 67).
 - Note: the task text says bug-fix-only releases use `v0.0.N`. Read literally that would reset the number to `v0.0.1`, which sorts before every earlier release and would break the "newer version" checks in root managers. So the handbook uses `v0.N.P` (the next fix of `v0.57` is `v0.57.1`). Change this table if the literal form is really wanted.
 - The version text must be changed together in: `VERSION` in `main.cpp`, `version` and `versionCode` in `module.prop`, the `echo 'UI: ...'` line in `webroot/index.html`, and the version checks in `tests/host_test_cfg.cpp` (it looks for the text `v0.57`).
 - Zip name: `codm_Blocky_v<version>.zip`.
