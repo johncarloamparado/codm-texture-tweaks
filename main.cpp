@@ -31,6 +31,8 @@
 #include <algorithm>
 #include <vector>
 #include <set>
+#include <tuple>
+#include <cctype>
 #include <map>
 #include <string>
 #include <EGL/egl.h>
@@ -47,7 +49,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.55.5"
+#define VERSION "v0.57"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -461,14 +463,15 @@ static void defer_drop(GLuint id) {
    made transparent is also written to the log once as a GRASSCAND line; the WebUI finder reads those lines.
    Written for this module from scratch. */
 static std::atomic<int> g_alpha{1};
+/* v0.57: grass.txt holds EXACT rules only, "format width height hash", at most GRASS_MAX_RULES unique rules. g_grass is built once in
+   load_cfg() (deduplicated and sorted by the full key) and never changed afterwards, so the upload path only does a binary search.
+   The old "range ..." rules (v0.47 to v0.56) are gone: such lines are skipped and counted (g_grass_range_old), never applied. */
+#define GRASS_MAX_RULES 4096
 struct GrRule { int fmt; int w; int h; uint64_t hash; };
-static std::vector<GrRule> g_grass;                  /* grass.txt, read once at startup */
-/* v0.46.1: "range LO HI FMT SIDE MINLV" = every candidate texture whose fingerprint is between LO and HI (hex, inclusive), with
-   format FMT (0 = any blankable format), longest side SIDE (0 = any) and at least MINLV mip levels (0 = any). Lets the WebUI
-   switch off half of all textures at once and bisect down to the grass. */
-/* v0.55: optional extra fields "MINSIDE MAXSIDE SHAPE" (longest side at least / at most, 0 = any; SHAPE 1 = square only, 2 = not square). */
-struct GrRange { uint64_t lo, hi; int fmt, side, minlv, minside, maxside, shape; };
-static std::vector<GrRange> g_range;
+static std::vector<GrRule> g_grass;                  /* grass.txt, read once at startup, sorted by (fmt, w, h, hash) */
+static int g_grass_range_old = 0;                    /* obsolete "range" lines found in grass.txt (ignored) */
+static int g_grass_over = 0;                         /* valid unique rules beyond GRASS_MAX_RULES (ignored) */
+static int g_grass_dups = 0, g_grass_bad = 0;        /* duplicate exact rules / unreadable lines found in grass.txt */
 static std::atomic<int> g_grass_on{0};
 static std::atomic<int> g_alpha_kept{0}, g_grass_n{0}, g_grass_guard{0}, g_grass_noalpha{0}, g_grass_pbo{0}, g_grass_nobound{0};
 static std::atomic<int> g_grass_cand{0}, g_grass_early{0}, g_grass_early_fix{0};
@@ -520,20 +523,59 @@ static void eac_stats(GLenum f, const void *p, int n, int *mean, int *zero) {
     if (cnt) { *mean = (int)(sum / cnt); *zero = z * 100 / cnt; }
 }
 static inline int blank_block_size(GLenum f) { uint8_t t[16]; return blank_block(f, t); }
-static bool grass_rule_match(int fmt, int w, int h, uint64_t hash, int lv = 0) {
-    for (auto &r : g_grass) if (r.fmt == fmt && r.w == w && r.h == h && r.hash == hash) return true;
-    for (auto &r : g_range) {
-        if (hash < r.lo || hash > r.hi) continue;
-        if (r.fmt && r.fmt != fmt) continue;
-        if (r.side && r.side != std::max(w, h)) continue;
-        if (r.minside && std::max(w, h) < r.minside) continue;
-        if (r.maxside && std::max(w, h) > r.maxside) continue;
-        if (r.shape == 1 && w != h) continue;
-        if (r.shape == 2 && w == h) continue;
-        if (r.minlv > 0 && lv > 0 && lv < r.minlv) continue;       /* lv 0 = unknown, never excluded */
-        return true;
-    }
-    return false;
+/* grass.txt line parser. Tokens are separated by spaces / tabs; "#" starts a comment. fmt / w / h are decimal (or 0x hex), the hash is
+   1 to 16 hex digits with an optional 0x. Anything else on the line makes it unreadable (never guessed). */
+enum { GRL_SKIP = 0, GRL_RULE = 1, GRL_RANGE = 2, GRL_LEGACY = 3, GRL_BAD = 4 };
+static bool grass_tok(const char *&p, char *out, size_t cap) {
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p == '#' || *p == '\n' || *p == '\r' || !*p) return false;
+    size_t n = 0;
+    while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r' && *p != '#') { if (n + 1 < cap) out[n] = *p; n++; p++; }
+    if (n + 1 >= cap) { out[0] = 0; return true; }      /* absurdly long token: handed on as an empty (= invalid) one */
+    out[n] = 0; return true;
+}
+static bool grass_int(const char *t, int *v) {
+    if (!*t) return false;
+    int base = 10;
+    if (t[0] == '0' && (t[1] == 'x' || t[1] == 'X')) { base = 16; t += 2; }
+    if (!*t) return false;
+    for (const char *q = t; *q; q++) if (!isxdigit((unsigned char)*q) || (base == 10 && !isdigit((unsigned char)*q))) return false;
+    if (strlen(t) > 9) return false;
+    *v = (int)strtol(t, nullptr, base); return true;
+}
+static bool grass_hex64(const char *t, uint64_t *v) {
+    if (t[0] == '0' && (t[1] == 'x' || t[1] == 'X')) t += 2;
+    size_t n = strlen(t);
+    if (n < 1 || n > 16) return false;
+    for (const char *q = t; *q; q++) if (!isxdigit((unsigned char)*q)) return false;
+    *v = (uint64_t)strtoull(t, nullptr, 16); return true;
+}
+static int grass_parse_line(const char *ln, GrRule *r) {
+    const char *p = ln; char t[4][40]; int n = 0; char extra[40];
+    while (n < 4 && grass_tok(p, t[n], sizeof t[n])) n++;
+    if (n == 0) return GRL_SKIP;
+    if (strcmp(t[0], "range") == 0) return GRL_RANGE;
+    if (grass_tok(p, extra, sizeof extra)) return GRL_BAD;          /* more than 4 fields */
+    int a = 0, b = 0, c = 0; uint64_t hh = 0;
+    if (n == 2 && grass_int(t[0], &a) && grass_int(t[1], &b)) return GRL_LEGACY;     /* v0.44 "format size" */
+    if (n != 4) return GRL_BAD;
+    if (!grass_int(t[0], &a) || !grass_int(t[1], &b) || !grass_int(t[2], &c) || !grass_hex64(t[3], &hh)) return GRL_BAD;
+    if (a <= 0 || b <= 0 || c <= 0 || b > 65536 || c > 65536) return GRL_BAD;
+    *r = GrRule{a, b, c, hh};
+    return GRL_RULE;
+}
+static inline bool grass_rule_less(const GrRule &a, const GrRule &b) {
+    if (a.fmt != b.fmt) return a.fmt < b.fmt;
+    if (a.w != b.w) return a.w < b.w;
+    if (a.h != b.h) return a.h < b.h;
+    return a.hash < b.hash;
+}
+/* Exact match only: format, width, height AND the full 64-bit fingerprint. g_grass is sorted (load_cfg), so this is a binary search
+   with no allocation; it is only called while a texture's decision is still open (g_blank is cached per texture id). */
+static bool grass_rule_match(int fmt, int w, int h, uint64_t hash) {
+    const GrRule key{fmt, w, h, hash};
+    auto it = std::lower_bound(g_grass.begin(), g_grass.end(), key, grass_rule_less);
+    return it != g_grass.end() && it->fmt == fmt && it->w == w && it->h == h && it->hash == hash;
 }
 /* true when the current GL_PIXEL_UNPACK_BUFFER binding is non-zero (then the data pointer is an offset, never read it) */
 static void (*g_giv_hook)(GLenum, GLint *) = nullptr;     /* host tests only */
@@ -577,7 +619,7 @@ static int grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p)
     }
     if (id == 0 || id >= MAXTEX) return 0;
     if (!g_grass_on.load()) return 0;
-    if (grass_rule_match((int)f, w, h, hh, (int)g_lv[id].load())) {
+    if (grass_rule_match((int)f, w, h, hh)) {
         if (grass_guard((int)f, w, h)) {
             int c = ++g_grass_guard; st_seti("grass_guard", c);
             if (c <= 5) L("GRASS kept fmt=%d %dx%d: it is the scope / reticle atlas (or the lobby buttons)\n", (int)f, w, h);
@@ -1777,28 +1819,38 @@ static void load_cfg() {
         f = fopen(ALPHAF, "w");
         if (f) { fprintf(f, "1\n"); fclose(f); }
     }
-    g_grass.clear(); g_range.clear();
-    f = fopen(GRASSF, "r");                        /* v0.45: Remove grass, "format width height hash" per line; missing or empty = off */
+    g_grass.clear(); g_grass_range_old = g_grass_over = g_grass_dups = g_grass_bad = 0;
+    f = fopen(GRASSF, "r");                        /* v0.57: Remove grass, exact "format width height hash" per line (max 4096); missing or empty = off */
     if (f) {
-        char ln[128];
-        while (g_grass.size() < 64 && fgets(ln, sizeof ln, f)) {
-            int a = 0, b = 0, c = 0; unsigned long long hh = 0, h2 = 0; int fm = 0, sd = 0, ml = 0, mn = 0, mx = 0, sh = 0;
-            if (strncmp(ln, "range ", 6) == 0) {
-                int rk = sscanf(ln + 6, "%llx %llx %i %i %i %i %i %i", &hh, &h2, &fm, &sd, &ml, &mn, &mx, &sh);
-                if (rk >= 5 && h2 >= hh && g_range.size() < 8) g_range.push_back({(uint64_t)hh, (uint64_t)h2, fm, sd, ml, rk >= 6 ? mn : 0, rk >= 7 ? mx : 0, rk >= 8 ? sh : 0});
-                else L("GRASSRULE range ignored (cannot read it): %.60s", ln);
-                continue;
+        std::vector<GrRule> got;                   /* accepted rules, file order */
+        std::set<std::tuple<int, int, int, uint64_t>> have;
+        char ln[256];
+        while (fgets(ln, sizeof ln, f)) {
+            if (!strchr(ln, '\n') && !feof(f)) {   /* longer than the buffer: it is not a rule; skip the rest of this line */
+                int ch; while ((ch = fgetc(f)) != EOF && ch != '\n') {}
+                g_grass_bad++; L("GRASSRULE ignored (line too long): %.40s\n", ln); continue;
             }
-            int k = sscanf(ln, "%i %i %i %llx", &a, &b, &c, &hh);
-            if (k == 4 && a > 0 && b > 0 && c > 0) g_grass.push_back({a, b, c, (uint64_t)hh});
-            else if (k == 2) L("GRASSRULE old v0.44 line ignored (it matched too many textures): %.40s", ln);
-            else if (ln[0] != '\n' && ln[0] != '#' && ln[0] != '\r') L("GRASSRULE ignored (cannot read it): %.40s", ln);
+            for (char *q = ln + strlen(ln); q > ln && (q[-1] == '\n' || q[-1] == '\r'); ) *--q = 0;
+            GrRule r{0, 0, 0, 0};
+            int kind = grass_parse_line(ln, &r);
+            if (kind == GRL_SKIP) continue;
+            if (kind == GRL_RANGE) { if (++g_grass_range_old == 1) L("GRASSRULE obsolete range rule ignored (v0.57 supports exact textures only): %.60s\n", ln); continue; }
+            if (kind == GRL_LEGACY) { g_grass_bad++; L("GRASSRULE old v0.44 line ignored (it matched too many textures): %.40s\n", ln); continue; }
+            if (kind != GRL_RULE) { g_grass_bad++; L("GRASSRULE ignored (cannot read it): %.40s\n", ln); continue; }
+            if (!have.insert(std::make_tuple(r.fmt, r.w, r.h, r.hash)).second) { g_grass_dups++; continue; }
+            if ((int)got.size() >= GRASS_MAX_RULES) { g_grass_over++; continue; }
+            got.push_back(r);
         }
         fclose(f);
-        for (auto &r : g_grass) L("GRASSRULE loaded fmt=%d %dx%d h=%016llx\n", r.fmt, r.w, r.h, (unsigned long long)r.hash);
-        for (auto &r : g_range) L("GRASSRULE range loaded %016llx-%016llx fmt=%d side=%d minlv=%d minside=%d maxside=%d shape=%d\n", (unsigned long long)r.lo, (unsigned long long)r.hi, r.fmt, r.side, r.minlv, r.minside, r.maxside, r.shape);
+        if (g_grass_range_old > 1) L("GRASSRULE %d obsolete range rules ignored in total\n", g_grass_range_old);
+        if (g_grass_over > 0) L("GRASSRULE limit: only the first %d unique rules are used, %d more ignored\n", GRASS_MAX_RULES, g_grass_over);
+        if (g_grass_dups > 0) L("GRASSRULE %d duplicate rules ignored\n", g_grass_dups);
+        std::sort(got.begin(), got.end(), grass_rule_less);
+        g_grass.swap(got);
+        if (g_grass.size() <= 64) for (auto &r : g_grass) L("GRASSRULE loaded fmt=%d %dx%d h=%016llx\n", r.fmt, r.w, r.h, (unsigned long long)r.hash);
+        else L("GRASSRULE loaded %d exact rules\n", (int)g_grass.size());
     }
-    g_grass_on = (g_grass.empty() && g_range.empty()) ? 0 : 1;
+    g_grass_on = g_grass.empty() ? 0 : 1;
     if (FILE *ff = fopen(FULLF, "r")) {
         int fw = 0, fh = 0;
         if (fscanf(ff, "%d %d", &fw, &fh) == 2 && fw >= 640 && fw <= 8192 && fh >= 360 && fw >= fh) { g_fullw = fw; g_fullh = fh; }
@@ -2050,7 +2102,7 @@ static void log_start(int mode) {
       VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), g_ttsize.load(), g_ttsm.load(), g_forcegl.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]), g_alpha.load(), (int)g_grass.size());
     st_set("ver", VERSION); st_seti("pid", (long long)getpid()); st_set("abi", abi); st_set("stage", "started");
     st_set("forcegl", g_forcegl.load() ? "on" : "off");
-    st_set("alpha", g_alpha.load() ? "keep" : "off"); st_seti("grass_rules", (long long)(g_grass.size() + g_range.size()));
+    st_set("alpha", g_alpha.load() ? "keep" : "off"); st_seti("grass_rules", (long long)g_grass.size()); st_seti("grass_range_old", g_grass_range_old); st_seti("grass_over", g_grass_over); st_seti("grass_max", GRASS_MAX_RULES);
     st_seti("started", (long long)time(nullptr));
     st_seti("live_fps", g_fps.load()); st_set("dir", g_dir); st_set("live", "1");
     st_set("scale_safety", g_scale_safety > 0 ? "forced_off_prev_" + std::to_string(g_scale_safety) : "no");
