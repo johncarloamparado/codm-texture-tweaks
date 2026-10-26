@@ -391,7 +391,7 @@ body.pend .apply::after { display: block; animation: pulse 1.5s ease-in-out infi
 
 /* ---------- toast & log window ---------- */
 #toast {
-  position: fixed; left: 16px; right: 16px; z-index: 50;
+  position: fixed; left: 16px; right: 16px; z-index: 200;
   bottom: calc(var(--dock-h) + 32px + env(safe-area-inset-bottom, 0px));
   max-width: 528px; margin: 0 auto; padding: 14px 16px;
   border-radius: 18px; background: var(--text); color: var(--ink);
@@ -441,7 +441,7 @@ body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hid
   background: linear-gradient(180deg, rgba(14, 26, 54, 0.98), rgba(7, 14, 32, 0.98));
   box-shadow: 0 20px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(56, 189, 248, 0.08);
 }
-.savebox .sh { display: flex; align-items: center; gap: 12px; }
+.savebox .shh { display: flex; align-items: center; gap: 12px; }
 .savebox .sico { flex: none; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 6px 18px var(--primary-glow); }
 .savebox .sico svg { width: 20px; height: 20px; fill: #fff; stroke: none; }
 .savebox .stt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -964,7 +964,7 @@ html.cc .card>details[open]>.body{margin-top:16px}
 .tb-sw{width:56px;min-width:56px;height:32px;min-height:32px;border:1px solid rgba(251,146,60,.85);background:linear-gradient(135deg,#ea580c,#f97316);box-shadow:inset 0 1px 3px rgba(0,0,0,.28);transition:background .2s,border-color .2s}
 .tb-sw::after{top:3px;left:3px;width:24px;height:24px;background:#fff center/14px 14px no-repeat;box-shadow:0 2px 6px rgba(0,0,0,.4);transition:transform .22s cubic-bezier(.3,1.3,.5,1)}
 .tb-sw[aria-checked="true"]{background:linear-gradient(135deg,#15803d,#22c55e);border-color:rgba(134,239,172,.9)}
-.tb-sw[aria-checked="true"]::after{transform:translateX(24px);background-color:#fff;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%2315803d' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'/></svg>")}
+.tb-sw[aria-checked="true"]::after{transform:translateX(24px);background-color:#fff;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%2315803d' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:center;background-size:14px 14px}
 .tb-st{font-size:11px;font-weight:700;letter-spacing:.02em;color:#fb923c;line-height:1}
 .tb-st::before{content:"Shown"}
 .tb-sw[aria-checked="true"]+.tb-st{color:#4ade80}
@@ -1007,6 +1007,45 @@ html.cc .tile{padding:8px 6px}
 html.cc .tile b{font-size:20px}
 html.cc .sw{padding-top:10px;padding-bottom:10px}
 html.cc .opt{padding:10px 12px}
+/* v0.55.6: compact test window */
+#twOv .sh{max-height:calc(96vh - 8px)}
+#twOv .sh-grab{margin-top:6px}
+#twOv .sh-h{padding:6px 12px 2px}
+#twOv .sh-h b{font-size:15px}
+#twOv .sh-x{height:32px;min-height:32px;padding:0 12px;font-size:13px;border-radius:10px}
+#twOv .sh-s{padding:0 12px 6px;font-size:11.5px;line-height:1.35}
+#twOv .sh-tools{gap:6px;padding:0 12px 4px}
+#twOv .sh-tools input,#twOv .sh-tools select{width:100%;min-width:0;height:36px;min-height:36px;border-radius:10px;border:1px solid var(--line);background:var(--fill);color:inherit;font:inherit;font-size:13px;padding:0 10px;text-overflow:ellipsis}
+#twOv .tw-fl{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#twOv .sh-btns{gap:6px}
+#twOv .sh-btns button{min-height:34px;padding:0 6px;font-size:12px;border-radius:10px}
+#twOv .sh-btns button:disabled{opacity:.4}
+#twOv .sh .tb-count{padding:0 14px 2px;font-size:12px}
+#twOv .sh-list{padding:2px 12px 8px;gap:5px;min-height:150px}
+#twOv .tw-row{padding:5px 8px;gap:8px;border-radius:11px}
+#twOv .tw-ck{width:22px;height:22px;min-width:22px;border-radius:7px}
+#twOv .tw-ck[aria-checked="true"]::after{left:6px;top:1px;width:5px;height:10px;border-width:0 2.5px 2.5px 0}
+#twOv .tb-main{gap:0}
+#twOv .tb-main b{font-size:13px;line-height:1.25}
+#twOv .tb-main small{font-size:11px;line-height:1.3}
+#twOv .tb-main em{font-size:10.5px}
+#twOv .tb-main small{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#twOv .tb-main small>span:first-child{min-width:0}
+#twOv .tw-id{flex:none;font-size:10px;opacity:.75;font-family:ui-monospace,Menlo,monospace}
+#twOv .tb-act{min-width:0}
+#twOv .tb-st{display:none}
+#twOv .tb-sw{width:48px;min-width:48px;height:28px;min-height:28px}
+#twOv .tb-sw::after{top:2px;left:2px;width:22px;height:22px;background-size:14px 14px}
+#twOv .tb-sw[aria-checked="true"]::after{transform:translateX(20px);background-repeat:no-repeat;background-position:center;background-size:14px 14px}
+#twOv .sh-foot{padding:10px 12px 10px;gap:8px}
+#twOv .sh-foot .gf-form{margin:0}
+#twOv .sh-foot .gf-form label{font-size:0;line-height:0;gap:0}
+#twOv .sh-foot input,#twOv .sh-foot select{height:34px;min-height:34px;font-size:13px;padding:0 10px}
+#twOv .sh-foot .grid2{gap:8px;margin-top:0}
+#twOv .sh-foot .btn{min-height:38px;font-size:13px;border-radius:11px;padding:0 8px}
+#twOv .sh-btns button.tw-side{min-height:38px;font-weight:600;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.55)}
+#twOv .tw-msg{margin:0 12px 6px;padding:7px 10px;border-radius:10px;border:1px solid rgba(251,146,60,.55);background:rgba(251,146,60,.12);font-size:12px;line-height:1.35;flex:none}
+#twOv .tw-msg[hidden]{display:none}
 /* v0.55.5: html.cc = Compact (the old compact look); html.cc.md = Default (between Compact and Roomy); no class = Roomy */
 html.cc.md .view{zoom:.96}
 html.cc.md .card{padding:14px 16px;margin-top:12px;border-radius:22px}
@@ -1027,6 +1066,25 @@ html.cc.md .tile{padding:11px 6px}
 html.cc.md .tile b{font-size:21px}
 html.cc.md .sw{padding-top:9px;padding-bottom:9px}
 html.cc.md .opt{padding:12px 13px}
+
+/* ===== v0.57: exact-rule counter, selection bar and picked rows in the Texture browser ===== */
+.rule-bar{display:grid;gap:3px;margin:0 0 8px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--fill);font-size:13px}
+.rule-bar small{font-size:11.5px;color:var(--mute)}
+.rule-bar .gf-prog{margin-top:2px}
+.tb-bar{display:grid;gap:8px;margin:2px 0 4px}
+.tb-bar .sh-btns{gap:8px}
+.tb-bar .sh-btns button{min-height:38px;padding:0 8px;font-size:12.5px;border-radius:11px;line-height:1.2}
+.tb-bar .sh-btns button:disabled{opacity:.4}
+.tb-bar .sh-btns button.arm{background:rgba(251,146,60,.22);border-color:rgba(251,146,60,.85)}
+.tb-bar .sh-btns button.tw-side{font-weight:600;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.55)}
+.tb-sel{margin:0 2px;font-size:12.5px;color:var(--mute);line-height:1.4}
+.tb-row.sel{outline:2px solid rgba(76,195,255,.55);outline-offset:-2px}
+.tb-row .tw-ck{width:24px;height:24px;min-width:24px}
+.tb-main small.tb-fp{font-family:ui-monospace,Menlo,monospace;font-size:11px;opacity:.8;overflow-wrap:anywhere}
+
+/* ===== v0.57: the Texture browser list is a window of its own: it scrolls inside, the page stays short ===== */
+#tbList{max-height:min(56vh,430px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:8px;border:1px solid var(--line);border-radius:16px;background:rgba(0,10,30,.35);scrollbar-width:thin}
+#tbList:empty{display:none}
 </style>
 </head>
 <body>
@@ -1271,7 +1329,7 @@ html.cc.md .opt{padding:12px 13px}
 
     <section class="card" id="tbCard">
       <div class="ch"><h2>Texture browser</h2><span class="tag n" id="tbTag" hidden style="margin-left:auto"></span></div>
-      <p class="cap">Every texture the module has seen on this phone. Search or filter the list, then use the small switch on one texture to hide only that one. Tap Save at the bottom to try it in the game. If it worked, save it with a name.</p>
+      <p class="cap">Every texture the module has seen on this phone. Search or filter the list, tick the textures you want, then test, hide, show or save exactly those. The small switch hides just one texture. Tap Save at the bottom to try it in the game. If it worked, save it with a name.</p>
       <div class="gf" id="tb"></div>
     </section>
 
@@ -1499,7 +1557,7 @@ html.cc.md .opt{padding:12px 13px}
 </div>
 <div id="savew" role="dialog" aria-modal="true" aria-labelledby="savet">
   <div class="savebox">
-    <div class="sh">
+    <div class="shh">
       <span class="sico"><svg viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></svg></span>
       <div class="stt"><h3 id="savet">Save settings</h3><span>Choose how to apply your changes</span></div>
       <button class="ib" id="savex" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
@@ -1524,7 +1582,7 @@ html.cc.md .opt{padding:12px 13px}
 </div>
 <div id="namew" role="dialog" aria-modal="true" aria-labelledby="namet">
   <div class="savebox">
-    <div class="sh">
+    <div class="shh">
       <span class="sico fine" id="namei"></span>
       <div class="stt"><h3 id="namet">Name this group</h3><span>Up to 24 characters</span></div>
     </div>
@@ -1537,7 +1595,7 @@ html.cc.md .opt{padding:12px 13px}
 </div>
 <div id="codew" role="dialog" aria-modal="true" aria-labelledby="codet2">
   <div class="savebox">
-    <div class="sh">
+    <div class="shh">
       <span class="sico fine" id="codei"></span>
       <div class="stt"><h3 id="codet2">Preset code</h3><span id="codesub">Share this code</span></div>
       <button class="ib" id="codex" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
@@ -1596,14 +1654,32 @@ html.cc.md .opt{padding:12px 13px}
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4", forcegl: "1",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0", alpha: "1",
-    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.55.4",
-    st: "ver=v0.41|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
-    startline: "=== start v0.41 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
+    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", ver: "v0.57",
+    st: "ver=v0.57|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
+    startline: "=== start v0.57 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
     ftall: "FT fps=57.1 avg=17.5ms p50=16.9 p99=36.2 max=48.0 >33ms=2 >50ms=0 n=285 cap=0 bias=0 scale=100 t=60.0 fz=0\nFT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=65.0 fz=1\nFT fps=58.4 avg=17.1ms p50=16.8 p99=30.2 max=41.0 >33ms=1 >50ms=0 n=292 cap=0 bias=0 scale=100 t=70.0 fz=0\nFT fps=56.0 avg=17.9ms p50=17.2 p99=38.9 max=52.0 >33ms=2 >50ms=1 n=280 cap=0 bias=0 scale=100 t=75.0 fz=0",
     ftn: "4",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
     ft: "FT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=125.0 fz=1"
   };
+  /* demo / preview only: ?demo=N adds N made-up candidate textures (default 150, at most 6000) so the finder can be tried in a browser */
+  if (demo) (function () {
+    var n = parseInt((String(location.search).match(/[?&]demo=(\d+)/) || [0, 150])[1], 10) || 0;
+    n = Math.max(0, Math.min(n, 6000));
+    var F = [37497, 37496, 37497, 37492, 37815, 37812], S = [512, 256, 128, 64, 1024, 512], seed = 12345, out = [], seen = {};
+    function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+    while (out.length < n) {
+      var f = F[Math.floor(rnd() * F.length)], z = S[Math.floor(rnd() * S.length)], h16 = "";
+      for (var j = 0; j < 4; j++) h16 += ("0000" + Math.floor(rnd() * 65536).toString(16)).slice(-4);
+      if (seen[h16]) continue; seen[h16] = 1;
+      out.push("GRASSCAND fmt=" + f + " w=" + z + " h=" + (rnd() < 0.8 ? z : z / 2) + " n=" + (z * z / 2) + " h=" + h16 + " a=" + Math.floor(rnd() * 256) + " z=" + Math.floor(rnd() * 100) + " lv=" + (rnd() < 0.2 ? 1 : 2 + Math.floor(rnd() * 8)));
+    }
+    if (out.length) fake.gcand += "\n" + out.join("\n");
+    var g = String(location.search).match(/[?&]grass=([^&]*)/);                  /* ?grass=line;line sets the demo grass.txt (to try old range lines) */
+    if (g) fake.grass = decodeURIComponent(g[1]).split(";").join("\n");
+    var tl = String(location.search).match(/[?&]texlib=([^&]*)/);                /* ?texlib=line;line sets the demo texlib.txt (names and groups) */
+    if (tl) fake.texlib = decodeURIComponent(tl[1]).split(";").join("\n");
+  })();
   var seq = 0;
   var TTSZ = [-2, -1, 0, 1, 2, 3];
   var TTSZN = { "-2": "Finer", "-1": "Fine", "0": "Normal", "1": "Big", "2": "Bigger", "3": "Huge" };
@@ -1625,7 +1701,8 @@ html.cc.md .opt{padding:12px 13px}
   var groups = [], skipSet = {};
   var grassSel = {};        /* groups whose pixels are made transparent: "fmt|size" -> 1 (grass.txt) */
   var baseGrass = {};
-  var gRange = "", baseRange = "";   /* v0.47: the "range ..." line of grass.txt (the half of the textures being tested) */
+  var MAXR = 4096;          /* v0.57: most exact rules grass.txt can hold (same limit as the module) */
+  var gRangeSeen = 0, gJunkSeen = 0, gOverSeen = 0;   /* v0.57: old "range" lines / unusable lines / rules over the limit found in grass.txt */
   var customSkips = [];
   var blOff = {}, blDel = {};
 
@@ -1656,7 +1733,7 @@ html.cc.md .opt{padding:12px 13px}
     baseSkipLines = skipLines();
     baseBlOff = Object.assign({}, blOff);
     baseBlDel = Object.assign({}, blDel);
-    baseGrass = Object.assign({}, grassSel); baseRange = gRange;
+    baseGrass = Object.assign({}, grassSel);
   }
   var builtins = ["37497 256 512", "37497 512 1024", "37497 512 256", "37497 512 512", "37496 512 512"];
   var FIXES = { scope: ["37497 256 512", "37497 512 1024", "37497 512 256"], menu: ["37496 512 512"] };
@@ -1752,7 +1829,6 @@ html.cc.md .opt{padding:12px 13px}
       "echo -n 'bldel='; [ -f $D/bltdel.txt ] && cat $D/bltdel.txt | tr '\\n' '|' || true; echo; " +
       "echo -n 'texg='; [ -f $D/codm_tex.log ] && grep -E '^TEXG ' $D/codm_tex.log | tail -n 200 | tr '\\n' '|' || true; echo; " +
       "echo -n 'texlib='; [ -f $D/texlib.txt ] && cat $D/texlib.txt | tr '\\n' ';' || true; echo; " +
-      "echo -n 'gcand='; [ -f $D/codm_tex.log ] && grep -E '^GRASSCAND ' $D/codm_tex.log | sort -u | tail -n 1500 | tr '\\n' '|' || true; echo; " +
       "echo -n 'ft='; [ -f $D/codm_tex.log ] && grep -E '^FT ' $D/codm_tex.log | tail -n 1 || true; echo; " +
       "L=$D/codm_tex.log; if [ -f $L ]; then S=$(grep -n '^=== start' $L | tail -n 1 | cut -d: -f1); [ -n \"$S\" ] || S=1; " +
       "echo gl=$(tail -n +$S $L | grep -c -E '^(TEXN|FT |GLINFO|GFX api=gles)'); " +
@@ -1781,13 +1857,39 @@ html.cc.md .opt{padding:12px 13px}
         var i = ln.indexOf("=");
         if (i < 0) return;
         var k = ln.slice(0, i), v = ln.slice(i + 1);
-        if (k === "skip" || k === "grass" || k === "texg" || k === "gcand" || k === "bloff" || k === "bldel" || k === "ftall") v = v.replace(/\|/g, "\n").replace(/\n$/, "");
+        if (k === "skip" || k === "grass" || k === "texg" || k === "bloff" || k === "bldel" || k === "ftall") v = v.replace(/\|/g, "\n").replace(/\n$/, "");
         if (k === "texlib") v = v.replace(/;/g, "\n").replace(/\n$/, "");      /* v0.54: names are saved as "group|name", so texlib must not be split on "|" */
         s[k] = v.trim();
       });
       /* If the first root route could not list /data/adb/modules, ask again through the other routes before anyone sees a warning */
       if (!s.zyg && !(s.st || s.nv || parseInt(s.inj, 10) > 0)) return zygFallback(s);
       return s;
+    }).then(function (s) {
+      if (s.nodir) return s;
+      return loadCandText().then(function (c) { s.gcand = c.text; s.gcandInfo = c; return s; });
+    });
+  }
+  /* v0.57: the texture list is read in chunks, never cut with tail. Every distinct GRASSCAND line of the log is fetched, 400 lines per
+     call, so one answer stays small. If a chunk cannot be read, the list is marked incomplete and the page says so. */
+  var CCHUNK = 400, CMAXCHUNKS = 60;
+  var gCandInfo = { total: 0, partial: false };
+  function loadCandText() {
+    var pre = "D=" + D + "; L=$D/codm_tex.log; ";
+    return sh(pre + "[ -f $L ] && grep -E '^GRASSCAND ' $L | sort -u | wc -l || echo 0", 15000).then(function (r) {
+      var total = parseInt(String(r.stdout).trim().split(/\s+/).pop(), 10) || 0, want = Math.ceil(total / CCHUNK), n = Math.min(want, CMAXCHUNKS);
+      var out = [], i = 0, bad = false;
+      function chunk(a, b, again) {
+        return sh(pre + "grep -E '^GRASSCAND ' $L | sort -u | sed -n '" + a + "," + b + "p'", 20000).then(function (c) {
+          if (c.errno !== 0 && !c.stdout) return again ? chunk(a, b, false) : null;
+          return c.stdout;
+        });
+      }
+      function next() {
+        if (i >= n) return Promise.resolve();
+        var a = i * CCHUNK + 1, b = a + CCHUNK - 1; i++;
+        return chunk(a, b, true).then(function (t) { if (t === null) { bad = true; return; } out.push(t); return next(); });
+      }
+      return next().then(function () { return { text: out.join("\n"), total: total, partial: bad || want > n }; });
     });
   }
   function zygFallback(s) {
@@ -2261,20 +2363,25 @@ html.cc.md .opt{padding:12px 13px}
     blOff = {}; blDel = {};
     (s.bloff || "").split("\n").forEach(function (l) { l = l.trim().replace(/\s+/g, " "); if (l) blOff[l] = 1; });
     (s.bldel || "").split("\n").forEach(function (l) { l = l.trim().replace(/\s+/g, " "); if (l) blDel[l] = 1; });
-    grassSel = {}; gRange = "";
-    var gOld = false;
+    grassSel = {}; gRangeSeen = 0; gJunkSeen = 0; gOverSeen = 0;
     (s.grass || "").split("\n").forEach(function (l) {
       if (!l.trim()) return;
-      if (/^\s*range\s/.test(l)) { gRange = l.trim().replace(/\s+/g, " "); return; }
-      var m = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(?:0x)?([0-9a-fA-F]+)\s*$/.exec(l);
-      if (m && m[2] !== "0" && m[3] !== "0") grassSel[m[1] + "|" + m[2] + "|" + m[3] + "|" + m[4].toLowerCase()] = 1;
-      else gOld = true;                                    /* a v0.44 line ("format size") matched too many textures */
+      if (/^\s*range(\s|$)/i.test(l)) { gRangeSeen++; return; }                  /* v0.57: range rules do not exist any more: skipped, and gone at the next write */
+      var m = /^\s*(0x[0-9a-f]+|\d+)\s+(0x[0-9a-f]+|\d+)\s+(0x[0-9a-f]+|\d+)\s+(?:0x)?([0-9a-f]{1,16})\s*$/i.exec(l);
+      var f = m ? Number(m[1]) : 0, w = m ? Number(m[2]) : 0, h = m ? Number(m[3]) : 0;
+      if (!m || !(f > 0) || !(w >= 1 && w <= 65536) || !(h >= 1 && h <= 65536)) { gJunkSeen++; return; }     /* a v0.44 line ("format size") or a broken line: the module ignores it too */
+      var key = f + "|" + w + "|" + h + "|" + hpad(m[4]);
+      if (grassSel[key]) return;                                                  /* duplicate */
+      if (Object.keys(grassSel).length >= MAXR) { gOverSeen++; return; }          /* the module only uses the first 4096 unique rules */
+      grassSel[key] = 1;
     });
     gCand = parseCands(s.gcand || "");
+    gCandInfo = s.gcandInfo || { total: gCand.length, partial: false };
     gLoadLib(s.texlib || "");
     gLoadState();
+    gCleanup();
     parseGroups(s.skip || "", s.texg || "");
-    cur.skip = nl(skipLines()); cur.bloff = nk(blOff); cur.bldel = nk(blDel); cur.grass = nk(grassSel) + "#" + gRange;
+    cur.skip = nl(skipLines()); cur.bloff = nk(blOff); cur.bldel = nk(blDel); cur.grass = nk(grassSel);
     if (!base) setBaseline();
     updatePend();
     renderGroups();
@@ -2431,22 +2538,54 @@ html.cc.md .opt{padding:12px 13px}
   function fmtAlphaSoft(f) { return f >= 0x9276 && f <= 0x9279; }
   function alphaKept(g) { return getSw("alpha") && fmtAlphaSoft(g.fmt); }
   function grassLines() {
-    return Object.keys(grassSel).sort().map(function (k) { return k.split("|").join(" "); }).concat(gRange ? [gRange] : []);
+    return Object.keys(grassSel).sort().map(function (k) { return k.split("|").join(" "); });
+  }
+  /* v0.57: up to 4096 lines are too long for ONE shell command (about 128 KB per argument), so a file is written in pieces to
+     "<file>.new", checked (line count) and only then moved over the real file. Nothing is half written. */
+  var WCH = 400;
+  function writeLinesAtomic(file, lines) {
+    var tmp = file + ".new", pre = "D=" + D + "; [ -d $D ] || { echo NODIR; exit 1; }; ";
+    return queued(function () {
+      function go(cmd) { return sh(cmd).then(function (r) { return r.stdout.indexOf("OK") >= 0; }); }
+      var p = go(pre + ": > $D/" + tmp + "; echo OK");
+      for (var i = 0; i < lines.length; i += WCH) (function (part) {
+        p = p.then(function (ok) {
+          if (!ok) return false;
+          return go(pre + "printf '%s\\n' " + part.map(function (l) { return "'" + l + "'"; }).join(" ") + " >> $D/" + tmp + "; echo OK");
+        });
+      })(lines.slice(i, i + WCH));
+      return p.then(function (ok) {
+        if (!ok) { sh(pre + "rm -f $D/" + tmp); return { ok: false, stdout: "" }; }
+        return go(pre + "n=$(wc -l < $D/" + tmp + "); if [ \"$n\" = " + lines.length + " ]; then mv -f $D/" + tmp + " $D/" + file + " && chmod 666 $D/" + file + " 2>/dev/null; chcon --reference=$D $D/" + file + " 2>/dev/null; echo OK; else rm -f $D/" + tmp + "; echo BAD; fi").then(function (ok2) { return { ok: ok2, stdout: ok2 ? "OK" : "" }; });
+      });
+    });
   }
   function writeGrass() {
-    cur.grass = nk(grassSel) + "#" + gRange;
-    if (demo) { fake.grass = grassLines().join("\n"); return Promise.resolve({ ok: true }); }
+    cur.grass = nk(grassSel);
     var a = grassLines();
-    var cmd = "D=" + D + "; [ -d $D ] || { echo NODIR; exit 1; }; " +
-      (a.length ? "printf '%s\\n' " + a.map(function (l) { return "'" + l + "'"; }).join(" ") + " > $D/grass.txt; " : ": > $D/grass.txt; ") +
-      "chmod 666 $D/grass.txt 2>/dev/null; chcon --reference=$D $D/grass.txt 2>/dev/null; echo OK";
-    return queued(function () {
-      return sh(cmd).then(function (r) { r.ok = r.stdout.indexOf("OK") >= 0; return r; });
+    if (a.length > MAXR) return Promise.resolve({ ok: false, stdout: "" });          /* never write more than the module can read */
+    if (demo) { fake.grass = a.join("\n"); return Promise.resolve({ ok: true }); }
+    return writeLinesAtomic("grass.txt", a);
+  }
+  if (demo) window.__ct = { rules: function () { return grassLines(); }, lib: function () { return gLib; }, cands: function () { return gCand.length; }, vis: function () { return tbVis().length; }, fakeGrass: function () { return fake.grass; } };     /* preview / tests only */
+  function hpad(h) { h = String(h).toLowerCase().replace(/^0x/, ""); while (h.length < 16) h = "0" + h; return h; }
+  /* v0.57: old range lines / unusable lines in grass.txt are dropped by rewriting the file once from the exact rules (the module ignores them anyway) */
+  var gCleanTried = false, gDropped = false;
+  function gCleanup() {
+    if (!(gRangeSeen || gJunkSeen || gOverSeen) || gCleanTried) return;
+    gCleanTried = true;
+    var nR = gRangeSeen, nO = gOverSeen, dropped = gDropped;
+    writeGrass().then(function (r) {
+      if (!r.ok) return;
+      var shown = false;
+      try { shown = localStorage.getItem("ct_rangeinfo") === "1"; if (nR) localStorage.setItem("ct_rangeinfo", "1"); } catch (e) {}
+      if (nO) toast("grass.txt had more than " + MAXR + " rules. Only the first " + MAXR + " are used, the rest was removed.");
+      else if (nR && !shown) toast("Old range rules were removed: v0.57 hides exact textures only. Your saved textures are kept." + (dropped ? " A search that was running was stopped." : ""));
     });
   }
   /* ---------- Texture finder (v0.53): switch off half of the textures, then half again ----------
      The module writes one GRASSCAND line per distinct texture (format, size, mips, fingerprint). The finder sorts a set of them
-     by fingerprint and writes ONE range line to grass.txt that switches off a slice of that list. Test 1 switches off the whole
+     by fingerprint and writes one exact rule per texture of a slice of that list to grass.txt (v0.57: no hash ranges any more). Test 1 switches off the whole
      set: if nothing changes on screen then, the finder cannot find it and says so. After that every answer halves the search.
      Found textures are kept in My textures (texlib.txt), in groups, each with its own on / off switch. */
   var gCand = [];
@@ -2457,6 +2596,7 @@ html.cc.md .opt{padding:12px 13px}
   var gOpen = {};           /* which My textures groups are open */
   function grpName(id) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][0] === id) return GROUPS[i][1]; return "Other"; }
   function grpOk(id) { return GROUPS.some(function (g) { return g[0] === id; }) ? id : "other"; }
+  var gCandMap = {};
   function parseCands(txt) {
     var seen = {}, out = [];
     (txt || "").split("\n").forEach(function (l) {
@@ -2464,13 +2604,15 @@ html.cc.md .opt{padding:12px 13px}
       if (!m) return;
       var key = m[1] + "|" + m[2] + "|" + m[3] + "|" + m[5];
       if (seen[key]) return;
-      seen[key] = 1;
-      out.push({ key: key, fmt: +m[1], w: +m[2], h: +m[3], n: +m[4], a: +m[6], z: +m[7], lv: m[8] === undefined ? 0 : +m[8] });
+      var c = { key: key, fmt: +m[1], w: +m[2], h: +m[3], n: +m[4], a: +m[6], z: +m[7], lv: m[8] === undefined ? 0 : +m[8], hay: "" };
+      seen[key] = c;
+      out.push(c);
     });
+    gCandMap = seen;
     return out;
   }
   function keyInfo(k) {
-    for (var i = 0; i < gCand.length; i++) if (gCand[i].key === k) return gCand[i];
+    if (gCandMap[k]) return gCandMap[k];
     var a = k.split("|");
     return { key: k, fmt: +a[0], w: +a[1], h: +a[2], a: -1, z: -1, lv: 0 };
   }
@@ -2504,11 +2646,6 @@ html.cc.md .opt{padding:12px 13px}
   try { var sfs = JSON.parse(localStorage.getItem("ct_sf") || "null"); if (sfs) Object.keys(sf).forEach(function (k) { if (typeof sfs[k] === "number") sf[k] = sfs[k]; }); } catch (e) {}
   function sfKeep() { try { localStorage.setItem("ct_sf", JSON.stringify(sf)); } catch (e) {} }
   function sfFilt() { return { fmt: sf.fmt, side: 0, minlv: sf.mips, mins: sf.mins, maxs: sf.maxs, shape: sf.shape }; }
-  function rangeLine(lo, hi, f) {
-    var l = "range " + lo + " " + hi + " " + (f.fmt || 0) + " " + (f.side || 0) + " " + (f.minlv || 0);
-    if (f.mins || f.maxs || f.shape) l += " " + (f.mins || 0) + " " + (f.maxs || 0) + " " + (f.shape || 0);
-    return l;
-  }
   /* ---- My textures (texlib.txt: "fmt w h hash group|name"). On / off = whether the texture is in grass.txt ---- */
   var gLib = [];
   function libClean(n) { return String(n || "").replace(/[^A-Za-z0-9 _.\-]/g, "").replace(/\s+/g, " ").trim().slice(0, 24); }
@@ -2568,71 +2705,92 @@ html.cc.md .opt{padding:12px 13px}
     libBackupWrite();
     var lines = gLib.map(function (e) { return e.key.split("|").join(" ") + " " + e.grp + (e.set ? "~" + e.set : "") + "|" + e.name; });
     if (demo) { fake.texlib = lines.join("\n"); return Promise.resolve({ ok: true }); }
-    var cmd = "D=" + D + "; [ -d $D ] || { echo NODIR; exit 1; }; " +
-      (lines.length ? "printf '%s\\n' " + lines.map(function (l) { return "'" + l + "'"; }).join(" ") + " > $D/texlib.txt; " : ": > $D/texlib.txt; ") +
-      "chmod 666 $D/texlib.txt 2>/dev/null; chcon --reference=$D $D/texlib.txt 2>/dev/null; echo OK";
-    return queued(function () { return sh(cmd).then(function (r) { r.ok = r.stdout.indexOf("OK") >= 0; return r; }); });
+    return writeLinesAtomic("texlib.txt", lines);
   }
-  function gSave() { try { if (gst) localStorage.setItem("ct_gst2", JSON.stringify(gst)); else localStorage.removeItem("ct_gst2"); } catch (e) {} }
-  /* what grass.txt must contain for the current test slice: { single: key | "", line: "range ..." | "" } */
-  function gRuleFor(t) {
-    if (t.tb - t.ta === 1) return { single: t.U[t.ta], line: "" };
-    return { single: "", line: rangeLine(hashOf(t.U[t.ta]), hashOf(t.U[t.tb - 1]), t.filt) };
+  function gSave() { try { if (gst) { gst.v = 2; localStorage.setItem("ct_gst2", JSON.stringify(gst)); } else localStorage.removeItem("ct_gst2"); } catch (e) {} }
+  /* v0.57: what grass.txt must contain for the current test slice: always an explicit list of exact keys, never a hash range */
+  function gRuleFor(t) { return { many: t.U.slice(t.ta, t.tb) }; }
+  function gHas(keys) { return keys.every(function (k) { return grassSel[k]; }); }
+  function uniq(keys) { var seen = {}, out = []; keys.forEach(function (k) { if (!seen[k]) { seen[k] = 1; out.push(k); } }); return out; }
+  function ruleLimitNote(n) {
+    var m = "That would be " + n + " hidden textures. The module can use " + MAXR + " at most. Nothing was changed.";
+    toast(m);
+    if (twOv) twNote(m);
+    if (typeof tbNote === "function") tbNote(m);
   }
   function gLoadState() {
-    gst = null;
-    try { gst = JSON.parse(localStorage.getItem("ct_gst2") || "null"); } catch (e) { gst = null; }
-    if (gst) {
-      var ok = gst.U && gst.U.length && gst.tb > gst.ta;
-      if (ok) { var r = gRuleFor(gst); ok = r.single ? !!grassSel[r.single] : gRange === r.line; }
-      if (!ok) { gst = null; gSave(); }
+    gst = null; gDropped = false;
+    var raw = null;
+    try { raw = JSON.parse(localStorage.getItem("ct_gst2") || "null"); } catch (e) { raw = null; }
+    if (raw) {
+      /* a search saved by v0.47 to v0.56 that used a hash range (no "ex" flag, no version) cannot be continued: it was not made of exact rules */
+      var ok = !!(raw.U && raw.U.length && raw.tb > raw.ta && raw.keep && (raw.v === 2 || raw.ex));
+      if (ok) {
+        delete raw.ex; raw.v = 2;
+        if (raw.sub && !(raw.sub.keys && raw.sub.keys.length && gHas(raw.sub.keys))) raw.sub = null;
+        if (!raw.sub) ok = gHas(gRuleFor(raw).many);
+      }
+      if (ok) gst = raw; else { gDropped = true; gSave(); }
     }
     gLoadPend();
   }
-  function setRules(keys, rline, msg) {
+  /* sets grass.txt to exactly these keys (deduplicated). More than 4096 unique keys are refused BEFORE anything changes or is written. */
+  function setRules(keys, msg) {
+    keys = uniq(keys);
+    if (keys.length > MAXR) { ruleLimitNote(keys.length); return Promise.resolve(false); }
     grassSel = {};
     keys.forEach(function (k) { grassSel[k] = 1; });
-    gRange = rline || "";
     gSave(); renderGrass(); renderGroups();
-    return writeGrass().then(function (r) { grassDone(r, msg); });
+    return writeGrass().then(function (r) { grassDone(r, msg); return !!r.ok; });
   }
   function gApply(msg) {
-    var r = gRuleFor(gst), keys = gst.keep.slice();
-    if (r.single) keys.push(r.single);
-    return setRules(keys, r.line, msg || "Next test is ready.");
+    var r = gRuleFor(gst);
+    return setRules(gst.keep.concat(r.many), msg || "Next test is ready.");
   }
   function gSnap() { gst.hist.push({ a: gst.a, b: gst.b, ta: gst.ta, tb: gst.tb, phase: gst.phase }); }
   function gConfirm(k) {
     var keep = gst.keep.concat([k]), nm = gst.name, gp = gst.grp; gst = null; gNote = "";
     gOpen[gp] = true;
     if (libAdd(k, nm, gp)) { gForm.name = ""; writeLib(); }
-    setRules(keep, "", "Texture found.");
+    setRules(keep, "Texture found.");
     toast("Found it: " + keyText(k) + ". It is in My textures. Tap Save to keep it.");
   }
   function gFail(why) {
     if (why === "verify" && gst.U.length > 1) {          /* the whole set worked in Test 1, but no half did: it needs several together */
-      gPend = { U: gst.U.slice(), filt: gst.filt, name: gst.name, grp: gst.grp, keep: gst.keep.slice() };
+      gPend = { v: 2, U: gst.U.slice(), name: gst.name, grp: gst.grp, keep: gst.keep.slice() };
       gst = null; gNote = ""; gPendSave();
-      setRules(gPend.keep, gPendLine(gPend), "All " + gPend.U.length + " are switched off.");
+      setRules(gPend.keep.concat(gPend.U), "All " + gPend.U.length + " are switched off.");
       toast("It needs several textures together. Tap Keep all.");
       return;
     }
-    var keep = gst.keep, mode = gst.mode, n = gst.U.length; gst = null;
+    var keep = gst.keep, n = gst.U.length; gst = null;
     gNote = why === "check"
       ? "Even with all " + n + " textures of this set switched off, nothing changed on screen. " + "Try a wider setup (smaller “Smallest texture to hide”, any format, any mips). " +
         "If that fails too, the texture is not one of these, or switching off does not work on your phone: tap Tools > Export report and send it with a note that you tested this."
       : "The last texture did not change anything. The thing you are looking for may be made of several textures, or the test was not clear. Try a wider setup, or send your report.";
-    setRules(keep, "", "Search stopped.");
+    setRules(keep, "Search stopped.");
     toast("Search stopped. Read the note in the card.");
   }
-  function gStart(filt) {
-    var mode = "search";
-    var keep = Object.keys(grassSel);
-    var U = universe(filt, libKeys().concat(keep));
-    if (!U.length) { toast("No textures in the list yet. Play one match with logs on, then tap Refresh list."); return; }
+  /* starts a search over an explicit list of textures: Test 1 switches off ALL of them, then every answer halves the list (exact rules only) */
+  function gStartKeys(list) {
+    if (gst || gPend) { toast("Finish or cancel the running test first."); return false; }
+    var keep = Object.keys(grassSel), have = {};
+    keep.forEach(function (k) { have[k] = 1; });
+    var U = uniq(list).filter(function (k) { return !have[k] && !guarded(keyInfo(k)); });
+    if (!U.length) { toast("Nothing to test: those textures are hidden already, or never changed by the module."); return false; }
+    if (keep.length + U.length > MAXR) {
+      var m = "Test 1 would hide " + (keep.length + U.length) + " textures (" + keep.length + " are hidden already + " + U.length + " to test). The limit is " + MAXR + ". Filter more or show some first.";
+      toast(m); if (typeof tbNote === "function") tbNote(m); return false;
+    }
     gNote = ""; gPend = null; gPendSave();
-    gst = { keep: keep, mode: mode, filt: filt, U: U, a: 0, b: U.length, ta: 0, tb: U.length, phase: "check", hist: [], name: libClean(gForm.name), grp: grpOk(gForm.grp) };
-    gApply("Test 1 is ready: ALL textures of the set are off.");
+    gst = { v: 2, keep: keep, mode: "search", U: U, a: 0, b: U.length, ta: 0, tb: U.length, phase: "check", hist: [], name: libClean(gForm.name), grp: grpOk(gForm.grp) };
+    gApply("Test 1 is ready: ALL " + U.length + " textures of the set are off.");
+    return true;
+  }
+  function gStart(filt) {
+    var U = universe(filt, libKeys().concat(Object.keys(grassSel)));
+    if (!U.length) { toast("No textures in the list yet. Play one match with logs on, then tap Refresh list."); return; }
+    gStartKeys(U);
   }
   function gYes() {                                       /* what I am looking for is gone (or mostly) */
     gSnap();
@@ -2655,8 +2813,22 @@ html.cc.md .opt{padding:12px 13px}
     if (!gst || !gst.hist.length) return;
     var h = gst.hist.pop();
     gst.a = h.a; gst.b = h.b; gst.ta = h.ta; gst.tb = h.tb; gst.phase = h.phase;
+    if (h.U) gst.U = h.U;                                 /* undo a "continue with these" from a side test */
+    gst.sub = null;
     gApply("Went back one step.");
   }
+  /* side test: switch off ONLY some of the textures of the current test (from the filters or ticks) to try them first.
+     Hidden: the search continues inside them. Still there: back to the main list exactly where it was. */
+  function gApplySub(msg) { return setRules(gst.keep.concat(gst.sub.keys), msg); }
+  function gSubYes() {
+    var S = gst.sub.keys.slice();
+    gst.hist.push({ a: gst.a, b: gst.b, ta: gst.ta, tb: gst.tb, phase: gst.phase, U: gst.U });
+    gst.U = S; gst.sub = null; gst.a = 0; gst.b = S.length; gst.phase = "bisect";
+    if (S.length === 1) { gConfirm(S[0]); return; }
+    gst.ta = 0; gst.tb = Math.ceil(S.length / 2);
+    gApply("Continuing inside your " + S.length + " textures.");
+  }
+  function gSubNo() { gst.sub = null; gApply("Back to the main list."); }
   function grassDone(r, msg) {
     var p = r.ok && updatePend();
     toast(!r.ok ? "Could not save the texture list." : (p ? msg + " Tap Save to apply it." : "Texture list is back to how it was."));
@@ -2725,52 +2897,24 @@ html.cc.md .opt{padding:12px 13px}
   /* ---- several textures that only work together (hiding half did not hide it, hiding all did) ---- */
   var gPend = null;         /* { U, filt, name, grp, keep } : all of U is switched off now, not saved to My textures yet */
   function gPendSave() { try { if (gPend) localStorage.setItem("ct_gset", JSON.stringify(gPend)); else localStorage.removeItem("ct_gset"); } catch (e) {} }
-  function gPendLine(q) { return rangeLine(hashOf(q.U[0]), hashOf(q.U[q.U.length - 1]), q.filt); }
   function gLoadPend() {
     gPend = null;
     try { gPend = JSON.parse(localStorage.getItem("ct_gset") || "null"); } catch (e) { gPend = null; }
-    if (gPend && !(gPend.U && gPend.U.length > 1 && gPend.filt && !gst && gRange === gPendLine(gPend))) { gPend = null; gPendSave(); }
+    if (gPend && !(gPend.U && gPend.U.length > 1 && gPend.keep && !gst && (gPend.v === 2 || gPend.ex) && gHas(gPend.U))) { gPend = null; gPendSave(); }
+    else if (gPend) { delete gPend.ex; gPend.v = 2; }
   }
   function gKeepSet() {
     var q = gPend; if (!q) return;
-    var all = {}; q.keep.concat(q.U).forEach(function (k) { all[k] = 1; });
-    if (Object.keys(all).length > 60) { toast("Too many textures for one list. Press Discard and use Quick search."); return; }
+    var all = uniq(q.keep.concat(q.U));
+    if (all.length > MAXR) { ruleLimitNote(all.length); return; }
     var id = "s" + Date.now().toString(36), nm = libClean(q.name) || (grpName(q.grp) + " set");
     gPend = null; gPendSave(); gOpen[q.grp] = true; gForm.name = "";
     if (q.U.length === 1) libAdd(q.U[0], q.name, q.grp);
     else q.U.forEach(function (k) { if (!libHas(k)) gLib.push({ key: k, name: nm, grp: q.grp, set: id }); });
     writeLib();
-    setRules(Object.keys(all), "", "Saved " + q.U.length + " textures as one set.");
+    setRules(all, "Saved " + q.U.length + " textures as one set.");
   }
-  function gDropSet() { var q = gPend; if (!q) return; gPend = null; gPendSave(); setRules(q.keep, "", "Test cancelled."); }
-  /* a range rule in grass.txt that no saved search owns (for example a test that was cut off) */
-  function rangeMembers() {
-    var m = /^range ([0-9a-fA-F]+) ([0-9a-fA-F]+) (\d+) (\d+) (\d+)(?: (\d+) (\d+) (\d+))?$/.exec(gRange || "");
-    if (!m) return [];
-    function pad(x) { x = x.toLowerCase(); while (x.length < 16) x = "0" + x; return x; }
-    var lo = pad(m[1]), hi = pad(m[2]), fmt = +m[3], side = +m[4], minlv = +m[5], mins = +m[6] || 0, maxs = +m[7] || 0, shape = +m[8] || 0;
-    return gCand.filter(function (c) {
-      var h = pad(hashOf(c.key));
-      return h >= lo && h <= hi && !grassSel[c.key] && !guarded(c) && (!fmt || c.fmt === fmt) && (!side || Math.max(c.w, c.h) === side) &&
-        (!mins || Math.max(c.w, c.h) >= mins) && (!maxs || Math.max(c.w, c.h) <= maxs) && (!shape || (shape === 1 ? c.w === c.h : c.w !== c.h)) &&
-        (minlv <= 0 || c.lv === 0 || c.lv >= minlv);
-    }).map(function (c) { return c.key; }).sort(function (x, y) { var a = hashOf(x), b = hashOf(y); return a < b ? -1 : (a > b ? 1 : 0); });
-  }
-  function orphanHtml() {
-    var M = rangeMembers(), N = M.length;
-    return '<div class="gf-now on"><b>A range rule is hiding textures</b><small>' + (N
-      ? "It comes from a search that was not saved. In your list it hides " + N + " texture" + (N === 1 ? "" : "s") + ". Save them to get switches for them. Textures that are not in your list yet are not included."
-      : "It comes from a search that was not saved, and none of the textures in your list are inside it. Tap Refresh list, or remove the range.") + '</small>' +
-      (N ? '<ul class="gf-list">' + M.slice(0, 8).map(function (k) { return "<li>" + esc(keyText(k)) + "</li>"; }).join("") + (N > 8 ? "<li>and " + (N - 8) + " more</li>" : "") + '</ul>' : "") + '</div>' +
-      (N ? '<button class="btn good" id="gfKeepRange" type="button">Save these ' + N + (N === 1 ? "" : " together") + '</button>' : "") +
-      '<button class="btn quiet" id="gfDropRange" type="button">Remove the range</button>';
-  }
-  function gKeepRange() {
-    var M = rangeMembers();
-    if (!M.length) return;
-    gPend = { U: M, filt: { fmt: 0, side: 0, minlv: 0 }, name: gForm.name, grp: gForm.grp, keep: Object.keys(grassSel) };
-    gKeepSet();
-  }
+  function gDropSet() { var q = gPend; if (!q) return; gPend = null; gPendSave(); setRules(q.keep, "Test cancelled."); }
   function pendHtml() {
     var N = gPend.U.length;
     return '<div class="gf-now on tw-tap" id="twOpen" role="button" tabindex="0"><b>It needs ' + N + ' textures together</b><small>Hiding half of them did not hide it, but hiding all ' + N + ' did. So what you look for is made of several textures. All ' + N + ' are switched off right now.' +
@@ -2778,6 +2922,14 @@ html.cc.md .opt{padding:12px 13px}
       '<button class="btn good" id="gfKeepSet" type="button">Keep all ' + N + ' together</button>' +
       '<button class="btn quiet" id="gfDropSet" type="button">Discard</button>' +
       '<p class="pnote">After Keep, tap Save at the bottom to apply. In My textures they show as one item with one switch.</p>';
+  }
+  /* v0.57: how many exact rules grass.txt holds right now (the module reads 4096 at most) */
+  function ruleBarHtml(n) {
+    var pct = Math.min(100, Math.round(n / MAXR * 100)), note = "";
+    if (gst) note = "test in progress: " + gst.keep.length + " hidden before + " + (gst.sub ? gst.sub.keys.length : gst.tb - gst.ta) + " being tested";
+    else if (n >= MAXR) note = "full: show some textures to hide others";
+    else if (n >= MAXR * 0.9) note = "almost full";
+    return '<div class="rule-bar" role="status"><span><b>' + n + ' / ' + MAXR + '</b> exact rules in use</span>' + (note ? '<small>' + esc(note) + '</small>' : "") + '<div class="gf-prog"><i style="width:' + Math.max(1, pct) + '%"></i></div></div>';
   }
   function renderGrass() {
     var box = $("gf"); if (!box) return;
@@ -2789,10 +2941,22 @@ html.cc.md .opt{padding:12px 13px}
       if (lt) { lt.hidden = !gLib.length; lt.textContent = onU + " on"; }
     }
     var tag = $("grassTag");
-    $("grassV").textContent = (n || gRange) ? "On" : "Off";
-    tag.hidden = !(n || gRange); tag.textContent = gst ? "testing" : n + " hidden";
-    var h = "";
-    if (gst) {
+    $("grassV").textContent = n ? "On" : "Off";
+    tag.hidden = !n; tag.textContent = gst ? "testing" : n + " hidden";
+    var h = ruleBarHtml(n);
+    if (gst && gst.sub) {
+      var SK = gst.sub.keys, SN = SK.length, SR = gst.b - gst.a;
+      h += '<div class="gf-now on gf-keep tw-tap" id="twOpen" role="button" tabindex="0"><b>Side test · ' + SN + ' texture' + (SN === 1 ? "" : "s") + '</b><small>' + (gst.name ? "Looking for: " + esc(gst.name) + " · " : "") +
+        'Only these ' + SN + ' are switched off. Your main list is waiting (' + SR + ' possible textures).</small>' +
+        (SN <= 4 ? '<ul class="gf-list">' + SK.map(function (k) { return "<li>" + esc(keyText(k)) + "</li>"; }).join("") + '</ul>' : "") +
+        '<span class="tw-hint">Tap here to see them, or narrow the side test again</span></div>' +
+        '<ol class="gf-steps"><li>Tap <b>Save</b> at the bottom (CODM restarts).</li><li>Open a match and look at the thing you are searching for.</li><li>Come back here and tap ONE answer.</li></ol>' +
+        '<p class="gf-q">After you look in the game, is it hidden?</p>' +
+        '<button class="btn good" id="gfSubYes" type="button">It is hidden: continue with these ' + SN + '</button>' +
+        '<button class="btn" id="gfSubNo" type="button">It is still there: back to the main list</button>' +
+        '<button class="btn quiet" id="gfOff" type="button">Cancel the whole search</button>' +
+        '<p class="pnote">Hidden: the search goes on inside these ' + SN + ' only (Back undoes that). Still there: nothing is lost, you return to the main list.</p>';
+    } else if (gst) {
       var N = gst.U.length, R = gst.b - gst.a, T = gst.tb - gst.ta;
       var what, steps = log2c(R) + (gst.phase === "verify" ? 0 : 1);
       if (gst.phase === "check") what = "Test 1 · ALL " + N + " textures of this set are switched off";
@@ -2801,7 +2965,7 @@ html.cc.md .opt{padding:12px 13px}
       var pct = gst.phase === "check" ? 5 : Math.round((1 - log2c(R) / Math.max(1, log2c(N))) * 100);
       h += '<div class="gf-now on gf-keep tw-tap" id="twOpen" role="button" tabindex="0"><b>' + (gst.phase === "check" ? "Check: everything off" : "Testing " + T + " texture" + (T === 1 ? "" : "s")) + '</b><small>' + (gst.name ? "Looking for: " + esc(gst.name) + " · " : "") + esc(what) + '</small>' +
         (T <= 4 ? '<ul class="gf-list">' + gst.U.slice(gst.ta, gst.tb).map(function (k) { return "<li>" + esc(keyText(k)) + "</li>"; }).join("") + '</ul>' : "") +
-        '<div class="gf-prog"><i style="width:' + Math.max(4, Math.min(100, pct)) + '%"></i></div><span class="tw-hint">Tap here to see the textures, switch them one by one, or save them</span></div>' +
+        '<div class="gf-prog"><i style="width:' + Math.max(4, Math.min(100, pct)) + '%"></i></div><span class="tw-hint">Tap here to see the textures, filter them and run a side test, or save them</span></div>' +
         '<ol class="gf-steps"><li>Tap <b>Save</b> at the bottom (CODM restarts).</li><li>Open a match and look at the thing you are searching for. ' +
         (gst.phase === "check" ? "Menus and some effects may look wrong in this first test, that is normal." : "") + '</li><li>Come back here and tap ONE answer.</li></ol>' +
         '<p class="gf-q">After you look in the game, is it hidden?</p>' +
@@ -2813,11 +2977,10 @@ html.cc.md .opt{padding:12px 13px}
         'Every answer cuts the list in half.</p>';
     } else {
       if (gPend) h += pendHtml();
-      else if (gRange) h += orphanHtml();
       if (gNote && !gPend) h += '<div class="gf-now on gf-keep"><b>Search stopped</b><small>' + esc(gNote) + '</small></div>';
       if (gCand.length) {
         h += '<div class="gf-now"><b>New search · ' + gCand.length + ' texture' + (gCand.length === 1 ? "" : "s") + ' in the list</b><small>Test 1 switches off the whole set. If what you look for is gone, every next answer cuts the list in half until one texture is left.</small></div>' + startForm() +
-          '<button class="btn quiet" id="gfRef" type="button">Refresh list</button>' + ((n || gRange) ? '<button class="btn quiet" id="gfOff" type="button">Turn all off</button>' : "");
+          '<button class="btn quiet" id="gfRef" type="button">Refresh list</button>' + (n ? '<button class="btn quiet" id="gfOff" type="button">Turn all off</button>' : "");
       } else {
         h += '<div class="gf-now"><b>No texture list yet</b><small>Install v0.53, turn logging on, play one match where you can see what you look for, then tap Refresh list.</small></div><button class="btn" id="gfRef" type="button">Refresh list</button>';
       }
@@ -2831,8 +2994,8 @@ html.cc.md .opt{padding:12px 13px}
     var t = e.target && e.target.closest ? e.target.closest("button") : null; if (!t) return null;
     var id = t.id, sels = [], k;
     if (id === "gfStart") sels = ["#gfYes"];
-    else if (id === "gfYes" || id === "gfNo" || id === "gfBack") sels = ["#" + id, "#gfYes", "#gfKeepSet", "#gfStart"];
-    else if (id === "gfOff" || id === "gfKeepSet" || id === "gfDropSet" || id === "gfKeepRange" || id === "gfDropRange") sels = ["#gfStart", "#gfRef"];
+    else if (id === "gfYes" || id === "gfNo" || id === "gfBack" || id === "gfSubYes" || id === "gfSubNo") sels = ["#" + id, "#gfYes", "#gfKeepSet", "#gfStart"];
+    else if (id === "gfOff" || id === "gfKeepSet" || id === "gfDropSet") sels = ["#gfStart", "#gfRef"];
     else if (t.hasAttribute("data-sfk")) sels = ['[data-sfk="' + t.getAttribute("data-sfk") + '"][data-sfv="' + t.getAttribute("data-sfv") + '"]'];
     else if ((k = t.getAttribute("data-toggle"))) sels = ['[data-toggle="' + k + '"]'];
     else if (t.closest && t.closest("[data-toggle]")) sels = ['[data-toggle="' + t.closest("[data-toggle]").getAttribute("data-toggle") + '"]'];
@@ -2868,30 +3031,29 @@ html.cc.md .opt{padding:12px 13px}
       if (gst) { toast("Finish or cancel the test first."); return; }
       if (gPend) { toast("Keep or discard the set first."); return; }
       var tks = unitKeys(tk), allOn = tks.length > 0 && tks.every(function (x) { return grassSel[x]; });
-      tks.forEach(function (x) { if (allOn) delete grassSel[x]; else grassSel[x] = 1; });
-      setRules(Object.keys(grassSel), "", allOn ? "Texture is back." : "Texture is hidden."); return;
+      setRules(allOn ? Object.keys(grassSel).filter(function (x) { return tks.indexOf(x) < 0; }) : Object.keys(grassSel).concat(tks), allOn ? "Texture is back." : "Texture is hidden."); return;
     }
     var fk = t.getAttribute("data-forget");
     if (fk) {
       if (gst) { toast("Finish or cancel the test first."); return; }
       if (gPend) { toast("Keep or discard the set first."); return; }
       var fks = unitKeys(fk);
-      gLib = gLib.filter(function (x) { return x.key !== fk && x.set !== fk; }); fks.forEach(function (x) { delete grassSel[x]; }); writeLib();
-      setRules(Object.keys(grassSel), "", "Texture forgotten, it is back to normal."); return;
+      gLib = gLib.filter(function (x) { return x.key !== fk && x.set !== fk; }); writeLib();
+      setRules(Object.keys(grassSel).filter(function (x) { return fks.indexOf(x) < 0; }), "Texture forgotten, it is back to normal."); return;
     }
     if (t.id === "gfStart") gStart(sfFilt());
     else if (t.id === "gfYes" && gst) gYes();
     else if (t.id === "gfNo" && gst) gNo();
+    else if (t.id === "gfSubYes" && gst && gst.sub) gSubYes();
+    else if (t.id === "gfSubNo" && gst && gst.sub) gSubNo();
     else if (t.id === "gfBack") gBack();
     else if (t.id === "gfKeepSet") gKeepSet();
     else if (t.id === "gfDropSet") gDropSet();
-    else if (t.id === "gfKeepRange") gKeepRange();
-    else if (t.id === "gfDropRange") setRules(Object.keys(grassSel), "", "Range removed.");
     else if (t.id === "gfOff") {
-      if (gst) { var kp = gst.keep; gst = null; gNote = ""; setRules(kp, "", "Test cancelled."); }
-      else { gNote = ""; gPend = null; gPendSave(); setRules([], "", "All off."); }
+      if (gst) { var kp = gst.keep; gst = null; gNote = ""; setRules(kp, "Test cancelled."); }
+      else { gNote = ""; gPend = null; gPendSave(); setRules([], "All off."); }
     }
-    else if (t.id === "gfRef") refresh().then(function () { toast("List refreshed."); });
+    else if (t.id === "gfRef") { t.disabled = true; t.textContent = "Loading the list…"; refresh().then(function () { toast("List refreshed."); }); }
   }
   function gfChange(e) {
     var el = e.target, a = null, k;
@@ -2927,25 +3089,38 @@ html.cc.md .opt{padding:12px 13px}
     el.addEventListener("toggle", function (e) { var d = e.target; if (d && d.getAttribute && d.getAttribute("data-grp")) gOpen[d.getAttribute("data-grp")] = d.open; if (d && d.hasAttribute && d.hasAttribute("data-sfmore")) sfOpen[d.getAttribute("data-sfmore")] = d.open; }, true);
   });
 
-  /* ---------- Texture browser (v0.54): every texture in the list, filters, one switch per texture ---------- */
-  var bf = { q: "", fmt: 0, side: 0, mips: "any", see: "any", show: "all", sort: "best", lim: 30 };
+  /* ---------- Texture browser (v0.54; v0.57: pick textures, then test / hide / show / save exactly those) ---------- */
+  var bf = { q: "", fmt: 0, side: 0, mips: "any", see: "any", show: "all", sort: "best" };
   try { var bfs = JSON.parse(localStorage.getItem("ct_bf") || "null"); if (bfs) ["fmt", "side"].forEach(function (k) { bf[k] = +bfs[k] || 0; }), ["mips", "see", "show", "sort"].forEach(function (k) { if (typeof bfs[k] === "string") bf[k] = bfs[k]; }); } catch (e) {}
   function bfKeep() { try { localStorage.setItem("ct_bf", JSON.stringify({ fmt: bf.fmt, side: bf.side, mips: bf.mips, see: bf.see, show: bf.show, sort: bf.sort })); } catch (e) {} }
   function cSide(c) { return Math.max(c.w, c.h); }
+  var TBB = 40;                                             /* rows added to the page at a time: thousands of rows are never in the page at once */
+  var bsel = {};                                            /* picked textures (key -> 1). Kept while the page is open, also when the filter changes */
+  var tbCache = { list: [], keys: {}, shown: 0 }, tbArm = "", tbArmT = 0;
+  function fpText(k) { return hashOf(k).replace(/(.{4})(?=.)/g, "$1 "); }     /* readable fingerprint: 4868 e8fc f478 6f93 */
   function tbScore(c) {                                   /* same idea as the finder: mips, near 512 px, see-through, 512 sRGBA first */
     return (c.lv >= 2 ? 100 : 0) + 40 * Math.min(cSide(c), 512) / 512 + (c.z >= 0 ? c.z * 0.5 : 0) + (c.fmt === 37497 && cSide(c) === 512 ? 60 : 0) - (c.lv === 1 ? 80 : 0);
   }
+  /* search words: 512 (size, mips or format) · 256x256 · ETC2 · sRGBA · "8 mips" · z>50 (see-through %) · a<100 (average alpha) · id:4868 or a long hex word (fingerprint starts with) */
   function tbMatch(c, toks) {
     for (var i = 0; i < toks.length; i++) {
-      var t = toks[i];
-      if (/^\d{1,5}$/.test(t)) { var v = +t; if (c.w === v || c.h === v || c.lv === v || c.fmt === v) continue; return false; }
-      var m = /^(\d+)[x×](\d+)$/.exec(t);
-      if (m) { if (c.w === +m[1] && c.h === +m[2]) continue; return false; }
-      var hay = (fmtName(c.fmt) + " " + c.w + "x" + c.h + " " + (c.lv > 1 ? c.lv + " mips" : (c.lv === 1 ? "no mips" : "")) + " " + hashOf(c.key) + " " + c.fmt + " 0x" + c.fmt.toString(16)).toLowerCase();
-      if (hay.indexOf(t) < 0) return false;
+      var t = toks[i], m;
+      if ((m = /^(z|see|a|alpha)(>=|<=|>|<|=)(\d{1,3})$/.exec(t))) {
+        var v = (m[1] === "z" || m[1] === "see") ? c.z : c.a, n = +m[3];
+        if (v < 0) return false;
+        if (m[2] === ">" ? v > n : m[2] === "<" ? v < n : m[2] === ">=" ? v >= n : m[2] === "<=" ? v <= n : v === n) continue;
+        return false;
+      }
+      if ((m = /^(?:id:|#)([0-9a-f]{1,16})$/.exec(t))) { if (hashOf(c.key).indexOf(m[1]) === 0) continue; return false; }
+      if (/^\d{1,5}$/.test(t)) { var q = +t; if (c.w === q || c.h === q || c.lv === q || c.fmt === q) continue; return false; }
+      if ((m = /^(\d+)[x×](\d+)$/.exec(t))) { if (c.w === +m[1] && c.h === +m[2]) continue; return false; }
+      if (/^[0-9a-f]{6,16}$/.test(t)) { if (hashOf(c.key).indexOf(t) === 0) continue; return false; }
+      if (!c.hay) c.hay = (fmtName(c.fmt) + " " + c.w + "x" + c.h + " " + (c.lv > 1 ? c.lv + " mips" : (c.lv === 1 ? "no mips" : "")) + " " + hashOf(c.key) + " " + c.fmt + " 0x" + c.fmt.toString(16)).toLowerCase();
+      if (c.hay.indexOf(t) < 0) return false;
     }
     return true;
   }
+  function tbVis() { return gCand.filter(function (c) { return !guarded(c); }); }
   function tbFiltered() {
     var toks = bf.q.toLowerCase().replace(/,/g, " ").split(/\s+/).filter(Boolean);
     var out = gCand.filter(function (c) {
@@ -2954,14 +3129,18 @@ html.cc.md .opt{padding:12px 13px}
       if (bf.side && cSide(c) !== bf.side) return false;
       if (bf.mips === "yes" && !(c.lv >= 2)) return false;
       if (bf.mips === "no" && c.lv !== 1) return false;
+      if (bf.see === "none" && c.z !== 0) return false;
       if (bf.see === "some" && !(c.z >= 10)) return false;
       if (bf.see === "most" && !(c.z >= 50)) return false;
       if (bf.show === "hidden" && !grassSel[c.key]) return false;
       if (bf.show === "free" && libHas(c.key)) return false;
+      if (bf.show === "picked" && !bsel[c.key]) return false;
       return tbMatch(c, toks);
     });
     out.sort(function (x, y) {
       if (bf.sort === "size") return cSide(y) - cSide(x) || y.n - x.n;
+      if (bf.sort === "fmt") return x.fmt - y.fmt || cSide(y) - cSide(x);
+      if (bf.sort === "mips") return y.lv - x.lv || cSide(y) - cSide(x);
       if (bf.sort === "see") return y.z - x.z || cSide(y) - cSide(x);
       if (bf.sort === "hash") { var a = hashOf(x.key), b = hashOf(y.key); return a < b ? -1 : (a > b ? 1 : 0); }
       return tbScore(y) - tbScore(x);
@@ -2970,21 +3149,65 @@ html.cc.md .opt{padding:12px 13px}
   }
   function tbOpts(list, cur, all) { return '<option value="0"' + (!cur ? " selected" : "") + ">" + all + "</option>" + list.map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join(""); }
   function tbSel(id, cur, list) { return '<select id="' + id + '">' + list.map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select>"; }
-  function tbSig(k) { var e = libOf(k); return (grassSel[k] ? "1" : "0") + "|" + (e ? e.name + "|" + (e.set || "") : "") ; }
+  function tbSig(k) { var e = libOf(k); return (grassSel[k] ? "1" : "0") + (bsel[k] ? "s" : "n") + "|" + (e ? e.name + "|" + (e.set || "") : ""); }
+  function infoLine(c) { return (c.lv > 1 ? c.lv + " mips" : (c.lv === 1 ? "no mips" : "mips unknown")) + (c.z >= 0 ? " · " + c.z + "% see-through" : "") + (c.a >= 0 ? " · alpha avg " + c.a : ""); }
   function tbRowHtml(c) {
-    var k = c.key, hid = !!grassSel[k], e = libOf(k);
-    var sm = (c.lv > 1 ? c.lv + " mips" : (c.lv === 1 ? "no mips" : "mips unknown")) + (c.z >= 0 ? " · " + c.z + "% see-through" : "") + " · id " + hashOf(k).slice(0, 8);
-    return '<div class="tb-row' + (hid ? " hid" : "") + '" data-sz="' + cSide(c) + '" data-key="' + k + '" data-sig="' + esc(tbSig(k)) + '"><div class="tb-main"><b>' + esc(fmtName(c.fmt) + " · " + c.w + "×" + c.h) + (hid ? " · hidden" : "") + '</b><small>' + esc(sm) + '</small>' +
+    var k = c.key, hid = !!grassSel[k], e = libOf(k), sel = !!bsel[k];
+    return '<div class="tb-row' + (hid ? " hid" : "") + (sel ? " sel" : "") + '" data-sz="' + cSide(c) + '" data-key="' + k + '" data-sig="' + esc(tbSig(k)) + '">' +
+      '<button type="button" class="tw-ck" role="checkbox" aria-checked="' + (sel ? "true" : "false") + '" data-tbck="' + k + '" aria-label="Select this texture"></button>' +
+      '<div class="tb-main"><b>' + esc(fmtName(c.fmt) + " · " + c.w + "×" + c.h) + (hid ? " · hidden" : "") + '</b><small>' + esc(infoLine(c)) + '</small><small class="tb-fp">id ' + fpText(k) + '</small>' +
       (e ? '<em>In My textures: ' + esc(e.name) + (e.set ? " (set)" : "") + '</em>' : "") + '</div><div class="tb-act">' +
       '<button class="tb-sw" type="button" role="switch" data-tbsw="' + k + '" aria-checked="' + (hid ? "true" : "false") + '" aria-label="Hide this texture"></button><span class="tb-st"></span>' +
       (hid && !e ? '<button class="tb-save" type="button" data-tbsave="' + k + '">Save</button>' : "") + '</div></div>';
   }
-  var tbReady = false, tbSigHead = "";
+  var tbReady = false;
+  function tbBarHtml() {
+    return '<div class="tb-bar" id="tbBar"><p class="tb-sel" id="tbSelTxt"></p>' +
+      '<div class="sh-btns"><button type="button" data-tbb="selfilt" id="tbbSelF"></button><button type="button" data-tbb="clear" id="tbbClr">Clear selection</button></div>' +
+      '<div class="sh-btns"><button type="button" class="tw-side" data-tbb="testsel" id="tbbTestS"></button><button type="button" data-tbb="testfilt" id="tbbTestF"></button></div>' +
+      '<div class="sh-btns"><button type="button" data-tbb="hidesel" id="tbbHide"></button><button type="button" data-tbb="showsel" id="tbbShow"></button></div>' +
+      '<details class="gf-grp sf-more" id="tbSaveD"><summary><span>Save selected to My textures</span><small id="tbSaveN"></small></summary><div class="sf-in"><div class="gf-form"><div class="grid2">' +
+      '<label>Name<input type="text" id="tbSelName" maxlength="24" value="' + esc(gForm.name) + '" placeholder="for example: green grass"></label>' +
+      '<label>Group<select id="tbSelGroup">' + GROUPS.map(function (g) { return '<option value="' + g[0] + '"' + (gForm.grp === g[0] ? " selected" : "") + ">" + g[1] + "</option>"; }).join("") + '</select></label></div></div>' +
+      '<div class="grid2"><button class="btn good" type="button" data-tbb="saveset" id="tbbSaveS">Save as ONE set</button><button class="btn" type="button" data-tbb="saveeach" id="tbbSaveE">Save one by one</button></div></div></details>' +
+      '<p class="tw-msg" id="tbMsg" role="status" hidden></p></div>';
+  }
+  function tbNote(m) { toast(m); var e = $("tbMsg"); if (e) { e.textContent = m; e.hidden = false; } }
+  function tbArmSet(id) { tbArm = id; clearTimeout(tbArmT); tbArmT = setTimeout(function () { tbArm = ""; tbBarUpd(); }, 5000); tbBarUpd(); }
+  function tbSelInfo() {
+    var sel = Object.keys(bsel), inF = 0;
+    sel.forEach(function (k) { if (tbCache.keys[k]) inF++; });
+    var hid = sel.filter(function (k) { return grassSel[k]; }).length;
+    return { n: sel.length, inF: inF, hid: hid, F: tbCache.list.length, T: tbVis().length };
+  }
+  function tbBarUpd() {
+    var bar = $("tbBar"); if (!bar) return;
+    var I = tbSelInfo(), busy = !!(gst || gPend), allT = I.F === I.T && I.T > 0;
+    var txt = I.n ? I.n + " selected" + (I.n === I.inF ? " (all of them are in the current filter)" : " · " + I.inF + " in the current filter, " + (I.n - I.inF) + " outside it") : "Nothing selected. Tick the box on a texture to select it.";
+    $("tbSelTxt").textContent = txt + (busy ? " · Finish the finder test first to test, hide or show." : "");
+    function set(id, label, off) { var b = $(id); if (!b) return; b.textContent = label; b.disabled = !!off; b.classList.toggle("arm", tbArm === id); }
+    set("tbbSelF", "Select all " + I.F + " filtered", !I.F || I.F === I.inF);
+    set("tbbClr", "Clear selection", !I.n);
+    set("tbbTestS", "Test selected (" + I.n + ")", !I.n || busy);
+    set("tbbTestF", tbArm === "tbbTestF" ? "Tap again: test ALL " + I.T + " candidates" : (allT ? "Test ALL " + I.T + " candidates" : "Test all " + I.F + " filtered"), !I.F || busy);
+    set("tbbHide", tbArm === "tbbHide" ? "Tap again: hide ALL " + I.T + " candidates" : "Hide selected (" + I.n + ")", !I.n || busy);
+    set("tbbShow", "Show selected (" + I.hid + " hidden)", !I.hid || busy);
+    var sn = $("tbSaveN"); if (sn) sn.textContent = I.n + " selected";
+    var d = !I.n; ["tbbSaveS", "tbbSaveE"].forEach(function (id) { var b = $(id); if (b) b.disabled = d; });
+    var sb = $("tbbSaveS"); if (sb) sb.textContent = I.n > 1 ? "Save " + I.n + " as ONE set" : "Save this texture";
+    var se = $("tbbSaveE"); if (se) se.hidden = I.n < 2;
+    tbCountUpd();
+  }
+  function tbCountUpd() {
+    var cnt = $("tbCount"); if (!cnt) return;
+    var T = tbVis().length, F = tbCache.list.length, n = Object.keys(grassSel).length;
+    cnt.textContent = "Filter: " + F + " of " + T + " candidates · showing " + tbCache.shown + " · " + n + " / " + MAXR + " rules in use" + (gCandInfo.partial ? " · LIST INCOMPLETE (some of the log could not be read, tap Refresh list)" : "");
+  }
   function renderBrowser() {
     var box = $("tb"); if (!box) return;
-    var vis = gCand.filter(function (c) { return !guarded(c); });
+    var vis = tbVis();
     if (!vis.length) {
-      tbReady = false; tbSigHead = "";
+      tbReady = false;
       box.innerHTML = '<div class="gf-now"><b>No texture list yet</b><small>Turn logging on, play one match where you can see what you look for, then tap Refresh list.</small></div><button class="btn" id="tbRef" type="button">Refresh list</button>';
       return;
     }
@@ -2994,26 +3217,40 @@ html.cc.md .opt{padding:12px 13px}
     if (bf.side && !sd[bf.side]) bf.side = 0;
     var fl = Object.keys(fm).map(Number).sort(function (a, b) { return fm[b] - fm[a]; }).map(function (f) { return [f, fmtName(f) + " (" + fm[f] + ")"]; });
     var sl = Object.keys(sd).map(Number).sort(function (a, b) { return b - a; }).map(function (z) { return [z, z + " px (" + sd[z] + ")"]; });
-    var head = '<div class="tb-filters"><label class="gf-form" style="display:grid;gap:4px"><span style="font-size:12.5px;color:var(--mute)">Search (size, format, mips, id)</span><input type="search" id="tbQ" autocomplete="off" placeholder="for example: 512  or  ETC2 sRGBA  or  8 mips" value="' + esc(bf.q) + '"></label>' +
+    var head = '<div class="tb-filters"><label class="gf-form" style="display:grid;gap:4px"><span style="font-size:12.5px;color:var(--mute)">Search (size, format, mips, see-through, id)</span><input type="search" id="tbQ" autocomplete="off" placeholder="512 · ETC2 sRGBA · 8 mips · z&gt;50 · id:4868" value="' + esc(bf.q) + '"></label>' +
       '<div class="gf-form"><div class="grid2"><label>Format' + '<select id="tbFmt">' + tbOpts(fl, bf.fmt, "All formats") + '</select></label><label>Size' + '<select id="tbSide">' + tbOpts(sl, bf.side, "All sizes") + '</select></label></div>' +
-      '<div class="grid2"><label>Mips' + tbSel("tbMips", bf.mips, [["any", "Any"], ["yes", "With mips (3D)"], ["no", "No mips (menu)"]]) + '</label><label>See-through' + tbSel("tbSee", bf.see, [["any", "Any"], ["some", "10% or more"], ["most", "50% or more"]]) + '</label></div>' +
-      '<div class="grid2"><label>Show' + tbSel("tbShow", bf.show, [["all", "Everything"], ["hidden", "Hidden now"], ["free", "Not in My textures"]]) + '</label><label>Sort' + tbSel("tbSort", bf.sort, [["best", "Likely first"], ["size", "Biggest first"], ["see", "Most see-through"], ["hash", "By id"]]) + '</label></div></div></div>' +
-      '<p class="tb-count" id="tbCount"></p><div id="tbPanel" class="gf"></div><div id="tbList"></div><button class="btn quiet" id="tbMore" type="button" hidden></button>' +
-      '<p class="pnote">Switch ON = hidden in the game. Menu images and the scope are never listed: the module does not touch them. A new texture only shows up here after a match where it was on screen. Tap Refresh list for new ones.</p><button class="btn quiet" id="tbRef" type="button">Refresh list</button>';
+      '<div class="grid2"><label>Mips' + tbSel("tbMips", bf.mips, [["any", "Any"], ["yes", "With mips (3D)"], ["no", "No mips (menu)"]]) + '</label><label>See-through' + tbSel("tbSee", bf.see, [["any", "Any"], ["none", "None (opaque)"], ["some", "10% or more"], ["most", "50% or more"]]) + '</label></div>' +
+      '<div class="grid2"><label>Show' + tbSel("tbShow", bf.show, [["all", "Everything"], ["hidden", "Hidden now"], ["free", "Not in My textures"], ["picked", "Selected only"]]) + '</label><label>Sort' + tbSel("tbSort", bf.sort, [["best", "Likely first"], ["size", "Biggest first"], ["fmt", "By format"], ["mips", "Most mips"], ["see", "Most see-through"], ["hash", "By id"]]) + '</label></div></div></div>' +
+      tbBarHtml() + '<p class="tb-count" id="tbCount"></p><div id="tbPanel" class="gf"></div><div id="tbList"></div><button class="btn quiet" id="tbMore" type="button" hidden></button>' +
+      '<p class="pnote">Tick the box to select a texture. The switch hides just that one. A new texture only shows up here after a match where it was on screen. Menu images and the scope are never listed: the module does not touch them.</p><button class="btn quiet" id="tbRef" type="button">Refresh list</button>';
     box.innerHTML = head;
     tbReady = true;
     renderBrowserList();
   }
-  function renderBrowserList() {
-    var list = $("tbList"); if (!list) return;
-    var all = tbFiltered(), show = all.slice(0, bf.lim);
-    list.innerHTML = show.length ? show.map(tbRowHtml).join("") : '<div class="gf-now"><b>Nothing matches</b><small>Change or clear the search and the filters.</small></div>';
-    var more = $("tbMore");
-    if (more) { more.hidden = all.length <= show.length; more.textContent = "Show " + Math.min(30, all.length - show.length) + " more"; }
-    var cnt = $("tbCount");
-    if (cnt) cnt.textContent = "Showing " + show.length + " of " + all.length + " · " + gCand.filter(function (c) { return !guarded(c); }).length + " in the whole list";
-    renderBrowserSoft();
+  function tbMoreBtn() {
+    var more = $("tbMore"), all = tbCache.list;
+    if (more) { more.hidden = all.length <= tbCache.shown; more.textContent = "Show " + Math.min(TBB, all.length - tbCache.shown) + " more (" + (all.length - tbCache.shown) + " not shown)"; }
   }
+  function renderBrowserList() {                          /* the filter changed: rebuild the first batch only */
+    var list = $("tbList"); if (!list) return;
+    var all = tbFiltered(), keys = {};
+    all.forEach(function (c) { keys[c.key] = 1; });
+    tbCache = { list: all, keys: keys, shown: Math.min(TBB, all.length) };
+    list.innerHTML = all.length ? all.slice(0, tbCache.shown).map(tbRowHtml).join("") : '<div class="gf-now"><b>Nothing matches</b><small>Change or clear the search and the filters.</small></div>';
+    var m = $("tbMsg"); if (m) m.hidden = true;
+    tbMoreBtn(); tbBarUpd(); renderBrowserSoft();
+  }
+  function tbShowMore() {                                 /* add the next batch without touching the rows that are there */
+    var list = $("tbList"), a = tbCache.shown, b = Math.min(a + TBB, tbCache.list.length);
+    if (!list || b <= a) return;
+    list.insertAdjacentHTML("beforeend", tbCache.list.slice(a, b).map(tbRowHtml).join(""));
+    tbCache.shown = b; tbMoreBtn(); tbCountUpd();
+  }
+  /* v0.57: scrolling to the end of the list window loads the next batch by itself ("Show more" stays as a fallback) */
+  document.addEventListener("scroll", function (e) {
+    var el = e.target;
+    if (el && el.id === "tbList" && el.scrollTop + el.clientHeight >= el.scrollHeight - 160 && tbCache && tbCache.list && tbCache.shown < tbCache.list.length) tbShowMore();
+  }, true);
   function tbUnsaved() { return Object.keys(grassSel).filter(function (k) { return !libHas(k); }); }
   function renderBrowserSoft() {                           /* only what changed: rows keep their place while you tap */
     var tag = $("tbTag"), un = tbUnsaved();
@@ -3033,18 +3270,23 @@ html.cc.md .opt{padding:12px 13px}
     Array.prototype.slice.call(list.querySelectorAll(".tb-row")).forEach(function (el) {
       var k = el.getAttribute("data-key");
       if (el.getAttribute("data-sig") === tbSig(k)) return;
-      var c = keyInfo(k), wrap = document.createElement("div");
-      wrap.innerHTML = tbRowHtml(c);
-      if (wrap.firstChild) el.parentNode.replaceChild(wrap.firstChild, el);
+      tbRowUpd(k);
     });
+    tbBarUpd();
+  }
+  function tbRowUpd(k) {
+    var list = $("tbList"); if (!list) return;
+    var el = list.querySelector('.tb-row[data-key="' + k + '"]'); if (!el) return;
+    var wrap = document.createElement("div");
+    wrap.innerHTML = tbRowHtml(keyInfo(k));
+    if (wrap.firstChild) el.parentNode.replaceChild(wrap.firstChild, el);
   }
   function tbToggle(k) {
     if (gst) { toast("Finish or cancel the finder test first."); return; }
     if (gPend) { toast("Keep or discard the finder set first."); return; }
-    var on = !!grassSel[k];
-    if (!on && Object.keys(grassSel).length >= 60) { toast("60 textures are hidden already. Show some first."); return; }
-    if (on) delete grassSel[k]; else grassSel[k] = 1;
-    setRules(Object.keys(grassSel), gRange, on ? "Texture is back." : "Texture is hidden.");
+    var on = !!grassSel[k], keys = Object.keys(grassSel);
+    keys = on ? keys.filter(function (x) { return x !== k; }) : keys.concat([k]);
+    setRules(keys, on ? "Texture is back." : "Texture is hidden.");
   }
   function tbSave(keys, asSet) {
     var nm = libClean(gForm.name), grp = grpOk(gForm.grp);
@@ -3054,26 +3296,58 @@ html.cc.md .opt{padding:12px 13px}
       keys.forEach(function (k) { if (!libHas(k)) gLib.push({ key: k, name: name, grp: grp, set: id }); });
     } else keys.forEach(function (k, i) { libAdd(k, nm ? (keys.length > 1 ? nm + " " + (i + 1) : nm) : "", grp); });
     gOpen[grp] = true; gForm.name = "";
+    var nn = $("tbSelName"); if (nn) nn.value = "";
     writeLib(); renderGrass(); renderGroups();
     toast(keys.length > 1 && asSet ? "Saved " + keys.length + " textures as one set in My textures." : "Saved in My textures.");
   }
+  function openCardOf(id) { var e = $(id); if (!e) return; var d = e.closest ? e.closest("details") : null; if (d) d.open = true; try { e.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (er) {} }
+  function tbBarAct(a) {
+    var sel = Object.keys(bsel), I = tbSelInfo(), busy = !!(gst || gPend);
+    if (a === "selfilt") { tbCache.list.forEach(function (c) { bsel[c.key] = 1; }); renderBrowserSoft(); tbNote("Selected all " + tbCache.list.length + " filtered textures. " + Object.keys(bsel).length + " selected in total."); return; }
+    if (a === "clear") { bsel = {}; renderBrowserSoft(); return; }
+    if (a === "saveset" || a === "saveeach") { tbSave(sel, a === "saveset"); return; }
+    if (busy) { tbNote("Finish or cancel the finder test first."); return; }
+    if (a === "testsel") {
+      var skip = sel.filter(function (k) { return grassSel[k]; }).length;
+      if (gStartKeys(sel)) { tbNote("Test started with " + (sel.length - skip) + " texture" + (sel.length - skip === 1 ? "" : "s") + (skip ? " (" + skip + " selected are hidden already and were left out)" : "") + ". Go to Texture hider, tap Save, look in the game, then answer."); openCardOf("grassCard"); }
+      return;
+    }
+    if (a === "testfilt") {
+      if (I.F === I.T && I.T > 0 && tbArm !== "tbbTestF") { tbArmSet("tbbTestF"); tbNote("This is EVERY candidate (" + I.T + "), not only the rows you see. Tap the button again to test all of them."); return; }
+      tbArm = ""; var keys = tbCache.list.map(function (c) { return c.key; });
+      if (gStartKeys(keys)) { tbNote("Test started with all " + keys.length + " filtered textures. Go to Texture hider, tap Save, look in the game, then answer."); openCardOf("grassCard"); }
+      return;
+    }
+    if (a === "hidesel") {
+      if (I.n === I.T && I.T > 0 && tbArm !== "tbbHide") { tbArmSet("tbbHide"); tbNote("This hides EVERY candidate (" + I.T + "). Tap the button again to do it. Show selected brings them back."); return; }
+      tbArm = "";
+      setRules(Object.keys(grassSel).concat(sel), sel.length + " textures hidden.");
+      return;
+    }
+    if (a === "showsel") {
+      var set = {}; sel.forEach(function (k) { set[k] = 1; });
+      setRules(Object.keys(grassSel).filter(function (k) { return !set[k]; }), "Selected textures are back.");
+    }
+  }
   function tbClick(e) {
     var t = e.target.closest ? e.target.closest("button") : null; if (!t || t.disabled) return;
-    var sw = t.getAttribute("data-tbsw"), sv = t.getAttribute("data-tbsave");
+    var sw = t.getAttribute("data-tbsw"), sv = t.getAttribute("data-tbsave"), ck = t.getAttribute("data-tbck"), bb = t.getAttribute("data-tbb");
+    if (ck) { if (bsel[ck]) delete bsel[ck]; else bsel[ck] = 1; tbRowUpd(ck); tbBarUpd(); return; }
+    if (bb) { tbBarAct(bb); return; }
     if (sw) { tbToggle(sw); return; }
     if (sv) { tbSave([sv], false); return; }
     if (t.id === "tbSaveSet") { if (gst || gPend) { toast("Finish the finder test first."); return; } var u = tbUnsaved(); tbSave(u, true); }
     else if (t.id === "tbSaveEach") { if (gst || gPend) { toast("Finish the finder test first."); return; } tbSave(tbUnsaved(), false); }
-    else if (t.id === "tbShowAll") { var un = tbUnsaved(); un.forEach(function (k) { delete grassSel[k]; }); setRules(Object.keys(grassSel), gRange, "Textures are back."); }
-    else if (t.id === "tbMore") { bf.lim += 30; renderBrowserList(); }
-    else if (t.id === "tbRef") refresh().then(function () { toast("List refreshed."); });
+    else if (t.id === "tbShowAll") { var un = tbUnsaved(), us = {}; un.forEach(function (k) { us[k] = 1; }); setRules(Object.keys(grassSel).filter(function (k) { return !us[k]; }), "Textures are back."); }
+    else if (t.id === "tbMore") tbShowMore();
+    else if (t.id === "tbRef") { t.disabled = true; t.textContent = "Loading the list…"; refresh().then(function () { toast("List refreshed."); }); }
   }
   function tbChange(e) {
     var el = e.target; if (!el || !el.id) return;
-    if (el.id === "tbName") { gForm.name = libClean(el.value); return; }
-    if (el.id === "tbGroup") { gForm.grp = grpOk(el.value); return; }
+    if (el.id === "tbName" || el.id === "tbSelName") { gForm.name = libClean(el.value); return; }
+    if (el.id === "tbGroup" || el.id === "tbSelGroup") { gForm.grp = grpOk(el.value); return; }
     var map = { tbFmt: ["fmt", true], tbSide: ["side", true], tbMips: ["mips"], tbSee: ["see"], tbShow: ["show"], tbSort: ["sort"] };
-    if (map[el.id]) { bf[map[el.id][0]] = map[el.id][1] ? (+el.value || 0) : el.value; bf.lim = 30; bfKeep(); renderBrowserList(); }
+    if (map[el.id]) { bf[map[el.id][0]] = map[el.id][1] ? (+el.value || 0) : el.value; bfKeep(); renderBrowserList(); }
   }
   (function () {
     var el = $("tb"); if (!el) return;
@@ -3082,8 +3356,8 @@ html.cc.md .opt{padding:12px 13px}
     var tm = 0;
     el.addEventListener("input", function (e) {
       var x = e.target; if (!x) return;
-      if (x.id === "tbName") gForm.name = libClean(x.value);
-      else if (x.id === "tbQ") { bf.q = x.value; bf.lim = 30; clearTimeout(tm); tm = setTimeout(renderBrowserList, 180); }
+      if (x.id === "tbName" || x.id === "tbSelName") gForm.name = libClean(x.value);
+      else if (x.id === "tbQ") { bf.q = x.value; clearTimeout(tm); tm = setTimeout(renderBrowserList, 180); }
     });
   })();
 
@@ -3124,20 +3398,47 @@ html.cc.md .opt{padding:12px 13px}
 
   /* ---------- window for the textures of the running test (v0.55): tap the red box ----------
      Lists every texture that is switched off by the test. Pick some, bring single ones back, or save the picked ones (as one set or one by one).
-     Switching one on / off or saving ends the test: the finder range turns into one exact rule per texture (max 60 in total). */
+     Switching one on / off or saving ends the test: the test list turns into normal exact rules, one per texture (v0.57: up to 4096 in total). */
   var tw = null, twOv = null;
   function twSel() { return tw ? tw.keys.filter(function (k) { return tw.sel[k]; }) : []; }
   function twHidden(k) { return tw.manual ? !!grassSel[k] : true; }
   function twFiltered() {
     var toks = tw.q.toLowerCase().replace(/,/g, " ").split(/\s+/).filter(Boolean);
-    return tw.keys.filter(function (k) { return tbMatch(keyInfo(k), toks); });
+    var f = tw.f;
+    return tw.keys.filter(function (k) {
+      var c = keyInfo(k);
+      if (f.fmt && c.fmt !== f.fmt) return false;
+      if (f.side && cSide(c) !== f.side) return false;
+      if (f.mips === "yes" && !(c.lv >= 2)) return false;
+      if (f.mips === "no" && c.lv !== 1) return false;
+      if (f.see === "none" && c.z !== 0) return false;
+      if (f.see === "some" && !(c.z >= 10)) return false;
+      if (f.see === "most" && !(c.z >= 50)) return false;
+      return tbMatch(c, toks);
+    });
   }
+  function twNote(m) {                                    /* the toast is behind this window on some phones, so the message is also shown inside it */
+    toast(m);
+    var e = twOv && twOv.querySelector("#twMsg"); if (e) { e.textContent = m; e.hidden = false; }
+  }
+  function twSideKeys() { var ks = twSel(); return ks.length ? ks : (twFiltersOn() ? twFiltered() : []); }
+  function twSide() {
+    if (!gst || gPend || tw.manual) { twNote("A side test only works while the finder test is running."); return; }
+    var ks = twSideKeys();
+    if (!ks.length) { twNote("Tick some textures, or use the search and filters first."); return; }
+    if (ks.length === tw.keys.length) { twNote("That is every texture of this test. Filter or tick fewer."); return; }
+    if (uniq(gst.keep.concat(ks)).length > MAXR) { ruleLimitNote(uniq(gst.keep.concat(ks)).length); return; }
+    gst.sub = { keys: ks.slice() };
+    twClose();
+    gApplySub("Side test is ready: only " + ks.length + " texture" + (ks.length === 1 ? " is" : "s are") + " off.");
+  }
+  function twFiltersOn() { var f = tw.f; return !!(tw.q.trim() || f.fmt || f.side || f.mips !== "any" || f.see !== "any"); }
   function twRowHtml(k) {
     var c = keyInfo(k), hid = twHidden(k), sel = !!tw.sel[k], e = libOf(k);
-    var sm = (c.lv > 1 ? c.lv + " mips" : (c.lv === 1 ? "no mips" : "mips unknown")) + (c.z >= 0 ? " · " + c.z + "% see-through" : "") + " · id " + hashOf(k).slice(0, 8);
+    var sm = infoLine(c);
     return '<div class="tb-row tw-row' + (hid ? " hid" : "") + (sel ? " sel" : "") + '" data-sz="' + cSide(c) + '" data-k="' + k + '">' +
       '<button type="button" class="tw-ck" role="checkbox" aria-checked="' + (sel ? "true" : "false") + '" data-twck="' + k + '" aria-label="Select this texture"></button>' +
-      '<div class="tb-main"><b>' + esc(fmtName(c.fmt) + " · " + c.w + "×" + c.h) + (hid ? " · hidden" : "") + '</b><small>' + esc(sm) + '</small>' + (e ? '<em>In My textures: ' + esc(e.name) + '</em>' : "") + '</div>' +
+      '<div class="tb-main"><b>' + esc(fmtName(c.fmt) + " · " + c.w + "×" + c.h) + '</b><small><span>' + esc(sm) + '</span><span class="tw-id">' + hashOf(k).slice(0, 8) + '…' + hashOf(k).slice(-4) + '</span></small>' + (e ? '<em>In My textures: ' + esc(e.name) + '</em>' : "") + '</div>' +
       '<div class="tb-act"><button class="tb-sw" type="button" role="switch" data-twsw="' + k + '" aria-checked="' + (hid ? "true" : "false") + '" aria-label="Hide this texture"></button><span class="tb-st"></span></div></div>';
   }
   function twStatus() {
@@ -3145,15 +3446,23 @@ html.cc.md .opt{padding:12px 13px}
     var n = twSel().length, sub = twOv.querySelector("#twSub"), cnt = twOv.querySelector("#twCnt");
     if (sub) sub.textContent = tw.manual
       ? "The test has ended. Each switch works right away (ON = hidden). Tap Save at the bottom of the app to try it in the game."
-      : "All " + tw.keys.length + " are hidden by the test now. Tick the ones you want to keep hidden, then tap Switch OFF all except ticked: only those stay hidden, so you can test if they work alone or only as a group. A switch, Save or these buttons end the test.";
-    if (cnt) cnt.textContent = "Ticked " + n + " of " + tw.keys.length;
+      : (gst && gst.sub ? "Side test: only these " + tw.keys.length + " are hidden. Filter or tick some and tap Side test again to narrow more, or close this window and answer."
+        : "All " + tw.keys.length + " are hidden by the test. Filter or tick some, then tap Side test to try only those first. A switch, Save, ON all or OFF all end the whole test.");
+    var shown = twFiltered().length;
+    if (cnt) cnt.textContent = "Showing " + shown + " of " + tw.keys.length + " · ticked " + n;
+    var sb = twOv.querySelector('[data-tw="side"]');
+    if (sb) {
+      var sk = twSideKeys(), can = !tw.manual && !!gst && !gPend && sk.length > 0 && sk.length < tw.keys.length;
+      sb.disabled = !can;
+      sb.textContent = !tw.manual && gst ? (sk.length ? "Side test: only the " + sk.length + (n ? " ticked" : " shown") : "Side test: filter or tick first") : "Side test (finder test has ended)";
+    }
     Array.prototype.forEach.call(twOv.querySelectorAll("[data-twact]"), function (b) { b.disabled = !n; });
-    var offb = twOv.querySelector('[data-tw="off"]'); if (offb) offb.textContent = n ? "Switch OFF all except ticked" : "Switch OFF all";
   }
   function twRender() {
     if (!twOv || !tw) return;
+    var mg = twOv.querySelector("#twMsg"); if (mg) mg.hidden = true;
     var list = twOv.querySelector("#twList"), top = list.scrollTop, all = twFiltered(), show = all.slice(0, tw.lim);
-    list.innerHTML = (show.length ? show.map(twRowHtml).join("") : '<div class="gf-now"><b>Nothing matches</b><small>Clear the search.</small></div>') +
+    list.innerHTML = (show.length ? show.map(twRowHtml).join("") : '<div class="gf-now"><b>Nothing matches</b><small>Change the search or the filters.</small></div>') +
       (all.length > show.length ? '<button type="button" class="btn quiet" data-tw="more">Show ' + Math.min(40, all.length - show.length) + ' more</button>' : "");
     list.scrollTop = top;
     twStatus();
@@ -3172,11 +3481,10 @@ html.cc.md .opt{padding:12px 13px}
     setTimeout(function () { if (o.parentNode) o.parentNode.removeChild(o); }, 200);
   }
   function twToHide(hide, msg) {                          /* end the test: hide exactly these (plus what was hidden before the test) */
-    var all = {}; tw.keep.concat(hide).forEach(function (k) { all[k] = 1; });
-    var arr = Object.keys(all);
-    if (arr.length > 60) { toast("Only 60 textures can be hidden one by one. Tick fewer."); return false; }
+    var arr = uniq(tw.keep.concat(hide));
+    if (arr.length > MAXR) { ruleLimitNote(arr.length); return false; }
     gst = null; gPend = null; gNote = ""; gSave(); gPendSave(); tw.manual = true;
-    setRules(arr, "", msg);
+    setRules(arr, msg);
     return true;
   }
   function twToggle(k) {
@@ -3185,39 +3493,48 @@ html.cc.md .opt{padding:12px 13px}
       if (twToHide(rest, "Test ended. That texture is back.")) twRender();
       return;
     }
-    var on = !!grassSel[k];
-    if (!on && Object.keys(grassSel).length >= 60) { toast("60 textures are hidden already. Show some first."); return; }
-    if (on) delete grassSel[k]; else grassSel[k] = 1;
-    setRules(Object.keys(grassSel), "", on ? "Texture is back." : "Texture is hidden.");
+    var on = !!grassSel[k], keys = Object.keys(grassSel);
+    keys = on ? keys.filter(function (x) { return x !== k; }) : keys.concat([k]);
+    if (keys.length > MAXR) { ruleLimitNote(keys.length); return; }
+    setRules(keys, on ? "Texture is back." : "Texture is hidden.");
     twRowUpd(k);
   }
   function twSave(asSet) {
     var keys = twSel();
-    if (!keys.length) { toast("Tick the textures first (the box on the left)."); return; }
+    if (!keys.length) { twNote("Tick the textures first (the box on the left)."); return; }
     var base = tw.manual ? Object.keys(grassSel) : tw.keep.slice();
     keys.forEach(function (k) { if (base.indexOf(k) < 0) base.push(k); });
-    if (base.length > 60) { toast("Only 60 textures can be hidden one by one. Tick fewer."); return; }
+    if (uniq(base).length > MAXR) { ruleLimitNote(uniq(base).length); return; }
     gst = null; gPend = null; gNote = ""; gSave(); gPendSave(); tw.manual = true;
-    setRules(base, "", "Saved " + keys.length + " in My textures.");
+    setRules(base, "Saved " + keys.length + " in My textures.");
     tbSave(keys, asSet);
     var nm = twOv && twOv.querySelector("#twName"); if (nm) nm.value = "";
     twRender();
   }
   function twOpen() {
     var keys, keep;
-    if (gst) { keys = gst.U.slice(gst.ta, gst.tb); keep = gst.keep.slice(); }
+    if (gst) { keys = gst.sub ? gst.sub.keys.slice() : gst.U.slice(gst.ta, gst.tb); keep = gst.keep.slice(); }
     else if (gPend) { keys = gPend.U.slice(); keep = gPend.keep.slice(); }
     else return;
     twClose();
-    tw = { keys: keys, keep: keep, sel: {}, q: "", lim: 40, manual: false };
+    tw = { keys: keys, keep: keep, sel: {}, q: "", lim: 40, manual: false, f: { fmt: 0, side: 0, mips: "any", see: "any" } };
+    var fc = {}, sc = {};
+    keys.forEach(function (k) { var c = keyInfo(k); fc[c.fmt] = (fc[c.fmt] || 0) + 1; sc[cSide(c)] = (sc[cSide(c)] || 0) + 1; });
+    var fOpts = '<option value="0">All formats</option>' + Object.keys(fc).sort(function (a, b) { return fc[b] - fc[a]; }).map(function (f) { return '<option value="' + f + '">' + esc(fmtName(+f)) + " (" + fc[f] + ")</option>"; }).join("");
+    var sOpts = '<option value="0">All sizes</option>' + Object.keys(sc).map(Number).sort(function (a, b) { return b - a; }).map(function (z) { return '<option value="' + z + '">' + z + " px (" + sc[z] + ")</option>"; }).join("");
     var ov = document.createElement("div"); ov.className = "sh-ov"; ov.id = "twOv";
     ov.innerHTML = '<div class="sh" role="dialog" aria-modal="true" aria-label="Textures in this test"><div class="sh-grab"></div>' +
       '<div class="sh-h"><b>Textures in this test</b><button type="button" class="sh-x" data-tw="close" aria-label="Close">Close</button></div>' +
       '<p class="sh-s" id="twSub"></p>' +
-      '<div class="sh-tools"><input type="search" id="twQ" autocomplete="off" placeholder="Search: 512, ETC2 sRGBA, 8 mips, id"><div class="sh-btns"><button type="button" data-tw="all">Tick all</button><button type="button" data-tw="none">Clear ticks</button></div><div class="sh-btns"><button type="button" data-tw="on">Switch ON all</button><button type="button" data-tw="off">Switch OFF all except ticked</button></div></div>' +
-      '<p class="tb-count" id="twCnt"></p><div class="sh-list" id="twList"></div>' +
-      '<div class="sh-foot"><div class="gf-form"><div class="grid2"><label>Name<input type="text" id="twName" maxlength="24" value="' + esc(gForm.name) + '" placeholder="for example: green grass"></label>' +
-      '<label>Group<select id="twGroup">' + GROUPS.map(function (g) { return '<option value="' + g[0] + '"' + (gForm.grp === g[0] ? " selected" : "") + '>' + g[1] + '</option>'; }).join("") + '</select></label></div></div>' +
+      '<div class="sh-tools"><input type="search" id="twQ" autocomplete="off" placeholder="Search: 512, ETC2 sRGBA, 8 mips, id">' +
+      '<div class="tw-fl"><select id="twFmt" aria-label="Format">' + fOpts + '</select><select id="twSide" aria-label="Size">' + sOpts + '</select>' +
+      '<select id="twMips" aria-label="Mips"><option value="any">Any mips</option><option value="yes">With mips</option><option value="no">No mips</option></select>' +
+      '<select id="twSee" aria-label="See-through"><option value="any">Any see-through</option><option value="none">None (opaque)</option><option value="some">10% or more</option><option value="most">50% or more</option></select></div>' +
+      '<div class="sh-btns"><button type="button" data-tw="all">Tick all</button><button type="button" data-tw="none">Untick</button><button type="button" data-tw="on">ON all</button><button type="button" data-tw="off">OFF all</button></div>' +
+      '<div class="sh-btns"><button type="button" class="tw-side" data-tw="side">Side test</button></div></div>' +
+      '<p class="tb-count" id="twCnt"></p><p class="tw-msg" id="twMsg" role="status" hidden></p><div class="sh-list" id="twList"></div>' +
+      '<div class="sh-foot"><div class="gf-form"><div class="grid2"><label>Name<input type="text" id="twName" aria-label="Name" maxlength="24" value="' + esc(gForm.name) + '" placeholder="for example: green grass"></label>' +
+      '<label>Group<select id="twGroup" aria-label="Group">' + GROUPS.map(function (g) { return '<option value="' + g[0] + '"' + (gForm.grp === g[0] ? " selected" : "") + '>' + g[1] + '</option>'; }).join("") + '</select></label></div></div>' +
       '<div class="grid2"><button type="button" class="btn good" data-twact="set">Save as ONE set</button><button type="button" class="btn" data-twact="each">Save one by one</button></div></div></div>';
     ov.addEventListener("click", function (e) {
       if (e.target === ov) { twClose(); return; }
@@ -3232,14 +3549,22 @@ html.cc.md .opt{padding:12px 13px}
       else if (act === "set") twSave(true);
       else if (act === "each") twSave(false);
       else if (a === "on") { if (twToHide(tw.keys.slice(), "All textures are switched on.")) twRender(); }
-      else if (a === "off") { var ks = twSel(); if (twToHide(ks, ks.length ? "Everything is off except the ticked textures." : "All textures are switched off.")) twRender(); }
+      else if (a === "side") twSide();
+      else if (a === "off") { if (twToHide([], "All textures of the test are shown again.")) twRender(); }
     });
     ov.addEventListener("input", function (e) {
       var x = e.target; if (!x || !tw) return;
       if (x.id === "twQ") { tw.q = x.value; tw.lim = 40; twRender(); }
       else if (x.id === "twName") gForm.name = libClean(x.value);
     });
-    ov.addEventListener("change", function (e) { if (e.target && e.target.id === "twGroup") gForm.grp = grpOk(e.target.value); });
+    ov.addEventListener("change", function (e) {
+      var x = e.target; if (!x || !tw) return;
+      if (x.id === "twGroup") gForm.grp = grpOk(x.value);
+      else if (x.id === "twFmt") { tw.f.fmt = +x.value || 0; tw.lim = 40; twRender(); }
+      else if (x.id === "twSide") { tw.f.side = +x.value || 0; tw.lim = 40; twRender(); }
+      else if (x.id === "twMips") { tw.f.mips = x.value; tw.lim = 40; twRender(); }
+      else if (x.id === "twSee") { tw.f.see = x.value; tw.lim = 40; twRender(); }
+    });
     document.body.appendChild(ov); twOv = ov; document.body.style.overflow = "hidden";
     twRender();
     requestAnimationFrame(function () { ov.classList.add("on"); });
@@ -3723,7 +4048,7 @@ html.cc.md .opt{padding:12px 13px}
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.55.5'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.57'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -3747,7 +4072,7 @@ html.cc.md .opt{padding:12px 13px}
       "echo '== crash log (only CODM-related lines; other apps crashing, e.g. e.android:clean / android:channel, are hidden)'; C=$(timeout 8 logcat -b crash -d -t 400 2>&1); echo \"$C\" | grep -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | tail -n 80; echo \"(hidden non-CODM crash lines: $(echo \"$C\" | grep -v -i -E 'garena|codm|libunity|codm_tex|anogs|tersafe' | grep -c .))\"; " +
       "echo '== logcat'; timeout 10 logcat -d -t 6000 2>/dev/null | grep -i -E 'garena|codm|libunity|zygisk|lsplt|FATAL|SIGSEGV|SIGABRT|tombstone|anogs|tersafe|lmkd' | tail -n 80; " +
       "echo '== tombstone'; T=$(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 40 | while read f; do grep -q -s $P \"$f\" && { echo \"$f\"; break; }; done); echo \"newest tombstone of any app: $(ls -t /data/tombstones/tombstone_* 2>/dev/null | head -n 1)\"; if [ -n \"$T\" ]; then echo \"$T\"; echo \"tombstone_time=$(date -r \"$T\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || stat -c %y \"$T\" 2>/dev/null | cut -c1-19)\"; [ -n \"$(find \"$T\" -mmin +1440 2>/dev/null)\" ] && echo 'STALE: older than 24 h, NOT from the last session; do not treat as the current crash'; head -n 70 \"$T\"; else echo none; fi; " +
-      "echo '== process / exit reason (v0.55.4)'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
+      "echo '== process / exit reason'; echo \"pid_now=$(pidof $P)\"; timeout 8 dumpsys activity exit-info $P 2>&1 | head -n 40; echo '-- death events'; timeout 8 logcat -b events -d -t 4000 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr' | grep -i -E 'codm|garena' | tail -n 10; timeout 8 logcat -b system,main -d -t 8000 2>/dev/null | grep -E 'lmkd|has died|Killing' | grep -i -E 'codm|garena' | tail -n 10; " +
       "echo '== mount ns'; readlink /proc/self/ns/mnt /proc/1/ns/mnt 2>&1";
   }
 
@@ -3880,7 +4205,7 @@ html.cc.md .opt{padding:12px 13px}
     KEYS.forEach(function (k) { if (k !== "mode" && cur[k] !== base[k]) { map[k] = base[k]; n++; } });
     blOff = Object.assign({}, baseBlOff);
     blDel = Object.assign({}, baseBlDel);
-    grassSel = Object.assign({}, baseGrass); gRange = baseRange;
+    grassSel = Object.assign({}, baseGrass);
     var p = n ? writeFiles(map) : Promise.resolve({ ok: true });
     p.then(function () { return writeSkip(baseSkipLines); })
      .then(function () { return writeBl(); })
@@ -4108,7 +4433,7 @@ html.cc.md .opt{padding:12px 13px}
       customSkips = [];
       skipMeta = { groups: [], member: {} }; saveMeta();
       syncSkipSet();
-      blOff = {}; blDel = {}; grassSel = {}; gRange = "";
+      blOff = {}; blDel = {}; grassSel = {};
       return writeSkip().then(writeBl).then(writeGrass);
     }).then(refresh);
   });
