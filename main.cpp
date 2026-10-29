@@ -49,7 +49,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.58"
+#define VERSION "v0.67"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -98,6 +98,7 @@ static void set_dir(const char *app_data_dir) {
 #define TTSMF P("ttsm.txt")
 #define ALPHAF P("alpha.txt")       /* v0.44: 1 = alpha-channel textures (smoke, dust, muzzle flash, leaves) keep their soft edge (default 1) */
 #define GRASSF P("grass.txt")       /* v0.45: "format width height hash" lines; that one texture is uploaded fully transparent (Remove grass) */
+#define ORIGF P("orig.txt")         /* v0.61: "format width height hash" lines; that one texture is left as the game made it (Restore original) */
 #define HDLYF P("hookdelay.txt")
 #define FGLF P("forcegl.txt")       /* v0.41: 1 = force OpenGL ES: Vulkan is hidden from libunity so Unity falls back to GLES (default 1) */
 #define HSAFEF P("hooksafe.txt")      /* v0.40: 1 = hooks skipped (the previous launch died while hooking); the WebUI resets it to 0 */
@@ -258,8 +259,13 @@ static const GLuint MAXTEX = 1u << 18;
 static std::atomic<uint8_t> g_tf[1u << 18];        /* 1 = NEAREST filtering is forced on this texture */
 static std::atomic<uint8_t> g_lv[1u << 18];        /* v0.46: mip levels of a texture made with glTexStorage2D (0 = unknown); UI textures have 1, 3D textures have many */
 static std::atomic<uint8_t> g_blank[1u << 18];     /* v0.44: 1 = uploads to this texture id are replaced with transparent blocks (Remove grass) */
+static std::atomic<uint8_t> g_tr[1u << 18];        /* v0.61: 1 = this module changed the texture parameters of this texture (filters / base level / min LOD) */
+static std::atomic<uint16_t> g_omin[1u << 18];     /* v0.61: MIN filter the GAME set (0 = never set: GL default). Only recorded while orig.txt has rules. */
+static std::atomic<uint16_t> g_omag[1u << 18];     /* v0.61: MAG filter the GAME set (0 = never set: GL default) */
+static std::atomic<int> g_orig_on{0};              /* v0.61: orig.txt has at least one rule */
 static thread_local GLuint tl_bound[32];
 static thread_local int tl_unit = 0;
+static inline void tr_mark() { GLuint id = tl_bound[tl_unit]; if (id > 0 && id < MAXTEX) g_tr[id] = 1; }   /* v0.61: this module changed this texture's parameters */
 
 static void (*o_act)(GLenum) = nullptr;
 static void h_act(GLenum u) {
@@ -279,7 +285,7 @@ static void (*o_del)(GLsizei, const GLuint *) = nullptr;
 static void h_del(GLsizei n, const GLuint *ids) {
     if (ids) {
         for (GLsizei i = 0; i < n; i++) {
-            if (ids[i] < MAXTEX) { g_tf[ids[i]] = 0; g_blank[ids[i]] = 0; g_lv[ids[i]] = 0; }
+            if (ids[i] < MAXTEX) { g_tf[ids[i]] = 0; g_blank[ids[i]] = 0; g_lv[ids[i]] = 0; g_tr[ids[i]] = 0; g_omin[ids[i]] = 0; g_omag[ids[i]] = 0; }
             defer_drop(ids[i]);
             for (int u = 0; u < 32; u++) if (tl_bound[u] == ids[i]) tl_bound[u] = 0;
         }
@@ -326,6 +332,9 @@ static void h_tp(GLenum t, GLenum p, GLint v) {
     if ((st > 0 || fl > 0 || tt > 0) && p == TEX_ANISO && v > 1) v = 1;
     if (t == GL_TEXTURE_2D && (p == GL_TEXTURE_MIN_FILTER || p == GL_TEXTURE_MAG_FILTER)) {
         GLuint id = tl_bound[tl_unit];
+        if (g_orig_on.load() && id > 0 && id < MAXTEX && v >= 0 && v <= 0xFFFF) {    /* v0.61: remember what the GAME asked for, before any override below */
+            if (p == GL_TEXTURE_MIN_FILTER) g_omin[id] = (uint16_t)v; else g_omag[id] = (uint16_t)v;
+        }
         if (id > 0 && id < MAXTEX && g_tf[id].load()) {
             if (tt > 0) {
                 /* True Pixelated: sharp texels, keep the full-resolution mip chain */
@@ -477,7 +486,7 @@ static std::atomic<int> g_alpha_kept{0}, g_grass_n{0}, g_grass_guard{0}, g_grass
 static std::atomic<int> g_grass_cand{0}, g_grass_early{0}, g_grass_early_fix{0};
 
 static inline bool fmt_alpha(GLenum f) { return f >= 0x9276 && f <= 0x9279; }   /* ETC2 punch-through (+sRGB), ETC2 EAC RGBA (+sRGB) */
-static inline bool tex_track() { return g_near.load() || g_style.load() || g_flat.load() || g_testtex.load() || g_grass_on.load(); }
+static inline bool tex_track() { return g_near.load() || g_style.load() || g_flat.load() || g_testtex.load() || g_grass_on.load() || g_orig_on.load(); }
 
 /* One fully transparent block for the format; returns its size in bytes, 0 = this format cannot be made transparent. */
 static int blank_block(GLenum f, uint8_t *out) {
@@ -577,6 +586,35 @@ static bool grass_rule_match(int fmt, int w, int h, uint64_t hash) {
     auto it = std::lower_bound(g_grass.begin(), g_grass.end(), key, grass_rule_less);
     return it != g_grass.end() && it->fmt == fmt && it->w == w && it->h == h && it->hash == hash;
 }
+/* v0.61 Restore original: orig.txt = the RESTORE list, same exact "format width height hash" lines, same parser, its own limit of
+   ORIG_MAX_RULES unique rules. A texture in this list is never blanked and never treated by this module (the Hide list wins if a key is in both). */
+#define ORIG_MAX_RULES 4096
+static std::vector<GrRule> g_orig;                   /* orig.txt, read once at startup, sorted like g_grass */
+static int g_orig_over = 0, g_orig_dups = 0, g_orig_bad = 0, g_orig_range_old = 0;
+static std::atomic<int> g_orig_n{0}, g_orig_fix{0}, g_orig_conflict{0};
+static bool orig_rule_match(int fmt, int w, int h, uint64_t hash) {
+    const GrRule key{fmt, w, h, hash};
+    auto it = std::lower_bound(g_orig.begin(), g_orig.end(), key, grass_rule_less);
+    return it != g_orig.end() && it->fmt == fmt && it->w == w && it->h == h && it->hash == hash;
+}
+/* The texture is bound (this runs inside its level-0 upload). Put back what this module changed: the filters the game asked for (GL defaults when
+   it never asked), base level 0, no max level, no min LOD. No texture data is read or written here. Only done when this module changed this texture. */
+static void restore_texture(GLuint id, GLenum f, int w, int h, uint64_t hh) {
+    int c = ++g_orig_n; st_seti("orig_n", c);
+    bool was = id > 0 && id < MAXTEX && g_tr[id].load() != 0;
+    if (id > 0 && id < MAXTEX) g_tf[id] = 0;
+    if (was && real_tp) {
+        uint16_t mn = g_omin[id].load(), mg = g_omag[id].load();
+        real_tp(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mn ? (GLint)mn : 0x2702 /* GL default NEAREST_MIPMAP_LINEAR */);
+        real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mg ? (GLint)mg : 0x2601 /* GL default LINEAR */);
+        real_tp(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+        real_tp(GL_TEXTURE_2D, TEX_MAX_LEVEL, 1000);
+        real_tp(GL_TEXTURE_2D, TEX_MIN_LOD, -1000);
+        g_tr[id] = 0;
+        int k = ++g_orig_fix; st_seti("orig_fix", k);
+    }
+    if (c <= 40) L("ORIG kept #%d fmt=0x%x %dx%d h=%016llx tex=%u%s\n", c, (unsigned)f, w, h, (unsigned long long)hh, (unsigned)id, was ? " (parameters put back)" : "");
+}
 /* true when the current GL_PIXEL_UNPACK_BUFFER binding is non-zero (then the data pointer is an offset, never read it) */
 static void (*g_giv_hook)(GLenum, GLint *) = nullptr;     /* host tests only */
 static bool unpack_pbo_bound() {
@@ -590,19 +628,43 @@ static bool unpack_pbo_bound() {
 static std::mutex g_cmu;
 static uint64_t g_cseen[4096];
 static int g_cseen_n = 0;
+static uint64_t g_rseen[4096];          /* v0.65: Restore finder candidates include every compressed format tex_post may alter */
+static int g_rseen_n = 0;
 /* Level-0 upload of a compressed texture: write it to the log once (finder list) and decide whether this texture is blanked.
    g_blank[id]: 0 = not decided yet, 1 = blank every upload, 2 = checked, leave it. */
 /* returns 0 = nothing to do, 1 = this texture is now blanked, 2 = blanked AND mip levels reached the GPU before level 0 did */
 static int grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p) {
-    if (!p || n < 16 || n > (8 << 20) || std::max(w, h) < 64) return 0;
-    uint8_t blk[16];
-    int bs = blank_block(f, blk);
-    if (!bs || (n % bs)) return 0;
+    if (!p || n < 16 || n > (8 << 20) || std::max(w, h) < 64 || !is_cmp(f)) return 0;
+    /* Both finders need the fingerprint. A PBO data argument is an offset, never a CPU pointer. */
     if (unpack_pbo_bound()) {
-        if (g_grass_on.load()) { int c = ++g_grass_pbo; if (c == 1) L("GRASS cannot read an upload that comes from a pixel buffer\n"); st_seti("grass_pbo", c); }
+        int c = ++g_grass_pbo; if (c == 1) L("TEXTURE finder cannot fingerprint an upload from a pixel buffer\n"); st_seti("grass_pbo", c);
         return 0;
     }
     uint64_t hh = tex_hash(p, n);
+    int levels = (id > 0 && id < MAXTEX) ? (int)g_lv[id].load() : 0;
+    /* v0.65: RESTORECAND is intentionally broader than GRASSCAND. Restore original can undo
+       tex_post's per-texture sampling/mip changes for ETC2 RGB formats too, even though those
+       formats cannot be made transparent by the Hide feature. Only list textures with a known
+       mip chain that tex_post itself could process. */
+    if (id > 0 && id < MAXTEX && levels >= 3) {
+        bool rfresh = false;
+        {
+            std::lock_guard<std::mutex> lk(g_cmu);
+            uint64_t key = hh ^ ((uint64_t)(uint32_t)f << 40) ^ ((uint64_t)(uint32_t)w << 20) ^ (uint64_t)(uint32_t)h;
+            bool seen = false;
+            for (int i = 0, e = std::min(g_rseen_n, 4096); i < e; i++) if (g_rseen[i] == key) { seen = true; break; }
+            if (!seen && g_rseen_n < 4096) { g_rseen[g_rseen_n++] = key; rfresh = true; }
+            else if (!seen && g_rseen_n == 4096) { g_rseen_n++; L("RESTORECAND list is full (4096 textures): later ones are not listed\n"); }
+        }
+        if (rfresh) {
+            int mean, zero; eac_stats(f, p, n, &mean, &zero);
+            L("RESTORECAND fmt=%d w=%d h=%d n=%d h=%016llx a=%d z=%d lv=%d\n", (int)f, w, h, n, (unsigned long long)hh, mean, zero, levels);
+        }
+    }
+    /* Hide needs a transparent replacement block. Keep its existing candidate list unchanged. */
+    uint8_t blk[16];
+    int bs = blank_block(f, blk);
+    if (!bs || (n % bs)) return 0;
     bool fresh = false;
     {
         std::lock_guard<std::mutex> lk(g_cmu);
@@ -615,11 +677,12 @@ static int grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p)
     if (fresh) {
         int mean, zero; eac_stats(f, p, n, &mean, &zero);
         int c = ++g_grass_cand; if (c % 20 == 0) st_seti("grass_cand", c);
-        L("GRASSCAND fmt=%d w=%d h=%d n=%d h=%016llx a=%d z=%d lv=%d\n", (int)f, w, h, n, (unsigned long long)hh, mean, zero, (id > 0 && id < MAXTEX) ? (int)g_lv[id].load() : 0);
+        L("GRASSCAND fmt=%d w=%d h=%d n=%d h=%016llx a=%d z=%d lv=%d\n", (int)f, w, h, n, (unsigned long long)hh, mean, zero, levels);
     }
     if (id == 0 || id >= MAXTEX) return 0;
-    if (!g_grass_on.load()) return 0;
-    if (grass_rule_match((int)f, w, h, hh)) {
+    if (!g_grass_on.load() && !g_orig_on.load()) return 0;
+    if (g_grass_on.load() && grass_rule_match((int)f, w, h, hh)) {
+        if (g_orig_on.load() && orig_rule_match((int)f, w, h, hh) && ++g_orig_conflict == 1) L("ORIGRULE conflict: fmt=%d %dx%d h=%016llx is in grass.txt AND orig.txt, Hide wins\n", (int)f, w, h, (unsigned long long)hh);
         if (grass_guard((int)f, w, h)) {
             int c = ++g_grass_guard; st_seti("grass_guard", c);
             if (c <= 5) L("GRASS kept fmt=%d %dx%d: it is the scope / reticle atlas (or the lobby buttons)\n", (int)f, w, h);
@@ -630,6 +693,9 @@ static int grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p)
         int c = ++g_grass_n; st_seti("grass_n", c);
         if (c <= 40) L("GRASS rule hit #%d fmt=0x%x %dx%d h=%016llx tex=%u%s\n", c, (unsigned)f, w, h, (unsigned long long)hh, (unsigned)id, early ? " (mips came first)" : "");
         return early ? 2 : 1;
+    } else if (g_orig_on.load() && orig_rule_match((int)f, w, h, hh)) {
+        restore_texture(id, f, w, h, hh);
+        g_blank[id] = 4;                    /* 4 = Restore original: left as the game made it (also when it is revisited after the start delay) */
     } else {
         g_blank[id] = 2;
     }
@@ -639,7 +705,7 @@ static int grass_level0(GLuint id, GLenum f, int w, int h, int n, const void *p)
 static void grass_on_storage(GLenum t, GLsizei lv, GLsizei w, GLsizei h, GLenum fmt) {
     if (t != GL_TEXTURE_2D) return;
     GLuint id = tl_bound[tl_unit];
-    if (id > 0 && id < MAXTEX) { g_blank[id] = 0; g_lv[id] = (uint8_t)std::min<GLsizei>(std::max<GLsizei>(lv, 0), 255); }
+    if (id > 0 && id < MAXTEX) { g_blank[id] = 0; g_tr[id] = 0; g_lv[id] = (uint8_t)std::min<GLsizei>(std::max<GLsizei>(lv, 0), 255); }
 }
 /* NOTE: only trivially destructible thread_locals are allowed in this file. A thread_local with a destructor (std::vector,
    std::string ...) makes the first use on a thread call __cxa_thread_atexit_impl, and the linker aborts there because this
@@ -706,6 +772,7 @@ static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, boo
         skip = true; g_sk_delay++;
         defer_add(tl_bound[tl_unit], lv, fmt, w, h);       /* v0.38: come back to it after the delay */
     }
+    if (!skip && revisit && g_orig_on.load()) { GLuint rid = tl_bound[tl_unit]; if (rid > 0 && rid < MAXTEX && g_blank[rid].load() == 4) skip = true; }   /* v0.61: Restore original */
     if (!skip && !revisit && tl_bound[tl_unit] == 0) g_nobound++;
 
     /* Test Tex: force NEAREST sampling only — full texture data, sharp pixel look. */
@@ -715,7 +782,7 @@ static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, boo
         if (!skip && real_tp) {
             GLuint id = tl_bound[tl_unit];
             if (id > 0 && id < MAXTEX) {
-                g_tf[id] = 1; g_flagged++;
+                g_tf[id] = 1; g_tr[id] = 1; g_flagged++;
                 GLint mn, mg; tt_filters(mn, mg);
                 real_tp(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mn);
                 real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mg);
@@ -754,9 +821,10 @@ static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, boo
         if (base > 0 && real_tp) {
             real_tp(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, base);
             real_tp(GL_TEXTURE_2D, TEX_MAX_LEVEL, base);   /* lock: no higher mips */
+            tr_mark();
             GLuint id = tl_bound[tl_unit];
             if (id > 0 && id < MAXTEX) {
-                g_tf[id] = 1; g_flagged++;
+                g_tf[id] = 1; g_tr[id] = 1; g_flagged++;
                 real_tp(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             }
@@ -774,10 +842,11 @@ static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, boo
         grp_note((int)fmt, mx, lod > 0);
         if (lod > 0 && real_tp) {
             real_tp(GL_TEXTURE_2D, TEX_MIN_LOD, lod);
+            tr_mark();
             if (g_sedge.load()) {
                 GLuint id = tl_bound[tl_unit];
                 if (id > 0 && id < MAXTEX) {
-                    g_tf[id] = 1; g_flagged++;
+                    g_tf[id] = 1; g_tr[id] = 1; g_flagged++;
                     real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 }
             }
@@ -799,10 +868,11 @@ static void tex_post(GLenum t, GLsizei lv, GLenum fmt, GLsizei w, GLsizei h, boo
     grp_note((int)fmt, mx, base > 0);
     if (base > 0 && real_tp) {
         real_tp(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, base);
+        tr_mark();
         if (g_near.load()) {
             GLuint id = tl_bound[tl_unit];
             if (id > 0 && id < MAXTEX) {
-                g_tf[id] = 1; g_flagged++;
+                g_tf[id] = 1; g_tr[id] = 1; g_flagged++;
                 real_tp(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 real_tp(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             }
@@ -1851,6 +1921,36 @@ static void load_cfg() {
         else L("GRASSRULE loaded %d exact rules\n", (int)g_grass.size());
     }
     g_grass_on = g_grass.empty() ? 0 : 1;
+    g_orig.clear(); g_orig_range_old = g_orig_over = g_orig_dups = g_orig_bad = 0;
+    f = fopen(ORIGF, "r");                         /* v0.61: Restore original, exact "format width height hash" per line (max 4096); missing or empty = off */
+    if (f) {
+        std::vector<GrRule> got;
+        std::set<std::tuple<int, int, int, uint64_t>> have;
+        char ln[256];
+        while (fgets(ln, sizeof ln, f)) {
+            if (!strchr(ln, '\n') && !feof(f)) {
+                int ch; while ((ch = fgetc(f)) != EOF && ch != '\n') {}
+                g_orig_bad++; L("ORIGRULE ignored (line too long): %.40s\n", ln); continue;
+            }
+            for (char *q = ln + strlen(ln); q > ln && (q[-1] == '\n' || q[-1] == '\r'); ) *--q = 0;
+            GrRule r{0, 0, 0, 0};
+            int kind = grass_parse_line(ln, &r);
+            if (kind == GRL_SKIP) continue;
+            if (kind == GRL_RANGE) { g_orig_range_old++; continue; }
+            if (kind != GRL_RULE) { g_orig_bad++; L("ORIGRULE ignored (cannot read it): %.40s\n", ln); continue; }
+            if (!have.insert(std::make_tuple(r.fmt, r.w, r.h, r.hash)).second) { g_orig_dups++; continue; }
+            if ((int)got.size() >= ORIG_MAX_RULES) { g_orig_over++; continue; }
+            got.push_back(r);
+        }
+        fclose(f);
+        if (g_orig_over > 0) L("ORIGRULE limit: only the first %d unique rules are used, %d more ignored\n", ORIG_MAX_RULES, g_orig_over);
+        if (g_orig_dups > 0) L("ORIGRULE %d duplicate rules ignored\n", g_orig_dups);
+        std::sort(got.begin(), got.end(), grass_rule_less);
+        g_orig.swap(got);
+        if (g_orig.size() <= 64) for (auto &r : g_orig) L("ORIGRULE loaded fmt=%d %dx%d h=%016llx\n", r.fmt, r.w, r.h, (unsigned long long)r.hash);
+        else L("ORIGRULE loaded %d exact rules\n", (int)g_orig.size());
+    }
+    g_orig_on = g_orig.empty() ? 0 : 1;
     if (FILE *ff = fopen(FULLF, "r")) {
         int fw = 0, fh = 0;
         if (fscanf(ff, "%d %d", &fw, &fh) == 2 && fw >= 640 && fw <= 8192 && fh >= 360 && fw >= fh) { g_fullw = fw; g_fullh = fh; }
@@ -2098,11 +2198,12 @@ static void log_start(int mode) {
 #else
     const char *abi = "other";
 #endif
-    L("=== start %s build=%s %s abi=%s mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d ttsize=%d ttsm=%d forcegl=%d builtin=%d alpha=%d grass=%d ===\n",
-      VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), g_ttsize.load(), g_ttsm.load(), g_forcegl.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]), g_alpha.load(), (int)g_grass.size());
+    L("=== start %s build=%s %s abi=%s mode=%d bias=%d fpscap=%d scale=%d fz=%d th=%d core=%d near=%d blk=%d min=%d delay=%d skip=%d style=%d sedge=%d flat=%d testtex=%d ttsize=%d ttsm=%d forcegl=%d builtin=%d alpha=%d grass=%d orig=%d ===\n",
+      VERSION, __DATE__, __TIME__, abi, mode, g_bias.load(), g_fps.load(), g_scale.load(), g_fz.load(), g_th.load(), g_core.load(), g_near.load(), g_blk.load(), g_minsz.load(), g_delay.load(), (int)g_skip.size(), g_style.load(), g_sedge.load(), g_flat.load(), g_testtex.load(), g_ttsize.load(), g_ttsm.load(), g_forcegl.load(), (int)(sizeof g_builtin / sizeof g_builtin[0]), g_alpha.load(), (int)g_grass.size(), (int)g_orig.size());
     st_set("ver", VERSION); st_seti("pid", (long long)getpid()); st_set("abi", abi); st_set("stage", "started");
     st_set("forcegl", g_forcegl.load() ? "on" : "off");
     st_set("alpha", g_alpha.load() ? "keep" : "off"); st_seti("grass_rules", (long long)g_grass.size()); st_seti("grass_range_old", g_grass_range_old); st_seti("grass_over", g_grass_over); st_seti("grass_max", GRASS_MAX_RULES);
+    st_seti("orig_rules", (long long)g_orig.size()); st_seti("orig_over", g_orig_over); st_seti("orig_max", ORIG_MAX_RULES); st_seti("orig_n", 0); st_seti("orig_fix", 0);
     st_seti("started", (long long)time(nullptr));
     st_seti("live_fps", g_fps.load()); st_set("dir", g_dir); st_set("live", "1");
     st_set("scale_safety", g_scale_safety > 0 ? "forced_off_prev_" + std::to_string(g_scale_safety) : "no");
