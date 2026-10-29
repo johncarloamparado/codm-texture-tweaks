@@ -16,13 +16,31 @@ if grep -nE '\b(gRange|baseRange|rangeLine|rangeMembers|orphanHtml|gKeepRange|gP
   echo "FAIL: range rule code or an old 60 / 64 rule limit is back in webroot/index.html"; exit 1
 fi
 echo "== lint ok (no range rules, no 60/64 rule limit)"
+# v0.65.1 lint: the Search setup state (sf, sfOpen) must be declared; a missing declaration made render() throw inside startForm()
+# (swallowed by .then(bootDone, bootDone)) so the Texture browser / finder never rendered.
+for v in sf sfOpen PENCIL CROSS GRIP TRASH libArm libArmT gSetOpen; do
+  if ! grep -qE "^[[:space:]]*var[[:space:]]+$v[[:space:]]*=" "$ROOT/webroot/index.html"; then
+    echo "FAIL: 'var $v' is not declared in webroot/index.html"; exit 1
+  fi
+done
+# v0.65.1 lint: every sheet / window (tbOv, twOv, picker) must be shown with the "on" class, or it stays at opacity 0
+if [ "$(grep -c 'requestAnimationFrame(function () { ov.classList.add("on")' "$ROOT/webroot/index.html")" -lt 3 ]; then
+  echo "FAIL: a sheet / window no longer gets the 'on' class (test window would be invisible)"; exit 1
+fi
+echo "== lint ok (sf / sfOpen / PENCIL / CROSS / GRIP / TRASH / libArm / libArmT / gSetOpen declared)"
 mkdir -p "$W/files" && chmod 777 "$W/files"
 sed "s#\"/data/data/\" PKG \"/files/\"#\"$W/files/\"#" "$ROOT/main.cpp" > "$W/main_test_copy.cpp"
-for t in cfg scale chain v040 v041 v044 v045 v057; do
-  g++ -std=c++20 -w -I"$ROOT/tests/stubs" -I"$W" "$ROOT/tests/host_test_$t.cpp" -o "$W/t_$t" -Wl,--unresolved-symbols=ignore-all -lpthread -ldl
+for t in cfg scale chain v040 v041 v044 v045 v057 v061 v065; do
+  g++ -std=c++20 -w -I"$ROOT/tests/stubs" -I"$W" "$ROOT/tests/host_test_$t.cpp" -o "$W/t_$t" -Wl,--unresolved-symbols=ignore-all -no-pie -lpthread -ldl
   echo "== $t"; (cd "$W" && "./t_$t")
 done
 rm -rf "$W"
 # WebUI checks (v0.57): JavaScript syntax, then the headless-browser tests (skipped when node / playwright are not installed)
-if command -v node >/dev/null 2>&1; then echo "== js syntax"; node "$ROOT/tests/js_syntax_check.js"; else echo "== js syntax SKIPPED (node not installed)"; fi
+if command -v node >/dev/null 2>&1; then
+  echo "== js syntax"; node "$ROOT/tests/js_syntax_check.js"
+  echo "== persistence regressions"; node "$ROOT/tests/persistence_test.js"
+else
+  echo "== js syntax SKIPPED (node not installed)"
+  echo "== persistence regressions SKIPPED (node not installed)"
+fi
 if command -v python3 >/dev/null 2>&1; then echo "== ui_test"; python3 "$ROOT/tests/ui_test.py"; else echo "== ui_test SKIPPED (python3 not installed)"; fi
