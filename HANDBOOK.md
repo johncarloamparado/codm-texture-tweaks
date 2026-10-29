@@ -12,7 +12,7 @@ Source layout: `main.cpp` (native module), `webroot/index.html` (WebUI), `module
 
 - `v0.65` is a major feature release: Restore original finder test mode, separate RESTORECAND log, 4096 orig.txt rules.
 - `v0.57` is a major feature release: exact-rules-only `grass.txt`, 4096 limit, selection based Texture Finder.
-- `versionCode` always goes up by exactly 1 per release (`v0.65` = 86, `v0.64` = 85, `v0.63` = 84, `v0.62` = 83, `v0.61` = 82, `v0.60.2` = 81, `v0.60.1` = 80, `v0.60` = 79, `v0.59` = 78, `v0.58.3` = 77, `v0.58.2` = 76, `v0.58.1` = 75, `v0.58` = 74, `v0.57.5` = 73, `v0.57.4` = 72, `v0.57.3` = 71, `v0.57.2` = 70, `v0.57.1` = 69, `v0.57` = 68; the last release before it, `v0.56.0`, was 67).
+- `versionCode` always goes up by exactly 1 per release (`v0.70.1` = 94, `v0.70` = 93, `v0.65` = 86, `v0.64` = 85, `v0.63` = 84, `v0.62` = 83, `v0.61` = 82, `v0.60.2` = 81, `v0.60.1` = 80, `v0.60` = 79, `v0.59` = 78, `v0.58.3` = 77, `v0.58.2` = 76, `v0.58.1` = 75, `v0.58` = 74, `v0.57.5` = 73, `v0.57.4` = 72, `v0.57.3` = 71, `v0.57.2` = 70, `v0.57.1` = 69, `v0.57` = 68; the last release before it, `v0.56.0`, was 67).
 - Note: the task text says bug-fix-only releases use `v0.0.N`. Read literally that would reset the number to `v0.0.1`, which sorts before every earlier release and would break the "newer version" checks in root managers. So the handbook uses `v0.N.P` (the next fix of `v0.57` is `v0.57.1`). Change this table if the literal form is really wanted.
 - The version text must be changed together in: `VERSION` in `main.cpp`, `version` and `versionCode` in `module.prop`, the `echo 'UI: ...'` line and demo version strings in `webroot/index.html`, and the version checks in `tests/host_test_cfg.cpp` and `tests/ui_test.py`.
 - Zip name: `codm_Blocky_v<version>.zip`.
@@ -167,3 +167,11 @@ John wanted ready-made ON/OFF switches for a tester, inside Home, in a collapsib
 - The state is read from `hidden.txt` itself (ON = all rules present, "partly hidden" = some), so it stays correct after a reload, a backup heal or a manual edit. `renderTF()` is called from `renderGrass()`.
 - Native: only the file name (see above) and the version string. No new native feature.
 - Tests: ui_test section 32 (32a-32k). Not verified on a phone.
+
+## Presets and Render scale (bug fix; v0.70.1 / versionCode 94)
+John: tapping a built-in preset (Recommended, Chunky blocks, Sharp pixels, Solid color, Original) reset his Render scale to 100%.
+- Cause: every built-in preset has a scale value of 0 (= 100%), and `applyVec()` wrote all `PK` keys including `scale`.
+- Rule now: **built-in presets never write `scale`** (`applyVec(v, name, "b")` removes it from the write map; the Render scale slider and `scale.txt` stay as they were). **My presets and imported CT1 codes still carry their own scale and load it** (a preset saved at 70% loads 70%; one saved at 100% loads 100%). `preSave` / `makeCode` already stored the scale in value 7, so no code format or saved-data change.
+- Not changed: fps cap, smallest texture and start delay are still set by built-in presets (they still write their values). Preset highlight (`sameLook`) still follows the Look card only.
+- Tests: ui_test section 33. Not verified on a phone.
+
