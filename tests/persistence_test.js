@@ -83,10 +83,10 @@ function flushContext(dir, opts = {}) {
 }
 
 (async function main() {
-  check('release version is aligned at v0.70 / versionCode 93', () => {
-    assert(CPP.includes('#define VERSION "v0.70"'));
-    assert(MOD.includes('version=v0.70') && MOD.includes('versionCode=93'));
-    assert(HTML.includes('ver: "v0.70"') && HTML.includes("echo 'UI: v0.70'"));
+  check('release version is aligned at v0.70.1 / versionCode 94', () => {
+    assert(CPP.includes('#define VERSION "v0.70.1"'));
+    assert(MOD.includes('version=v0.70.1') && MOD.includes('versionCode=94'));
+    assert(HTML.includes('ver: "v0.70.1"') && HTML.includes("echo 'UI: v0.70.1'"));
   });
   check('Restore finder has its own candidate stream and only writes orig.txt in Restore mode', () => {
     assert(HTML.includes('loadCandText("GRASSCAND")') && HTML.includes('loadCandText("RESTORECAND")'));
