@@ -647,6 +647,11 @@ html.compact .sbtn { min-height: 42px; }
 .gf-now { border: 1px solid var(--line); background: var(--fill); border-radius: 14px; padding: 12px 14px; }
 .gf-now b { display: block; font-size: 15px; }
 .gf-now small { display: block; margin-top: 4px; color: var(--mute); font-size: 12.5px; line-height: 1.45; }
+/* v0.69.1: a button inside a note box gets air above it and the box gets air below it, so a short explanation is not squeezed against the button */
+.gf-now > b + small { margin-top: 6px; }
+.gf-now > .btn { margin-top: 16px; margin-bottom: 2px; }
+.gf-now > b + .btn, .gf-now > small + .btn { margin-top: 16px; }
+.gf-now:has(> .btn) { padding: 14px 14px 16px; }
 .gf-now.on { border-color: rgba(248, 113, 113, 0.55); background: rgba(248, 113, 113, 0.08); }
 .gf-steps { margin: 0; padding-left: 18px; color: var(--mute); font-size: 12.5px; line-height: 1.6; }
 .gf .btn { min-height: 50px; font-size: 15px; }
@@ -1055,6 +1060,8 @@ html.cc .gf .btn.quiet{min-height:38px}
 html.cc .hi{width:26px;height:26px}
 html.cc .gf{gap:10px}
 html.cc .gf-now{padding:10px 12px}
+html.cc .gf-now > .btn{margin-top:14px}
+html.cc .gf-now:has(> .btn){padding:12px 12px 14px}
 html.cc .tile{padding:8px 6px}
 html.cc .tile b{font-size:20px}
 html.cc .sw{padding-top:10px;padding-bottom:10px}
@@ -1108,7 +1115,7 @@ html.cc .opt{padding:10px 12px}
 #twOv .tw-sidenote:empty{display:none}
 .btn.gf-cpbtn{display:block;width:100%;text-align:left;white-space:normal;overflow-wrap:anywhere}
 .btn.gf-cpbtn span{display:block;font-weight:700}
-.btn.gf-cpbtn small{display:block;margin-top:3px;font-size:12px;font-weight:400;line-height:1.35;opacity:.9}
+.btn.gf-cpbtn small{display:block;margin-top:5px;font-size:12px;font-weight:400;line-height:1.45;opacity:.9}
 /* v0.55.5: html.cc = Compact (the old compact look); html.cc.md = Default (between Compact and Roomy); no class = Roomy */
 html.cc.md .view{zoom:.96}
 html.cc.md .card{padding:14px 16px;margin-top:12px;border-radius:22px}
@@ -1344,6 +1351,12 @@ html.cc.md .opt{padding:12px 13px}
         <p class="desc">Stops the game from going above this many frames per second.</p>
         <div class="steps" id="fpsBox" role="radiogroup" aria-labelledby="fpsL" style="--n:4"></div>
       </div>
+    </section>
+
+    <section class="card" id="tfCard">
+      <div class="ch"><h2>Hide Texture</h2><span class="tag n" id="tfTag" hidden style="margin-left:auto"></span></div>
+      <p class="cap"><b style="color:#fb923c;letter-spacing:.02em">USE AT YOUR OWN RISK.</b> Quick ON / OFF switches to hide grass and smoke. The textures are already built into the module, so you do not need to search for them, and they stay even if the game data is cleared. Turn a switch ON to hide it, OFF to bring it back, then tap Save and restart the game.</p>
+      <div id="tfList"></div>
     </section>
 
           </div>
@@ -1771,9 +1784,9 @@ html.cc.md .opt{padding:12px 13px}
     blk: "0", bias: "0", near: "1", scale: "0", fps: "0",
     fz: "1", th: "1", core: "1", mode: "4", forcegl: "1",
     minsz: "64", delay: "0", style: "0", sedge: "1", flat: "0", testtex: "0", ttsize: "0", ttsm: "0", alpha: "1",
-    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", orig: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", rcand: "RESTORECAND fmt=37492 w=512 h=512 n=32768 h=aa01000000000001 a=-1 z=-1 lv=9\nRESTORECAND fmt=37496 w=512 h=512 n=32768 h=bb02000000000002 a=120 z=23 lv=9\nRESTORECAND fmt=37497 w=512 h=1024 n=65536 h=cc03000000000003 a=128 z=69 lv=10\nRESTORECAND fmt=37808 w=256 h=256 n=32768 h=dd04000000000004 a=-1 z=-1 lv=8", ver: "v0.67",
-    st: "ver=v0.67|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
-    startline: "=== start v0.67 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
+    hookdelay: "0", hooksafe: "0", skip: "", bloff: "", bldel: "", grass: "", orig: "", texlib: "", gcand: "GRASSCAND fmt=37497 w=512 h=512 n=262144 h=0a1b2c3d4e5f6071 a=40 z=62\nGRASSCAND fmt=37497 w=512 h=512 n=262144 h=11aa22bb33cc44dd a=250 z=1\nGRASSCAND fmt=37496 w=256 h=256 n=65536 h=99887766554433ff a=120 z=20", rcand: "RESTORECAND fmt=37492 w=512 h=512 n=32768 h=aa01000000000001 a=-1 z=-1 lv=9\nRESTORECAND fmt=37496 w=512 h=512 n=32768 h=bb02000000000002 a=120 z=23 lv=9\nRESTORECAND fmt=37497 w=512 h=1024 n=65536 h=cc03000000000003 a=128 z=69 lv=10\nRESTORECAND fmt=37808 w=256 h=256 n=32768 h=dd04000000000004 a=-1 z=-1 lv=8", ver: "v0.70",
+    st: "ver=v0.70|stage=gfx|hook=committed|gfx=gles_forced|forcegl=on|vk_blocked=3|applied=312|cand=380|live=1|live_fps=0|started=1760800000|dir=/data/data/com.garena.game.codm/files/|",
+    startline: "=== start v0.70 build=demo abi=arm64-v8a mode=4 bias=0 fpscap=0 scale=100 fz=1 th=1 core=1 near=1 blk=0 min=64 delay=0 skip=0 style=0 sedge=1 flat=0 testtex=1 ttsize=0 ttsm=0 forcegl=1 builtin=5 ===",
     ftall: "FT fps=57.1 avg=17.5ms p50=16.9 p99=36.2 max=48.0 >33ms=2 >50ms=0 n=285 cap=0 bias=0 scale=100 t=60.0 fz=0\nFT fps=55.2 avg=18.1ms p50=17.6 p99=41.3 max=63.0 >33ms=3 >50ms=1 n=276 cap=0 bias=0 scale=100 t=65.0 fz=1\nFT fps=58.4 avg=17.1ms p50=16.8 p99=30.2 max=41.0 >33ms=1 >50ms=0 n=292 cap=0 bias=0 scale=100 t=70.0 fz=0\nFT fps=56.0 avg=17.9ms p50=17.2 p99=38.9 max=52.0 >33ms=2 >50ms=1 n=280 cap=0 bias=0 scale=100 t=75.0 fz=0",
     ftn: "4",
     texg: "TEXG t=60 fmt=37812 hex=0x93b4 sz=1024 n=40 ap=40\nTEXG t=60 fmt=37812 hex=0x93b4 sz=2048 n=6 ap=6\nTEXG t=60 fmt=37815 hex=0x93b7 sz=512 n=120 ap=120\nTEXG t=60 fmt=37496 hex=0x9278 sz=256 n=64 ap=60\nTEXG t=60 fmt=37497 hex=0x9279 sz=512 n=12 ap=0",
@@ -1819,6 +1832,11 @@ html.cc.md .opt{padding:12px 13px}
   /* skip manager state */
   var groups = [], skipSet = {};
   var grassSel = {};        /* groups whose pixels are made transparent: "fmt|size" -> 1 (grass.txt) */
+  /* v0.70 Hide Texture lists (built in; declared here so render() can never hit an undeclared name at boot) */
+  var TESTF = [
+    { id: "grass", name: "Grass", keys: ["37497|512|512|14d49f3bf0a7aecb", "37497|256|256|f9c90d2e08c8e2ab", "37497|512|512|497e0532c6a634d8"] },
+    { id: "smoke", name: "Smoke", keys: ["37497|256|256|39e797c518477967"] }
+  ];
   var baseGrass = {};
   var origSel = {}, baseOrig = {};   /* v0.61 Restore original: "fmt|w|h|hash" -> 1 (orig.txt). A key is in grassSel (Hide) or origSel (Restore), never both. */
   var oJunkSeen = 0, oOverSeen = 0, gOrigCleanTried = false;
@@ -1940,11 +1958,12 @@ html.cc.md .opt{padding:12px 13px}
     var cmd =
       "D=" + D + "; " + (zygCache.v && Date.now() - zygCache.t < 90000 ? "echo zyg=" + zygCache.v + "; " : ZYG_SCRIPT) +
       "[ -d $D ] || { echo NODIR; exit 0; }; " +
+      "[ -f $D/hidden.txt ] || { [ -f $D/grass.txt ] && cp -f $D/grass.txt $D/hidden.txt && { chmod 666 $D/hidden.txt 2>/dev/null; chcon --reference=$D $D/hidden.txt 2>/dev/null; }; }; " +
       "for f in bias scale fps fz th core near blk minsz delay style sedge flat testtex ttsize ttsm alpha mode hookdelay hooksafe forcegl; do " +
       "  if [ -f $D/$f.txt ]; then printf '%s=' $f; cat $D/$f.txt; else printf '%s=\\n' $f; fi; " +
       "done; " +
       "echo -n 'skip='; [ -f $D/skip.txt ] && cat $D/skip.txt | tr '\\n' '|' || true; echo; " +
-      "echo -n 'grass='; [ -f $D/grass.txt ] && grep -v '^#' $D/grass.txt | tr '\\n' '|' || true; echo; " +
+      "echo -n 'grass='; [ -f $D/hidden.txt ] && grep -v '^#' $D/hidden.txt | tr '\\n' '|' || true; echo; " +
       "echo -n 'orig='; [ -f $D/orig.txt ] && grep -v '^#' $D/orig.txt | tr '\\n' '|' || true; echo; " +
       "echo -n 'bloff='; [ -f $D/bltoff.txt ] && cat $D/bltoff.txt | tr '\\n' '|' || true; echo; " +
       "echo -n 'bldel='; [ -f $D/bltdel.txt ] && cat $D/bltdel.txt | tr '\\n' '|' || true; echo; " +
@@ -2718,7 +2737,7 @@ html.cc.md .opt{padding:12px 13px}
     var a = grassLines();
     if (a.length > MAXR) return Promise.resolve({ ok: false, stdout: "" });          /* never write more than the module can read */
     if (demo) { fake.grass = a.join("\n"); return Promise.resolve({ ok: true }); }
-    return writeLinesAtomic("grass.txt", a);
+    return writeLinesAtomic("hidden.txt", a);
   }
   /* v0.61: orig.txt = the RESTORE list (textures the module must leave as the game made them). Same line format, same limit, same atomic writer. */
   function origLines() {
@@ -2743,7 +2762,7 @@ html.cc.md .opt{padding:12px 13px}
       if (!r.ok) return;
       var shown = false;
       try { shown = localStorage.getItem("ct_rangeinfo") === "1"; if (nR) localStorage.setItem("ct_rangeinfo", "1"); } catch (e) {}
-      if (nO) toast("grass.txt had more than " + MAXR + " rules. Only the first " + MAXR + " are used, the rest was removed.");
+      if (nO) toast("hidden.txt had more than " + MAXR + " rules. Only the first " + MAXR + " are used, the rest was removed.");
       else if (nR && !shown) toast("Old range rules were removed: v0.57 hides exact textures only. Your saved textures are kept." + (dropped ? " A search that was running was stopped." : ""));
     });
   }
@@ -2858,7 +2877,7 @@ html.cc.md .opt{padding:12px 13px}
     return true;
   }
   function libOf(k) { for (var i = 0; i < gLib.length; i++) if (gLib[i].key === k) return gLib[i]; return null; }
-  /* v0.60: ONE function saves a set (tbSave / twSave / gKeepSet), so the rules for a set live in one place.
+  /* v0.60: ONE function saves a set (tbSave / twSave), so the rules for a set live in one place.
      - 2 or more different keys are needed, otherwise it is saved as one single texture.
      - a key that is already saved ALONE is taken into the new set (the person asked for these together); its old name is replaced by the set name.
      - a key that already belongs to ANOTHER set is never taken out of it (that would split the old set): nothing is saved and the reason is returned.
@@ -2993,7 +3012,7 @@ html.cc.md .opt{padding:12px 13px}
       if (!cpInt(g.a, 0, n - 1) || !cpInt(g.b, g.a + 1, n) || !cpInt(g.ta, 0, n - 1) || !cpInt(g.tb, g.ta + 1, n)) return false;
       if (g.phase !== "check" && g.phase !== "bisect" && g.phase !== "verify") return false;
       if (!Array.isArray(g.hist) || g.hist.length > 200) return false;
-      if (!g.hist.every(function (h) { return h && cpInt(h.a, 0, MAXR) && cpInt(h.b, 0, MAXR) && cpInt(h.ta, 0, MAXR) && cpInt(h.tb, 0, MAXR) && (h.phase === "check" || h.phase === "bisect" || h.phase === "verify") && (!h.U || cpKeysOk(h.U, 1)); })) return false;
+      if (!g.hist.every(function (h) { return h && cpInt(h.a, 0, MAXR) && cpInt(h.b, 0, MAXR) && cpInt(h.ta, 0, MAXR) && cpInt(h.tb, 0, MAXR) && (h.phase === "check" || h.phase === "bisect" || h.phase === "verify") && (h.ans === undefined || h.ans === "y" || h.ans === "n") && (!h.U || cpKeysOk(h.U, 1)); })) return false;
       if (typeof g.name !== "string" || typeof g.grp !== "string") return false;
       g.U.forEach(function (k) { m[k] = 1; });
       if (g.mode !== undefined && g.mode !== "restore" && typeof g.mode !== "string") return false;
@@ -3042,13 +3061,13 @@ html.cc.md .opt{padding:12px 13px}
     var g = c.gst, n = g.sub ? g.sub.keys.length : g.tb - g.ta;
     return n + " texture" + (n === 1 ? "" : "s") + ", step " + (g.hist.length + 1);
   }
-  function gReturn() {
+  function gReturn(force) {
     var c = gCp; if (!c) return;
     if (gst || gPend) { toast("Finish or cancel the running test first. Nothing was changed."); return; }
     if (!cpValid(c)) { gCp = null; cpSave(); renderGrass(); return; }
     var gmode = modeOf(c.gst), rules = cpWrites(c);
     if (rules.length > MAXR) { ruleLimitNote(rules.length); return; }
-    if (cpLost(rules, gmode) && !cpArm) {
+    if (!force && cpLost(rules, gmode) && !cpArm) {
       cpArm = true; clearTimeout(cpArmT); cpArmT = setTimeout(function () { cpArm = false; renderGrass(); }, 5000);
       renderGrass(); return;
     }
@@ -3120,6 +3139,28 @@ html.cc.md .opt{padding:12px 13px}
     if (!rk.length) return Promise.resolve(true);
     return setOrigRules(Object.keys(origSel).concat(rk), msg);
   }
+  /* v0.70 Hide Texture card: two ready-made switches, built into the module (so a wiped game folder does not remove them). A switch only adds / removes
+     these exact rules in hidden.txt, the same thing a My textures switch does. Not available while a finder test is running or a set is pending. */
+  function tfCount(g) { return g.keys.filter(function (k) { return !!grassSel[k]; }).length; }
+  function renderTF() {
+    var box = $("tfList"); if (!box) return;
+    var used = 0;
+    box.innerHTML = '<div class="gf-conf">' + TESTF.map(function (g) {
+      var n = tfCount(g), on = n === g.keys.length; if (n) used++;
+      return '<div class="item lib"><button class="sw" type="button" role="switch" data-tf="' + g.id + '" aria-checked="' + (on ? "true" : "false") + '"><span><span class="t">Remove ' + esc(g.name) + '</span><span class="d">' +
+        g.keys.length + (g.keys.length === 1 ? " texture" : " textures") + (on ? " · hidden" : (n ? " · partly hidden (" + n + " of " + g.keys.length + ")" : " · normal")) + '</span></span><span class="knob"></span></button></div>';
+    }).join("") + '</div>';
+    var tg = $("tfTag"); if (tg) { tg.hidden = !used; tg.textContent = used + " on"; }
+  }
+  function tfToggle(id) {
+    var g = TESTF.filter(function (x) { return x.id === id; })[0]; if (!g) return;
+    if (gst) { toast("Finish or cancel the test first."); return; }
+    if (gPend) { toast("Keep or discard the set first."); return; }
+    if (g.keys.some(function (k) { return !!origSel[k]; })) { toast("One of these is set to Restore original. Turn that off first."); return; }
+    var on = tfCount(g) === g.keys.length;
+    setRules(on ? Object.keys(grassSel).filter(function (k) { return g.keys.indexOf(k) < 0; }) : Object.keys(grassSel).concat(g.keys), g.name + (on ? " is back to normal." : " is hidden."));
+  }
+  (function () { var b = $("tfList"); if (b) b.addEventListener("click", function (e) { var t = e.target.closest ? e.target.closest("[data-tf]") : null; if (t) tfToggle(t.getAttribute("data-tf")); }); })();
   function gApply(msg) {
     var r = gRuleFor(gst);
     return applyModeRules(modeOf(gst), gst.keep.concat(r.many), msg || "Next test is ready.");
@@ -3157,7 +3198,7 @@ html.cc.md .opt{padding:12px 13px}
     toast(restore ? "Restore test ended. Your Restore original rules stay as they are. Tap Save to apply." : "Test ended. The switches stay as they are. Tap Save to apply.");
     if (twOv && tw) twRender();
   }
-  function gSnap() { gst.hist.push({ a: gst.a, b: gst.b, ta: gst.ta, tb: gst.tb, phase: gst.phase }); }
+  function gSnap(ans) { gst.hist.push({ a: gst.a, b: gst.b, ta: gst.ta, tb: gst.tb, phase: gst.phase, ans: ans }); }           /* ans: "y" = hidden / fixed, "n" = still there (v0.69) */
   function gConfirm(k, subKeys) {
     var mode = modeOf(gst), keep = gst.keep.concat([k]), nm = gst.name, gp = gst.grp, action = mode === "restore" ? "restore" : gForm.act;
     cpPut("found", cpLast(gst, subKeys), k); gst = null; gNote = "";
@@ -3175,7 +3216,7 @@ html.cc.md .opt{padding:12px 13px}
       gPend = { v: 2, mode: mode, U: gst.U.slice(), name: gst.name, grp: gst.grp, keep: gst.keep.slice(), cp: { a: lp.a, b: lp.b, ta: lp.ta, tb: lp.tb, phase: lp.phase, hist: lp.hist } };
       gst = null; gNote = ""; gPendSave();
       applyModeRules(mode, gPend.keep.concat(gPend.U), restore ? "All " + gPend.U.length + " textures are restored to original." : "All " + gPend.U.length + " textures are switched off.");
-      toast(restore ? "Several textures may be needed together. Tap Keep all." : "It needs several textures together. Tap Keep all."); return;
+      toast(restore ? "Several textures may be needed together. Tap Back to the last test, or end the test." : "It needs several textures together. Tap Back to the last test, or end the test."); return;
     }
     var keep = gst.keep, n = gst.U.length; cpPut("fail", cpLast(gst, null)); gst = null;
     gNote = why === "check"
@@ -3208,7 +3249,7 @@ html.cc.md .opt{padding:12px 13px}
     gStartKeys(U, gTestMode);
   }
   function gYes() {                                       /* what I am looking for is gone (or mostly) */
-    gSnap();
+    gSnap("y");
     if (gst.phase === "check") gst.phase = "bisect";
     else { gst.a = gst.ta; gst.b = gst.tb; }              /* it is inside the part that was switched off */
     if (gst.b - gst.a === 1) { gConfirm(gst.U[gst.a]); return; }
@@ -3216,7 +3257,7 @@ html.cc.md .opt{padding:12px 13px}
     gApply("Narrowing it down.");
   }
   function gNo() {                                        /* nothing changed */
-    gSnap();
+    gSnap("n");
     if (gst.phase === "check") { gFail("check"); return; }
     if (gst.phase === "verify") { gFail("verify"); return; }
     gst.a = gst.tb;                                       /* so it is in the part that was NOT switched off */
@@ -3237,7 +3278,7 @@ html.cc.md .opt{padding:12px 13px}
   function gApplySub(msg) { return applyModeRules(modeOf(gst), gst.keep.concat(gst.sub.keys), msg); }
   function gSubYes() {
     var S = gst.sub.keys.slice();
-    gst.hist.push({ a: gst.a, b: gst.b, ta: gst.ta, tb: gst.tb, phase: gst.phase, U: gst.U });
+    gst.hist.push({ a: gst.a, b: gst.b, ta: gst.ta, tb: gst.tb, phase: gst.phase, U: gst.U, ans: "y" });
     gst.U = S; gst.sub = null; gst.a = 0; gst.b = S.length; gst.phase = "bisect";
     if (S.length === 1) { gConfirm(S[0], S); return; }
     gst.ta = 0; gst.tb = Math.ceil(S.length / 2);
@@ -3354,32 +3395,56 @@ html.cc.md .opt{padding:12px 13px}
     if (gPend && !(gPend.U && gPend.U.length > 1 && gPend.keep && !gst && (gPend.v === 2 || gPend.ex) && (gPend.paused || gHasMode(modeOf(gPend), gPend.U.concat(gPend.keep || []))) && !(modeOf(gPend) === "restore" && gPend.U.some(function (k) { return !!grassSel[k]; })))) { gPend = null; gPendSave(); }
     else if (gPend) { delete gPend.ex; gPend.v = 2; }
   }
-  function gKeepSet() {
-    var q = gPend; if (!q) return;
-    var mode = modeOf(q), action = mode === "restore" ? "restore" : gForm.act, all = uniq(q.keep.concat(q.U));
-    if (all.length > MAXR) { ruleLimitNote(all.length); return; }
-    var r = null, fid = q.U.length === 1 ? q.U[0] : "";
-    if (q.U.length > 1) {
-      r = libSaveSet(q.U, q.name, q.grp, action);
-      if (!r.ok) { toast(r.why); return; }
-      fid = r.id;
-    }
-    cpTest("found", fid);
-    gPend = null; gPendSave(); gOpen[q.grp] = true; gForm.name = "";
-    if (q.U.length === 1) libAdd(q.U[0], q.name, q.grp, "", action);
-    writeLib();
-    if (mode === "restore") setOrigRules(all, "Saved " + q.U.length + " textures as one set (Restore original).");
-    else setRules(all, "Saved " + q.U.length + " textures as one set (" + actName(action) + ").").then(function () { return origOnFor(q.U, "Saved " + q.U.length + " textures as one set: Restore original is on."); });
+  /* v0.69: go back to the step before my last "still there" (n) or my last "hidden / fixed" (y) answer, to try again from there */
+  function histLast(hist, ans) { for (var i = hist.length - 1; i >= 0; i--) if (hist[i] && hist[i].ans === ans) return i; return -1; }
+  function histRewind(g, idx) {                          /* g = a test state; the answers from idx on are undone */
+    var h = g.hist[idx], u = null, j;
+    for (j = idx; j < g.hist.length; j++) if (g.hist[j].U) { u = g.hist[j].U; break; }          /* the oldest "continue with these" after idx remembers the list as it was */
+    g.a = h.a; g.b = h.b; g.ta = h.ta; g.tb = h.tb; g.phase = h.phase; if (u) g.U = u;
+    g.hist = g.hist.slice(0, idx); g.sub = null;
+  }
+  function rewLabel(ans, restore) { return ans === "n" ? "Back to my last \u201cstill there\u201d" : (restore ? "Back to my last \u201cproblem fixed\u201d" : "Back to my last \u201cIt is hidden\u201d"); }
+  function rewBtn(id, hist, idx, ans, restore) {
+    var h = hist[idx], n = h.tb - h.ta;
+    return '<button class="btn gf-cpbtn" id="' + id + '" type="button"><span>' + rewLabel(ans, restore) + '</span><small>' + n + ' texture' + (n === 1 ? "" : "s") + ' tested then, step ' + (idx + 1) + ' · try again from there</small></button>';
+  }
+  function gRewind(ans) {
+    if (!gst || gst.paused) return;
+    var idx = histLast(gst.hist, ans); if (idx < 0) return;
+    histRewind(gst, idx);
+    gApply("Back at your last \u201c" + (ans === "n" ? "still there" : (modeOf(gst) === "restore" ? "problem fixed" : "It is hidden")) + "\u201d step.");
+  }
+  function gRewindPend() {
+    var q = gPend; if (!q || !q.cp || q.paused) return;
+    var idx = histLast(q.cp.hist || [], "y"); if (idx < 0) return;
+    var g = { v: 2, keep: q.keep, mode: q.mode || "search", U: q.U.slice(), a: q.cp.a, b: q.cp.b, ta: q.cp.ta, tb: q.cp.tb, phase: q.cp.phase, hist: JSON.parse(JSON.stringify(q.cp.hist)), name: q.name || "", grp: q.grp || "other", sub: null, paused: false };
+    histRewind(g, idx);
+    cpPut("drop", g);
+    if (!gCp) { toast("Could not go back. Nothing was changed."); return; }
+    gPend = null; gPendSave();
+    gReturn(true);
+  }
+  /* v0.68: from the "needs N textures together" screen: go back to the step before the answer that ended the search (the last "still there"), to keep trying from there */
+  function gBackLast() {
+    var q = gPend; if (!q || !q.cp || q.paused) return;
+    cpTest("drop");
+    if (!gCp) { toast("Could not go back. Nothing was changed."); return; }
+    gPend = null; gPendSave();
+    gReturn(true);
   }
   function gDropSet() { var q = gPend; if (!q) return; var mode = modeOf(q); cpTest("drop"); gPend = null; gPendSave(); applyModeRules(mode, q.keep, "Test cancelled."); }
   function pendHtml() {
     var N = gPend.U.length, restore = modeOf(gPend) === "restore";
     var status = restore ? "The problem was still there for each half, but it looked fixed with all " + N + " restored to original. These textures may work together." : "Hiding half of them did not hide it, but hiding all " + N + " did. So what you look for is made of several textures. All " + N + " are switched off right now.";
-    var pausedNote = restore ? "The test is paused: you changed the Restore original rules by hand. Keep all restores all " + N + " again." : "The set is paused: you changed switches by hand. Keep all puts all " + N + " back to hidden.";
-    return '<div class="gf-now on tw-tap" id="twOpen" role="button" tabindex="0"><b>' + (restore ? "It needs " + N + " textures together" : "It needs " + N + " textures together") + '</b><small>' + esc(status) + '</small><ul class="gf-list">' + gPend.U.slice(0, 8).map(function (k) { return "<li>" + esc(keyText(k)) + "</li>"; }).join("") + (N > 8 ? "<li>and " + (N - 8) + " more</li>" : "") + '</ul><span class="tw-hint">Tap here to see them, or pick only some</span></div>' +
+    var pausedNote = restore ? "The test is paused: you changed the Restore original rules by hand." : "The set is paused: you changed switches by hand.";
+    var cpg = { hist: (gPend.cp && gPend.cp.hist) || [], ta: gPend.cp ? gPend.cp.ta : 0, tb: gPend.cp ? gPend.cp.tb : 0, sub: null };
+    var back = gPend.cp && !gPend.paused ? '<button class="btn good gf-cpbtn" id="gfBackLast" type="button"><span>Back to the last test</span><small>your last \u201cstill there\u201d · ' + esc(cpText({ gst: cpg })) + (gPend.name ? " · " + esc(gPend.name) : "") + ' · try again from there</small></button>' : "";
+    var yIdx = gPend.cp && !gPend.paused ? histLast(gPend.cp.hist || [], "y") : -1;
+    if (yIdx >= 0) back += rewBtn("gfRewYP", gPend.cp.hist, yIdx, "y", restore);
+    return '<div class="gf-now on tw-tap" id="twOpen" role="button" tabindex="0"><b>It needs ' + N + ' textures together</b><small>' + esc(status) + '</small><ul class="gf-list">' + gPend.U.slice(0, 8).map(function (k) { return "<li>" + esc(keyText(k)) + "</li>"; }).join("") + (N > 8 ? "<li>and " + (N - 8) + " more</li>" : "") + '</ul></div>' +
       (gPend.paused ? '<p class="pnote">' + esc(pausedNote) + '</p><button class="btn" id="gfResume" type="button">Back to the test</button><button class="btn quiet" id="gfEnd" type="button">End the test, keep my switches</button>' : "") +
-      (restore ? '' : '<div class="gf-form">' + actPickHtml("gfPendAct") + '</div>') + '<button class="btn good" id="gfKeepSet" type="button">Keep all ' + N + ' together</button>' +
-      '<button class="btn quiet" id="gfDropSet" type="button">Discard</button><p class="pnote">After Keep, tap Save at the bottom to apply. In My textures they show as one item with one switch.</p>';
+      back + '<button class="btn quiet" id="gfDropSet" type="button">End the test (discard)</button>' +
+      '<p class="pnote">Back to the last test goes to the step before this, so you can keep trying from there. End the test puts everything back as it was before the search.</p>';
   }
   function ruleBarHtml(n, mode) {
     mode = mode || "hide";
@@ -3392,6 +3457,7 @@ html.cc.md .opt{padding:12px 13px}
     return '<div class="rule-bar" role="status"><span><b>' + n + ' / ' + MAXR + '</b> exact ' + (restore ? 'Restore original' : 'Hide') + ' rules in use</span>' + (note ? '<small>' + esc(note) + '</small>' : '') + '<div class="gf-prog"><i style="width:' + Math.max(1, pct) + '%"></i></div></div>';
   }
   function renderGrass() {
+    renderTF();
     var box = $("gf"); if (!box) return;
     placeFinder();
     var keys = Object.keys(grassSel), n = keys.length;
@@ -3446,6 +3512,10 @@ html.cc.md .opt{padding:12px 13px}
         '<p class="gf-q">' + (modeOf(gst) === "restore" ? "After you look in the game, is the problem fixed?" : "After you look in the game, is it hidden?") + '</p>' +
         '<button class="btn good" id="gfYes" type="button">' + (modeOf(gst) === "restore" ? "Yes, the problem is fixed" : "It is hidden") + '</button>' +
         '<button class="btn" id="gfNo" type="button">' + (modeOf(gst) === "restore" ? "No, the problem is still there" : "It is still there") + '</button>' +
+        (function () { var o = "", iN = histLast(gst.hist, "n"), iY = histLast(gst.hist, "y"), L = gst.hist.length - 1, rs = modeOf(gst) === "restore";
+          if (iN >= 0 && iN < L) o += rewBtn("gfRewN", gst.hist, iN, "n", rs);
+          if (iY >= 0 && iY < L) o += rewBtn("gfRewY", gst.hist, iY, "y", rs);
+          return o; })() +
         '<div class="grid2"><button class="btn" id="gfBack" type="button"' + (gst.hist.length ? "" : " disabled") + '>Back</button>' +
         '<button class="btn quiet" id="gfOff" type="button">Cancel</button></div>' +
         '<p class="pnote">' + (gst.phase === "check" ? (modeOf(gst) === "restore" ? "If the problem still looks the same, the cause may not be in these candidates or may be global render scale. " : "If nothing changes in this first test, tell me: the texture is not in this set, or switching off does not work. ") : "") +
@@ -3453,7 +3523,6 @@ html.cc.md .opt{padding:12px 13px}
     } else {
       if (gPend) h += pendHtml();
       if (gNote && !gPend) h += '<div class="gf-now on gf-keep"><b>' + (testModeForUi === "restore" ? "Restore test stopped" : "Search stopped") + '</b><small>' + esc(gNote) + '</small></div>';
-      if (gCp && !gPend) h += cpHtml();
       if (activeCandidates(gTestMode).length) {
         var activeCands = activeCandidates(gTestMode);
         h += '<div class="gf-now"><b>New search · ' + activeCands.length + ' texture' + (activeCands.length === 1 ? "" : "s") + ' in the list</b><small>' + (gTestMode === "restore" ? 'Test 1 restores the full candidate set to original rendering. If the problem is fixed, the finder narrows the candidates until one texture or a set remains.' : 'Test 1 switches off the whole set. If what you look for is gone, every next answer cuts the list in half until one texture is left.') + '</small></div>' + startForm() +
@@ -3461,6 +3530,7 @@ html.cc.md .opt{padding:12px 13px}
       } else {
         h += '<div class="gf-now"><b>No texture list yet</b><small>' + (gTestMode === "restore" ? 'Enable logging, play a match where the affected texture appears, then tap Refresh list. Restore candidates require a fresh native v0.65 build.' : 'Install the current module, turn logging on, play one match where you can see what you look for, then tap Refresh list.') + '</small></div><button class="btn" id="gfRef" type="button">Refresh list</button>';
       }
+      if (gCp && !gPend) h += cpHtml();                 /* v0.68: Return to last test sits at the bottom of the finder, only while no test is running */
     }
     box.innerHTML = h;
     renderBrowserSoft();
@@ -3471,9 +3541,9 @@ html.cc.md .opt{padding:12px 13px}
     var t = e.target && e.target.closest ? e.target.closest("button") : null; if (!t) return null;
     var id = t.id, sels = [], k;
     if (id === "gfStart") sels = ["#gfYes"];
-    else if (id === "gfYes" || id === "gfNo" || id === "gfBack" || id === "gfSubYes" || id === "gfSubNo") sels = ["#" + id, "#gfYes", "#gfKeepSet", "#gfStart"];
-    else if (id === "gfResume" || id === "gfEnd" || id === "gfReturn") sels = ["#gfYes", "#gfSubYes", "#gfKeepSet", "#gfStart", "#gfRef"];
-    else if (id === "gfOff" || id === "gfKeepSet" || id === "gfDropSet") sels = ["#gfStart", "#gfRef"];
+    else if (id === "gfYes" || id === "gfNo" || id === "gfBack" || id === "gfRewN" || id === "gfRewY" || id === "gfSubYes" || id === "gfSubNo") sels = ["#" + id, "#gfYes", "#gfBackLast", "#gfStart"];
+    else if (id === "gfResume" || id === "gfEnd" || id === "gfReturn") sels = ["#gfYes", "#gfSubYes", "#gfBackLast", "#gfStart", "#gfRef"];
+    else if (id === "gfOff" || id === "gfBackLast" || id === "gfRewYP" || id === "gfDropSet") sels = ["#gfYes", "#gfStart", "#gfRef"];
     else if (t.hasAttribute("data-sfk")) sels = ['[data-sfk="' + t.getAttribute("data-sfk") + '"][data-sfv="' + t.getAttribute("data-sfv") + '"]'];
     else if ((k = t.getAttribute("data-toggle"))) sels = ['[data-toggle="' + k + '"]'];
     else if (t.closest && t.closest("[data-toggle]")) sels = ['[data-toggle="' + t.closest("[data-toggle]").getAttribute("data-toggle") + '"]'];
@@ -3532,13 +3602,16 @@ html.cc.md .opt{padding:12px 13px}
     else if (t.id === "gfResume") gResume();
     else if (t.id === "gfEnd") gEndTest();
     else if (t.id === "gfReturn") gReturn();
-    else if ((t.id === "gfYes" || t.id === "gfNo" || t.id === "gfSubYes" || t.id === "gfSubNo" || t.id === "gfBack") && gPaused()) toast("The test is paused. Tap Back to the test first.");
+    else if ((t.id === "gfYes" || t.id === "gfNo" || t.id === "gfSubYes" || t.id === "gfSubNo" || t.id === "gfBack" || t.id === "gfRewN" || t.id === "gfRewY") && gPaused()) toast("The test is paused. Tap Back to the test first.");
     else if (t.id === "gfYes" && gst) gYes();
     else if (t.id === "gfNo" && gst) gNo();
     else if (t.id === "gfSubYes" && gst && gst.sub) gSubYes();
     else if (t.id === "gfSubNo" && gst && gst.sub) gSubNo();
     else if (t.id === "gfBack") gBack();
-    else if (t.id === "gfKeepSet") gKeepSet();
+    else if (t.id === "gfBackLast") gBackLast();
+    else if (t.id === "gfRewYP") gRewindPend();
+    else if (t.id === "gfRewN" && gst) gRewind("n");
+    else if (t.id === "gfRewY" && gst) gRewind("y");
     else if (t.id === "gfDropSet") gDropSet();
     else if (t.id === "gfOff") {
       if (gst) { var mode = modeOf(gst), kp = gst.keep; cpTest("cancel"); gst = null; gNote = ""; applyModeRules(mode, kp, "Test cancelled."); }
@@ -4055,7 +4128,7 @@ html.cc.md .opt{padding:12px 13px}
   function twSideInfo() {
     var restore = tw.mode === "restore", tot = tw.keys.length, ticked = twSel(), byTick = ticked.length > 0, ks = byTick ? ticked : (twFiltersOn() ? twFiltered() : []), n = ks.length, how = byTick ? "ticked" : "shown";
     var r = { can: false, keys: ks, n: n, how: how, label: "Side test (not available)", note: "" };
-    if (!gst && gPend) { r.note = restore ? "Not available: this saved set needs all its textures together. Keep all or Discard in the finder card." : "Not available: these textures only work together, so a part of them cannot be tested alone. Keep all or Discard in the finder card."; return r; }
+    if (!gst && gPend) { r.note = restore ? "Not available: this set needs all its textures together. Use Back to the last test or End the test in the finder card." : "Not available: these textures only work together, so a part of them cannot be tested alone. Use Back to the last test or End the test in the finder card."; return r; }
     if (!gst) { r.note = "Not available: the finder test has ended."; return r; }
     if (!n) { r.label = "Side test: pick some first"; r.note = "Nothing is picked yet. Tick some textures, or use the search or a filter, then tap Side test."; return r; }
     if (n >= tot) { r.label = "Side test: all " + n + " " + how; r.note = "All " + tot + " textures of this test are " + how + ". A side test needs fewer than all: untick some or narrow the filter."; return r; }
@@ -4742,7 +4815,7 @@ html.cc.md .opt{padding:12px 13px}
      Some phones / game updates leave the game folder empty or point the page at another copy of it, and CODM then starts with defaults.
      A small marker file (.ct_keep) lives in the game folder. If the marker is gone but the backup has it, the folder was emptied or
      replaced: the saved settings are copied back (and the page says so). The backup follows every save. */
-  var CFGLIST = "flat testtex ttsize ttsm blk bias near scale fps fz th core minsz delay style sedge alpha mode hookdelay forcegl skip grass orig bltoff bltdel texlib";
+  var CFGLIST = "flat testtex ttsize ttsm blk bias near scale fps fz th core minsz delay style sedge alpha mode hookdelay forcegl skip grass hidden orig bltoff bltdel texlib";
   var healed = "", healMsg = "", bkT = 0;
   function bkDir() { return CFGDIR + "/u" + USER; }
   function healSettings() {
@@ -4864,7 +4937,7 @@ html.cc.md .opt{padding:12px 13px}
   function diagScript() { return "{ " + diagBody() + "; } 2>&1 | " + REDACT; }
   function diagBody() {
     return "P=" + PKG + "; D=" + D + "; L=$D/codm_tex.log; " +
-      "echo '== report'; echo 'UI: v0.67'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
+      "echo '== report'; echo 'UI: v0.70'; echo 'shell mode: " + ["direct", "nsenter", "su"][WR] + "'; echo \"settings folder: $D\"; date; " +
       "echo '== who'; id; getenforce 2>&1; " +
       "echo '== root manager'; (ksud -V 2>&1 || ksud --version 2>&1) | head -n 1; magisk -v 2>&1 | head -n 1; apd -V 2>&1 | head -n 1; ls /data/adb 2>&1 | tr '\\n' ' '; echo; " +
       "echo '== device props (ro.product.* can be SPOOFED by other modules: not proof of the real model)'; for k in ro.product.manufacturer ro.product.model ro.product.device ro.build.display.id; do echo \"$k=$(getprop $k)\"; done; " +
@@ -5917,7 +5990,7 @@ html.cc.md .opt{padding:12px 13px}
   var CATS = {
     look: { n: "Look", c: "#38bdf8", t: ["Presets", "Look", "Display"] },
     stat: { n: "Stats", c: "#f472b6", t: ["Session summary", "Advice", "History"] },
-    tex: { n: "Textures", c: "#34d399", t: ["Texture hider", "Texture restorer", "Texture browser", "My textures", "Texture groups", "Skip Manager", "Fine tuning"] },
+    tex: { n: "Textures", c: "#34d399", t: ["Hide Texture", "Texture hider", "Texture restorer", "Texture browser", "My textures", "Texture groups", "Skip Manager", "Fine tuning"] },
     sys: { n: "System", c: "#a78bfa", t: ["Startup", "Compatibility", "Renderer", "Game copy", "Save action", "Interface"] },
     dbg: { n: "Logs and tests", c: "#fbbf24", t: ["Logging", "Log", "Quick test"] },
     danger: { n: "Reset", c: "#fb7185", t: ["Reset"] },
