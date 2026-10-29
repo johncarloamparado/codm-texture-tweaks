@@ -49,7 +49,7 @@
 #endif
 
 /* One place for the version. Keep in sync with module.prop (bump +1 every update). */
-#define VERSION "v0.67"
+#define VERSION "v0.70"
 #define PKG "com.garena.game.codm"
 /* v0.40: the settings folder is chosen at run time. A clone (Dual Apps, work profile, user 999) keeps its data
    under /data/user/<id>/<pkg>, which the old hard-coded /data/data/<pkg> path does not reach. */
@@ -97,7 +97,8 @@ static void set_dir(const char *app_data_dir) {
 #define TTSZF P("ttsize.txt")
 #define TTSMF P("ttsm.txt")
 #define ALPHAF P("alpha.txt")       /* v0.44: 1 = alpha-channel textures (smoke, dust, muzzle flash, leaves) keep their soft edge (default 1) */
-#define GRASSF P("grass.txt")       /* v0.45: "format width height hash" lines; that one texture is uploaded fully transparent (Remove grass) */
+#define GRASSF P("hidden.txt")      /* v0.70: was grass.txt. "format width height hash" lines; that one texture is uploaded fully transparent (hide list) */
+#define GRASSOLDF P("grass.txt")    /* v0.70: the old name. Read ONLY when hidden.txt does not exist (a phone that has not opened the WebUI since the update) */
 #define ORIGF P("orig.txt")         /* v0.61: "format width height hash" lines; that one texture is left as the game made it (Restore original) */
 #define HDLYF P("hookdelay.txt")
 #define FGLF P("forcegl.txt")       /* v0.41: 1 = force OpenGL ES: Vulkan is hidden from libunity so Unity falls back to GLES (default 1) */
@@ -1890,7 +1891,9 @@ static void load_cfg() {
         if (f) { fprintf(f, "1\n"); fclose(f); }
     }
     g_grass.clear(); g_grass_range_old = g_grass_over = g_grass_dups = g_grass_bad = 0;
-    f = fopen(GRASSF, "r");                        /* v0.57: Remove grass, exact "format width height hash" per line (max 4096); missing or empty = off */
+    f = fopen(GRASSF, "r");
+    if (!f) f = fopen(GRASSOLDF, "r");             /* v0.70: hidden.txt missing = old install. An existing but EMPTY hidden.txt is a real "all off" and never falls back */
+    /* v0.57: exact "format width height hash" per line (max 4096); missing or empty = off */
     if (f) {
         std::vector<GrRule> got;                   /* accepted rules, file order */
         std::set<std::tuple<int, int, int, uint64_t>> have;

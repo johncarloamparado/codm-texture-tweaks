@@ -18,7 +18,10 @@ Source layout: `main.cpp` (native module), `webroot/index.html` (WebUI), `module
 - Zip name: `codm_Blocky_v<version>.zip`.
 - Every release: update the demo `fake` version in `webroot/index.html` too, update this handbook and the handoff text, and hand over the source zip, `preview_index_v<version>.html`, the handoff txt, and (for the 10-part roadmap) the next `PROMPT_PART_N.txt`.
 
-## grass.txt (the list of hidden textures)
+## grass.txt (the list of hidden textures) - renamed hidden.txt in v0.70
+
+- Since v0.70 the file is `hidden.txt` (same format, same 4096 limit; the old name was too narrow because effects such as smoke are hidden here too). The text below still says `grass.txt` in places: read it as `hidden.txt`. Internal names (`GRASSCAND`, `grass_rules`, `grassSel`, `g_grass`) did not change.
+- Migration: the WebUI read script copies `grass.txt` to `hidden.txt` once when `hidden.txt` does not exist yet; the old file is left in place. The module reads `hidden.txt`, and falls back to `grass.txt` ONLY when `hidden.txt` does not exist (a phone that updated but did not open the WebUI yet). An existing empty `hidden.txt` means everything is off and never falls back. `CFGLIST` (backup / heal) lists both names.
 
 - One rule per line: `<format> <width> <height> <64-bit hex fingerprint>`, all four must match exactly.
 - At most **4096 unique** rules (unique by format, width, height, fingerprint). The module keeps the first 4096 and logs the rest as ignored. The WebUI refuses a 4097th unique rule *before* anything is written.
@@ -138,3 +141,29 @@ John asked for a Restore finder that works exactly like the Texture hider (same 
 - The old "Test mode" select inside the finder form (`gfMode`) is gone; the mode is fixed by the card and shown in a coloured banner. Start buttons: "Start hide search" / "Start restore search". The browser window select is now "This list is for: Hide (Texture hider) / Restore (Texture restorer)".
 - No overlap: a texture that is hidden, restored or saved is offered to neither finder (`universe()` skip list, tested in ui_test 29i / 29j). My textures stays one card for both kinds, each entry marked Hide or Restore.
 - No native change besides the version string. Tests: ui_test section 29. Not verified on a phone.
+
+## Finder: Back to the last test, no Keep all (Part 15; v0.68 / versionCode 90)
+John (screenshots of the Hide finder): the "Return to last test" card should not sit at the top of the finder, and the "needs N textures together" card should not offer "Keep all N together"; he wants a button to go back to the last "still there" step to keep experimenting, plus a way to end the test. Same for the Restore finder.
+- "It needs N textures together" card: buttons are now **Back to the last test** (`gfBackLast`, shows "N texture(s), step S · try again from there") and **End the test (discard)** (`gfDropSet`). The "Keep all N together" button, the "Keep as" choice and the note about Keep are gone from the finder. Sets are still saved from the Texture browser / test window (`tbSave` / `twSave`); `gKeepSet` was removed.
+- `gBackLast()` = take the checkpoint of the step before the answer that ended the search (`cpTest("drop")`), clear the pending set and call `gReturn(true)`; `force` skips the "tap again" question, because the person just asked for it. Not offered while the pending set is paused (use Back to the test).
+- "Return to last test" (`gfReturn`) is now at the BOTTOM of the finder (below New search / Refresh list) and only while no test is running; when a test is running there is no Return control.
+- Tests: ui_test 22ae-22am, 23aq-23av, 28p-28r rewritten for the new buttons (the old Keep all tests were removed because the button was removed on purpose).
+
+## Back to my last "still there" / "hidden" answer (Part 16; v0.69 / versionCode 91)
+John asked for a way to return to the test step where his last "still there" click, or his last "It is hidden" / "problem fixed" click, was, to experiment from there.
+- Every answer in `gst.hist` now records its kind: `ans: "y"` (hidden / fixed; also a side-test "continue with these") or `ans: "n"` (still there). Old saved tests without `ans` simply do not offer the new buttons. `cpValid` accepts `ans` = y / n / missing.
+- Running test: under the answer buttons, **Back to my last "still there"** (`gfRewN`) and **Back to my last "It is hidden"** / "problem fixed" (`gfRewY`) each name the step ("N textures tested then, step S"). A button is shown only when it goes back further than the normal Back (the previous step is already covered by Back).
+- "Needs N textures together" card: Back to the last test (`gfBackLast`) is the last "still there" (it now says so), and **Back to my last "It is hidden"** (`gfRewYP`) is offered when an earlier hidden/fixed answer exists.
+- `histRewind(g, idx)` cuts the history at idx, restores a/b/ta/tb/phase and, if a "continue with these" was undone, the earlier list `U`. `gRewind` (running) and `gRewindPend` (pending, via a checkpoint and `gReturn(true)`) use it. Not available while the test is paused.
+- Tests: ui_test section 30 (Hide and Restore, running and pending).
+
+## Spacing in note boxes (Part 17; v0.69.1 / versionCode 92)
+John (screenshot of "Hide finder is not active"): the button sat against the short explanation and the box had almost no room below it. CSS only: a `.btn` directly inside `.gf-now` gets 14 px above it and the box gets 16 px below (`.gf-now:has(> .btn)`), also in compact mode (`html.cc`); `.gf-cpbtn small` has a little more room. Test: ui_test 31 (320 to 411 px).
+
+## Hide Texture card (v0.70 / versionCode 93)
+John wanted ready-made ON/OFF switches for a tester, inside Home, in a collapsible card, that the tester cannot lose.
+- Home tab card `tfCard` (the LAST card on Home, below Display), title **Hide Texture** (first called "Test feature") (category Textures in the organiser, closed by default). Two switches: **Remove Grass** (3 textures) and **Remove Smoke** (1 texture) (the row title carries the word "Remove"; the toast still says "Grass is hidden."). The lists are the constant `TESTF` in `webroot/index.html` (declared near `grassSel`; `tests/run_host_tests.sh` lints that it stays declared). They are built into the module zip, so clearing the game data does not remove them.
+- A switch only adds or removes those exact rules in `hidden.txt` through `setRules()` (same atomic writer, 4096 check, Save / restart message as a My textures switch). Other hidden textures are never touched. Refused while a finder test runs or a set is pending, and when one of its textures is set to Restore original.
+- The state is read from `hidden.txt` itself (ON = all rules present, "partly hidden" = some), so it stays correct after a reload, a backup heal or a manual edit. `renderTF()` is called from `renderGrass()`.
+- Native: only the file name (see above) and the version string. No new native feature.
+- Tests: ui_test section 32 (32a-32k). Not verified on a phone.
