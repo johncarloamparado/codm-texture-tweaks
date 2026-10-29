@@ -18,7 +18,7 @@ fi
 echo "== lint ok (no range rules, no 60/64 rule limit)"
 # v0.65.1 lint: the Search setup state (sf, sfOpen) must be declared; a missing declaration made render() throw inside startForm()
 # (swallowed by .then(bootDone, bootDone)) so the Texture browser / finder never rendered.
-for v in sf sfOpen PENCIL CROSS GRIP TRASH libArm libArmT gSetOpen; do
+for v in sf sfOpen PENCIL CROSS GRIP TRASH libArm libArmT gSetOpen TESTF; do
   if ! grep -qE "^[[:space:]]*var[[:space:]]+$v[[:space:]]*=" "$ROOT/webroot/index.html"; then
     echo "FAIL: 'var $v' is not declared in webroot/index.html"; exit 1
   fi
@@ -27,7 +27,7 @@ done
 if [ "$(grep -c 'requestAnimationFrame(function () { ov.classList.add("on")' "$ROOT/webroot/index.html")" -lt 3 ]; then
   echo "FAIL: a sheet / window no longer gets the 'on' class (test window would be invisible)"; exit 1
 fi
-echo "== lint ok (sf / sfOpen / PENCIL / CROSS / GRIP / TRASH / libArm / libArmT / gSetOpen declared)"
+echo "== lint ok (sf / sfOpen / PENCIL / CROSS / GRIP / TRASH / libArm / libArmT / gSetOpen / TESTF declared)"
 mkdir -p "$W/files" && chmod 777 "$W/files"
 sed "s#\"/data/data/\" PKG \"/files/\"#\"$W/files/\"#" "$ROOT/main.cpp" > "$W/main_test_copy.cpp"
 for t in cfg scale chain v040 v041 v044 v045 v057 v061 v065; do

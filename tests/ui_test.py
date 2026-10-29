@@ -235,7 +235,7 @@ with sync_playwright() as p:
     cmds = pg.evaluate("window.__cmds"); last = pg.evaluate("window.__last || ''")
     check("hid %d textures through the mocked shell" % n_sel, ("%d / 4096" % n_sel) in pg.inner_text("#gf"), pg.inner_text("#gf")[:100])
     check("no single shell command is larger than 60 KB", cmds and max(cmds) < 60000, max(cmds or [0]))
-    check("file is written to .new, counted, then moved", "grass.txt" in last and "mv -f" in last and ("= %d ]" % n_sel) in last, last[:200])
+    check("file is written to .new, counted, then moved", "hidden.txt" in last and "mv -f" in last and ("= %d ]" % n_sel) in last, last[:200])
     check("no JS errors (mock shell)", not errs, errs)
     pg.close()
     pg, errs = mock_page(1200, failchunk=1)
@@ -469,7 +469,7 @@ with sync_playwright() as p:
         else if (cmd.indexOf("cat ") === 0 && cmd.indexOf("ui.b64") >= 0) out = uidata;
         else if (cmd.indexOf("UIWRITEOK") >= 0) out = "UIWRITEOK\\n";
         else if (cmd.indexOf("UIOK") >= 0) out = "UIOK\\n";
-        else if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nbias=0\\nflat=0\\nver=v0.67\\nst=ver=v0.67|stage=started|\\n";
+        else if (cmd.indexOf("for f in bias scale") >= 0) out = "zyg=rezygisk,\\nbias=0\\nflat=0\\nver=v0.70\\nst=ver=v0.70|stage=started|\\n";
         else if (cmd.indexOf("echo OK") >= 0) out = "OK\\n";
         setTimeout(function(){ window[cb](0, out, ""); }, 0);
       } };
@@ -710,7 +710,7 @@ with sync_playwright() as p:
     def to_pend(pg):
         tap(pg, "#gfYes")
         for _ in range(60):
-            if has(pg, "#gfKeepSet") or not has(pg, "#gfNo"): break
+            if has(pg, "#gfBackLast") or not has(pg, "#gfNo"): break
             tap(pg, "#gfNo")
 
     # 22a-22e: per width
@@ -829,11 +829,11 @@ with sync_playwright() as p:
     check("22ad no JS errors (fail)", not errs, errs)
     pg.close()
 
-    # 22ae: a pending set (needs several together): Discard takes the last test step; Keep all clears nothing but records a found checkpoint
+    # 22ae: a pending set (needs several together): End the test takes the last test step; Back to the last test returns to it in one tap
     pg = new(); errs = []
     pg.on("pageerror", lambda e: errs.append(str(e)))
     cp_open(pg); cp_start(pg); to_pend(pg)
-    check("22ae the demo reached the pending set card", has(pg, "#gfKeepSet") and has(pg, "#gfDropSet"))
+    check("22ae the demo reached the pending set card: Back to the last test and End the test, and NO Keep all", has(pg, "#gfBackLast") and has(pg, "#gfDropSet") and not has(pg, "#gfKeepSet") and "Keep all" not in pg.inner_text("#gf"))
     if has(pg, "#gfDropSet"):
         check("22af while a set is pending there is no Return control", n_ret(pg) == 0)
         pend = pg.evaluate("JSON.parse(localStorage.getItem('ct_gset'))")
@@ -844,6 +844,18 @@ with sync_playwright() as p:
         g = gj(pg)
         check("22ah Return after Discard: a normal test in its last check (1 texture off)", g and g["phase"] == "verify" and len(rules(pg)) == len(g["keep"]) + 1 and has(pg, "#gfNo"))
     check("22ai no JS errors (pending)", not errs, errs)
+    pg.close()
+    # 22aj Back to the last test (pending set): one tap, straight back into the test at the step before the answer that ended it
+    pg = new(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    cp_open(pg); cp_start(pg); to_pend(pg)
+    pend = pg.evaluate("JSON.parse(localStorage.getItem('ct_gset'))")
+    check("22aj the Back to the last test button says the step it goes to", has(pg, "#gfBackLast") and "step" in pg.inner_text("#gfBackLast") and "try again from there" in pg.inner_text("#gfBackLast"))
+    tap(pg, "#gfBackLast"); pg.wait_for_timeout(400)
+    g = gj(pg)
+    check("22ak Back to the last test: a normal test again, last check (1 texture off), the pending set is gone", g and g["phase"] == "verify" and g["tb"] - g["ta"] == 1 and has(pg, "#gfNo") and pg.evaluate("localStorage.getItem('ct_gset')") is None, g and g["phase"])
+    check("22al Back to the last test needed no second tap and shows no Return control while the test runs", n_ret(pg) == 0 and not has(pg, "#gfBackLast"))
+    check("22am no JS errors (Back to the last test)", not errs, errs)
     pg.close()
 
     # 22aj: reload keeps the checkpoint; Return works after the reload (new page, same browser data)
@@ -1107,30 +1119,22 @@ with sync_playwright() as p:
     check("23ap no JS errors (already saved)", not er, er)
     pg.close()
 
-    # 23aq Keep all (the finder's 'needs N together') goes through the same rules
+    # 23aq the finder's 'needs N together' card: Back to the last test + End the test, no Keep all (sets are still saved from the texture list / test window)
     def pend_page(rows, grass, U):
         st = json.dumps({"v": 2, "U": U, "keep": [], "name": "Pend set", "grp": "plants", "cp": {"a": 0, "b": len(U), "ta": 0, "tb": len(U), "phase": "check", "hist": []}})
         pg = b.new_page(viewport={"width": 360, "height": 900}); er = open_adv(pg, "?demo=300&texlib=" + tlines(*rows) + "&grass=" + ";".join(ck(k) for k in grass).replace(" ", "%20"), "localStorage.setItem('ct_gset', %s)" % json.dumps(st))
         return pg, er
     pg, er = pend_page([], S3, S3)
-    check("23aq the pending set is there (Keep all)", has(pg, "#gfKeepSet"))
-    tap(pg, "#gfKeepSet"); pg.wait_for_timeout(300)
-    ls = lib_sets(pg); sid = [s for s in ls if s != "-"]
-    check("23ar Keep all: ONE set of 3 in My textures, one container", len(sid) == 1 and len(ls[sid[0]]) == 3 and nsets(pg) == 1 and ls[sid[0]][0] == ["Pend set", "plants"], ls)
-    check("23as the checkpoint points at the set id (Return is cleared when the set is deleted)", (cpj(pg) or {}).get("found") == sid[0], cpj(pg))
-    tap(pg, "#gl details.lib-set [data-forget]"); pg.wait_for_timeout(300)
-    check("23at Delete of that set clears the checkpoint", cpj(pg) is None and len(pg.evaluate("window.__ct.lib()")) == 0)
-    check("23au no JS errors (Keep all)", not er, er)
+    check("23aq the pending set card has Back to the last test and End the test", has(pg, "#gfBackLast") and has(pg, "#gfDropSet"))
+    check("23ar there is no Keep all button and no Keep as choice on it", not has(pg, "#gfKeepSet") and not has(pg, "#gfPendAct") and "Keep all" not in pg.inner_text("#gf"))
+    tap(pg, "#gfBackLast"); pg.wait_for_timeout(300)
+    check("23as Back to the last test: the test is running again and nothing was saved to My textures", has(pg, "#gfYes") and not has(pg, "#gfBackLast") and len(pg.evaluate("window.__ct.lib()")) == 0, pg.evaluate("window.__ct.lib().length"))
+    check("23at the pending set is gone after Back to the last test", pg.evaluate("localStorage.getItem('ct_gset')") is None)
+    check("23au no JS errors (Back to the last test)", not er, er)
     pg.close()
-    pg, er = pend_page([ck(S3[0]) + " other~sset2|Bushes", ck(CK[8]) + " other~sset2|Bushes"], S3, S3)
-    lj = pg.evaluate("JSON.stringify(window.__ct.lib())")
-    tap(pg, "#gfKeepSet"); pg.wait_for_timeout(300)
-    check("23av Keep all when one texture is in ANOTHER set: refused with the reason, the pending set and the library stay as they are", has(pg, "#gfKeepSet") and "already in the set" in toast_txt(pg) and pg.evaluate("JSON.stringify(window.__ct.lib())") == lj and pg.evaluate("localStorage.getItem('ct_gset')") is not None, toast_txt(pg))
-    pg.close()
-    pg, er = pend_page([ck(S3[0]) + " effects|Smoke"], S3, S3)
-    tap(pg, "#gfKeepSet"); pg.wait_for_timeout(300)
-    ls = lib_sets(pg)
-    check("23aw Keep all when one is saved alone: it joins the set, 3 members, no duplicate", len([s for s in ls if s != "-"]) == 1 and len(pg.evaluate("window.__ct.lib()")) == 3 and "-" not in ls, ls)
+    pg, er = pend_page([], S3, S3)
+    tap(pg, "#gfDropSet"); pg.wait_for_timeout(300)
+    check("23av End the test: nothing saved, the Return to last test control is offered at the BOTTOM of the finder", len(pg.evaluate("window.__ct.lib()")) == 0 and has(pg, "#gfReturn") and pg.evaluate("(function(){var r=document.getElementById('gfReturn').getBoundingClientRect(),s=(document.getElementById('gfStart')||document.getElementById('gfRef')).getBoundingClientRect();return r.top>s.top})()"), er)
     pg.close()
 
     # 23ax a set member found again by the finder: it stays in its set (nothing duplicated, nothing moved, the set is not split)
@@ -1265,8 +1269,8 @@ with sync_playwright() as p:
     MOD = open(os.path.join(HERE, "..", "module.prop"), encoding="utf-8").read()
     CPP = open(os.path.join(HERE, "..", "main.cpp"), encoding="utf-8").read()
     HAN = open(os.path.join(HERE, "..", "HANDBOOK.md"), encoding="utf-8").read()
-    check("25a current v0.67 / versionCode=89 are consistent, backup includes orig.txt, and action field is documented",
-          '#define VERSION "v0.67"' in CPP and "version=v0.67" in MOD and "versionCode=89" in MOD and
+    check("25a current v0.70 / versionCode=93 are consistent, backup includes orig.txt, and action field is documented",
+          '#define VERSION "v0.70"' in CPP and "version=v0.70" in MOD and "versionCode=93" in MOD and
           re.search(r'var CFGLIST = "[^\"]*\borig\b[^\"]*";', SRC) and
           'localStorage.setItem("ct_gact", gForm.act)' in SRC and 'if (!/^ct_/.test(k) || UI_SKIP.test(k)) continue;' in SRC and "Action field" in HAN)
 
@@ -1387,8 +1391,8 @@ with sync_playwright() as p:
     MOD = open(os.path.join(HERE, "..", "module.prop"), encoding="utf-8").read()
     CPP = open(os.path.join(HERE, "..", "main.cpp"), encoding="utf-8").read()
     HAN = open(os.path.join(HERE, "..", "HANDBOOK.md"), encoding="utf-8").read()
-    check("26a v0.67 / versionCode 89 are consistent and filter collapse is documented",
-          '#define VERSION "v0.67"' in CPP and "version=v0.67" in MOD and "versionCode=89" in MOD and
+    check("26a v0.70 / versionCode 93 are consistent and filter collapse is documented",
+          '#define VERSION "v0.70"' in CPP and "version=v0.70" in MOD and "versionCode=93" in MOD and
           'id="twFilterPack"' in SRC and 'data-tw="filters"' in SRC and "Test-window collapsible filters" in HAN)
 
     def p26_test(w):
@@ -1453,8 +1457,8 @@ with sync_playwright() as p:
     MOD27 = open(os.path.join(HERE, "..", "module.prop"), encoding="utf-8").read()
     CPP27 = open(os.path.join(HERE, "..", "main.cpp"), encoding="utf-8").read()
     HAN27 = open(os.path.join(HERE, "..", "HANDBOOK.md"), encoding="utf-8").read()
-    check("27a v0.67 / versionCode 89 are consistent, the summary and sort explanation exist and are documented",
-          '#define VERSION "v0.67"' in CPP27 and "version=v0.67" in MOD27 and "versionCode=89" in MOD27 and
+    check("27a v0.70 / versionCode 93 are consistent, the summary and sort explanation exist and are documented",
+          '#define VERSION "v0.70"' in CPP27 and "version=v0.70" in MOD27 and "versionCode=93" in MOD27 and
           'id="tbSum"' in SRC27 and 'id="tbWhy"' in SRC27 and "Finder guidance" in HAN27)
 
     def p27_open(w, h=800):
@@ -1536,7 +1540,7 @@ with sync_playwright() as p:
     CPP28 = open(os.path.join(HERE, "..", "main.cpp"), encoding="utf-8").read()
     HAN28 = open(os.path.join(HERE, "..", "HANDBOOK.md"), encoding="utf-8").read()
     check("28a v0.65 exposes a separate RESTORECAND stream, Restore mode and 4096-rule native cap documentation",
-          '#define VERSION "v0.67"' in CPP28 and "version=v0.67" in MOD28 and "versionCode=89" in MOD28 and
+          '#define VERSION "v0.70"' in CPP28 and "version=v0.70" in MOD28 and "versionCode=93" in MOD28 and
           'loadCandText("RESTORECAND")' in SRC28 and 'id="tbTestMode"' in SRC28 and
           'Restore finder (Part 12; v0.65 / versionCode 86)' in HAN28 and 'g_rseen_n < 4096' in CPP28)
 
@@ -1591,16 +1595,16 @@ with sync_playwright() as p:
     check("28o found-asset flow has no JavaScript errors", not er, er)
     q.close()
 
-    # If no single texture fixes the look but restoring the complete candidate set does, Keep all saves a Restore-action set.
+    # If no single texture fixes the look but restoring the complete candidate set does, the finder holds it as a pending Restore set with Back to the last test / End the test.
     q, er = p28_open()
     q.select_option("#tbTestMode", "restore"); q.wait_for_timeout(150); tap(q, "#tbbTestF"); tap(q, "#tbbTestF")
     tap(q, "#gfYes"); tap(q, "#gfNo"); tap(q, "#gfNo"); tap(q, "#gfNo"); q.wait_for_timeout(250)
-    pending = q.locator("#gfKeepSet").count() == 1
+    pending = q.locator("#gfBackLast").count() == 1
     check("28p multi-texture result is held as a pending Restore set, not dropped or converted to Hide", pending and q.evaluate("window.__ct.orig().length") == 4 and q.evaluate("window.__ct.rules().length") == 0)
-    tap(q, "#gfKeepSet"); q.wait_for_timeout(250)
-    libset = q.evaluate("window.__ct.lib().map(e=>({act:e.act,set:e.set||'',key:e.key}))")
-    check("28q Keep all saves one four-member My textures set with action Restore original", len(libset) == 4 and all(e["act"] == "restore" for e in libset) and len(set(e["set"] for e in libset)) == 1 and libset[0]["set"] and q.evaluate("window.__ct.orig().length") == 4 and q.evaluate("window.__ct.rules().length") == 0, libset)
-    check("28r Keep-all Restore set flow has no JavaScript errors", not er, er)
+    check("28q the Restore pending card has Back to the last test and End the test, no Keep all", q.locator("#gfDropSet").count() == 1 and q.locator("#gfKeepSet").count() == 0 and "Keep all" not in q.inner_text("#gf"))
+    tap(q, "#gfBackLast"); q.wait_for_timeout(250)
+    check("28q2 Back to the last test (Restore): the Restore test runs again, nothing saved", q.locator("#gfYes").count() == 1 and q.locator("#gfBackLast").count() == 0 and q.evaluate("window.__ct.lib().length") == 0 and q.evaluate("window.__ct.rules().length") == 0)
+    check("28r Restore pending-set flow has no JavaScript errors", not er, er)
     q.close()
 
     # A candidate already listed in grass.txt must not be copied into orig.txt. Select that exact row, not the ranking-first row.
@@ -1714,6 +1718,109 @@ with sync_playwright() as p:
         check("29j the Restore finder leaves out one hidden and one restored texture (no overlap, no error)", nr1 == nr0 - 2, (nr0, nr1))
     else:
         check("29i fixture has two candidates in each finder", False, (kh, kr))
+
+    # 30. v0.69: go back to my last "still there" or my last "hidden / fixed" answer (running test and pending set), Hide and Restore
+    def p30_gj(q): return q.evaluate("JSON.parse(localStorage.getItem('ct_gst2'))")
+    def p30_tap(q, sel): q.evaluate("s=>document.querySelector(s).click()", sel); q.wait_for_timeout(120)
+    def p30_has(q, sel): return q.evaluate("s=>!!document.querySelector(s)", sel)
+    for cid, mode, seq, yi in (("grassCard", "hide", ("Yes", "Yes", "No", "Yes", "No", "No"), 3), ("rsCard", "restore", ("Yes", "No"), 0)):
+        q, er = p29_open(360)
+        card_open(q, cid); p30_tap(q, "#gfStart")
+        for a in seq: p30_tap(q, "#gf" + a)
+        g = p30_gj(q); ans = [h.get("ans") for h in g["hist"]]
+        check("30a %s: every answer is recorded as hidden/fixed (y) or still there (n)" % mode, ans == [("y" if a == "Yes" else "n") for a in seq], ans)
+        check("30b %s: the last still-there is the step just before, so only the last-hidden button is shown" % mode, p30_has(q, "#gfRewY") and not p30_has(q, "#gfRewN"))
+        lab = q.inner_text("#gfRewY")
+        check("30c %s: the button names the answer and the step" % mode, ("problem fixed" in lab if mode == "restore" else "It is hidden" in lab) and ("step %d" % (yi + 1)) in lab, lab)
+        want = g["hist"][yi]
+        p30_tap(q, "#gfRewY"); g2 = p30_gj(q)
+        check("30d %s: Back to my last hidden/fixed: the test is exactly at the step before that answer" % mode, len(g2["hist"]) == yi and all(g2[k] == want[k] for k in ("a", "b", "ta", "tb", "phase")) and p30_has(q, "#gfYes"), g2)
+        if mode == "hide":
+            p30_tap(q, "#gfNo"); p30_tap(q, "#gfYes")
+            g = p30_gj(q)
+            check("30e %s: after new answers the last-still-there button appears and the last-hidden one does not (it is the previous step)" % mode, p30_has(q, "#gfRewN") and not p30_has(q, "#gfRewY"), [h.get("ans") for h in g["hist"]])
+            iN = max(i for i, h in enumerate(g["hist"]) if h["ans"] == "n"); want = g["hist"][iN]
+            p30_tap(q, "#gfRewN"); g2 = p30_gj(q)
+            check("30f %s: Back to my last still there: the test is at the step before that answer" % mode, len(g2["hist"]) == iN and all(g2[k] == want[k] for k in ("a", "b", "ta", "tb", "phase")), g2)
+        check("30g %s: rewinding has no JavaScript errors" % mode, not er, er)
+        q.close()
+    # 30h: the pending 'needs N together' card also offers the last hidden/fixed answer
+    U = ["37497|512|512|%016x" % (0x500 + i) for i in range(40)]
+    st = json.dumps({"v": 2, "U": U, "keep": [], "name": "", "grp": "plants", "cp": {"a": 10, "b": 11, "ta": 10, "tb": 11, "phase": "verify", "hist": [{"a": 0, "b": 40, "ta": 0, "tb": 40, "phase": "check", "ans": "y"}, {"a": 0, "b": 40, "ta": 0, "tb": 20, "phase": "bisect", "ans": "n"}]}})
+    q = b.new_page(viewport={"width": 360, "height": 900}); er = open_adv(q, "?demo=300&grass=" + quote(";".join(u.replace("|", " ") for u in U), safe=""), "localStorage.setItem('ct_gset', %s)" % json.dumps(st))
+    check("30h the pending card offers Back to the last test (still there) and Back to my last hidden", p30_has(q, "#gfBackLast") and p30_has(q, "#gfRewYP") and "still there" in q.inner_text("#gfBackLast"), er)
+    p30_tap(q, "#gfRewYP"); q.wait_for_timeout(300); g = p30_gj(q)
+    check("30i Back to my last hidden (pending): the test is at its first step, the pending set is gone", g and len(g["hist"]) == 0 and g["phase"] == "check" and g["tb"] - g["ta"] == 40 and q.evaluate("localStorage.getItem('ct_gset')") is None and p30_has(q, "#gfYes"), g)
+    check("30j no JavaScript errors (pending rewind)", not er, er)
+    q.close()
+
+    # 31. v0.69.1: a button inside a note box has air above it and below it (short explanations were squeezed against the button)
+    for w in (320, 360, 390, 411):
+        q, er = p29_open(w)
+        card_open(q, "rsCard")                      # the Hide finder box now shows the "not active" note with its button
+        q.evaluate("document.getElementById('grassCard').querySelector('details').open = true"); q.wait_for_timeout(200)
+        m = q.evaluate("(function(){var n=document.querySelector('#gfStubH .gf-now');var s=n.querySelector('small').getBoundingClientRect(),bt=n.querySelector('.btn').getBoundingClientRect(),bx=n.getBoundingClientRect();return {above:bt.top-s.bottom,below:bx.bottom-bt.bottom,over:document.documentElement.scrollWidth>innerWidth+1,l:bt.left-bx.left,r:bx.right-bt.right}})()")
+        check("31a %dpx the note's button has at least 12 px above it and 12 px below it, and sits inside the box" % w, m["above"] >= 12 and m["below"] >= 12 and m["l"] >= 8 and m["r"] >= 8 and not m["over"], m)
+        check("31b %dpx no JavaScript errors" % w, not er, er)
+        q.close()
+
+    # 32. v0.70: Hide Texture card on Home (built-in Grass / Smoke switches) and the hidden.txt rename
+    GR = ["37497 512 512 14d49f3bf0a7aecb", "37497 256 256 f9c90d2e08c8e2ab", "37497 512 512 497e0532c6a634d8"]
+    SM = ["37497 256 256 39e797c518477967"]
+    OTHER = "37497 64 64 00000000000000aa"
+    def p32_open(w, extra=""):
+        q = b.new_page(viewport={"width": w, "height": 800}); er = []
+        q.on("pageerror", lambda e: er.append(str(e)))
+        q.goto(PAGE + "?demo=300" + extra); q.wait_for_timeout(700)
+        return q, er
+    def p32_tap(q, tid):
+        q.click("#tfList [data-tf=%s]" % tid); q.wait_for_timeout(300)
+    def p32_on(q, tid): return q.get_attribute("#tfList [data-tf=%s]" % tid, "aria-checked") == "true"
+    q, er = p32_open(360)
+    check("32a the Hide Texture card is on Home and closed on first load",
+          q.evaluate("(function(){var c=document.getElementById('tfCard');return !!c && c.closest('#v-home')!==null && c.querySelector('summary h2').textContent.indexOf('Hide Texture')>=0 && !c.querySelector('details').open})()"), er)
+    check("32a2 the Hide Texture card is the LAST card on Home, right below Display",
+          q.evaluate("(function(){var c=document.querySelectorAll('#v-home > .card');return c[c.length-1].id==='tfCard' && c[c.length-2].querySelector('h2').textContent.indexOf('Display')>=0})()"), er)
+    q.evaluate("document.getElementById('tfCard').querySelector('details').open = true"); q.wait_for_timeout(200)
+    t = q.inner_text("#tfList")
+    check("32b Remove Grass (3 textures) and Remove Smoke (1 texture) switches exist, both off", "Remove Grass" in t and "Remove Smoke" in t and "Grass" in t and "3 textures" in t and "Smoke" in t and "1 texture" in t and not p32_on(q, "grass") and not p32_on(q, "smoke"), t)
+    p32_tap(q, "grass")
+    check("32c Grass ON writes exactly its 3 rules", sorted(q.evaluate("window.__ct.rules()")) == sorted(GR) and p32_on(q, "grass") and not p32_on(q, "smoke"), q.evaluate("window.__ct.rules()"))
+    p32_tap(q, "smoke")
+    check("32d Smoke ON adds its 1 rule; the tag says 2 on", sorted(q.evaluate("window.__ct.rules()")) == sorted(GR + SM) and "2 on" in q.inner_text("#tfTag"), q.evaluate("window.__ct.rules()"))
+    p32_tap(q, "grass")
+    check("32e Grass OFF removes only its 3 rules", q.evaluate("window.__ct.rules()") == SM and not p32_on(q, "grass") and p32_on(q, "smoke"), q.evaluate("window.__ct.rules()"))
+    check("32f no JavaScript errors", not er, er)
+    q.close()
+    q, er = p32_open(360, "&grass=" + quote(OTHER, safe=""))
+    q.evaluate("document.getElementById('tfCard').querySelector('details').open = true"); q.wait_for_timeout(200)
+    p32_tap(q, "grass"); p32_tap(q, "grass")
+    check("32g another hidden texture is never touched by the switches", q.evaluate("window.__ct.rules()") == [OTHER], q.evaluate("window.__ct.rules()"))
+    q.close()
+    U32 = ["37497|512|512|%016x" % (0x500 + i) for i in range(40)]
+    st32 = json.dumps({"v": 2, "U": U32, "keep": [], "name": "", "grp": "plants", "cp": {"a": 10, "b": 11, "ta": 10, "tb": 11, "phase": "verify", "hist": [{"a": 0, "b": 40, "ta": 0, "tb": 40, "phase": "check", "ans": "y"}, {"a": 0, "b": 40, "ta": 0, "tb": 20, "phase": "bisect", "ans": "n"}]}})
+    q = b.new_page(viewport={"width": 360, "height": 900}); er = []
+    q.on("pageerror", lambda e: er.append(str(e)))
+    q.add_init_script("localStorage.setItem('ct_gset', %s)" % json.dumps(st32))
+    q.goto(PAGE + "?demo=300&grass=" + quote(";".join(u.replace("|", " ") for u in U32), safe="")); q.wait_for_timeout(900)
+    q.evaluate("document.getElementById('tfCard').querySelector('details').open = true"); q.wait_for_timeout(200)
+    n0 = len(q.evaluate("window.__ct.rules()")); p32_tap(q, "grass")
+    check("32h while a set is pending the switch is refused and nothing is written", len(q.evaluate("window.__ct.rules()")) == n0 and not p32_on(q, "grass") and "Keep or discard" in q.inner_text("#toast"), n0)
+    q.close()
+    for w in (320, 360, 390, 411):
+        q, er = p32_open(w)
+        q.evaluate("document.getElementById('tfCard').querySelector('details').open = true"); q.wait_for_timeout(250)
+        m = q.evaluate("(function(){var s=document.querySelector('#tfList [data-tf=grass]').getBoundingClientRect();return {h:s.height,over:document.documentElement.scrollWidth>innerWidth+1,r:s.right<=innerWidth+1}})()")
+        check("32i %dpx the switch rows are at least 40 px tall, inside the screen, no sideways scroll" % w, m["h"] >= 40 and m["r"] and not m["over"], m)
+        check("32j %dpx no JavaScript errors" % w, not er, er)
+        q.close()
+    CPP32 = open(os.path.join(HERE, "..", "main.cpp"), encoding="utf-8").read()
+    HAN32 = open(os.path.join(HERE, "..", "HANDBOOK.md"), encoding="utf-8").read()
+    SRC32 = open(os.path.join(HERE, "..", "webroot", "index.html"), encoding="utf-8").read()
+    check("32k the file is hidden.txt (UI write + read, migration from grass.txt, native fallback only when hidden.txt is missing, backup list) and it is documented",
+          'writeLinesAtomic("hidden.txt", a)' in SRC32 and "$D/hidden.txt" in SRC32 and "cp -f $D/grass.txt $D/hidden.txt" in SRC32 and
+          'writeLinesAtomic("grass.txt"' not in SRC32 and 'P("hidden.txt")' in CPP32 and "if (!f) f = fopen(GRASSOLDF" in CPP32 and
+          re.search(r'var CFGLIST = "[^"]*\bhidden\b[^"]*";', SRC32) and "Hide Texture card (v0.70 / versionCode 93)" in HAN32 and "hidden.txt" in HAN32)
 
     b.close()
 

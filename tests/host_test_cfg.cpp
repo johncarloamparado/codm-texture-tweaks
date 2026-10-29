@@ -10,8 +10,8 @@ int main(){
   load_cfg(); log_start(4);
   CHECK(g_delay.load()==0); CHECK(g_scale.load()==0); CHECK(g_minsz.load()==64);
   CHECK(rd(DLYF)=="0\n"); CHECK(rd(SCLF)=="0\n"); CHECK(g_cfg_note.empty()); CHECK(g_cfg_missing>=15);
-  CHECK(rd(STATF).find("stage=started")!=std::string::npos); CHECK(rd(STATF).find("ver=v0.67")!=std::string::npos);
-  CHECK(rd(LOGF).find("=== start v0.67")!=std::string::npos);
+  CHECK(rd(STATF).find("stage=started")!=std::string::npos); CHECK(rd(STATF).find("ver=v0.70")!=std::string::npos);
+  CHECK(rd(LOGF).find("=== start v0.70")!=std::string::npos);
   /* 2: empty / invalid files -> defaults + repaired + reported */
   wr(DLYF,""); wr(SCLF,"abc\n"); wr(MINF,"   \n"); wr(FZF,"0\n");
   g_delay=20; g_scale=70;
@@ -29,8 +29,8 @@ int main(){
   if (lf){fclose(lf);lf=nullptr;} if (geteuid()!=0) { L("hello\n"); CHECK(rd(LOGF).find("hello")!=std::string::npos); }
   /* 5: log rotation on version change keeps the new log */
   unlink(LOGF); wr(LOGF,"=== start v0.35 build=x ===\nold\n"); if (lf){fclose(lf);lf=nullptr;}
-  log_rotate_if_new_version(); L("=== start v0.67 build=y ===\n");
-  CHECK(rd(LOGF).find("v0.35")==std::string::npos); CHECK(rd(LOGF).find("v0.67")!=std::string::npos);
+  log_rotate_if_new_version(); L("=== start v0.70 build=y ===\n");
+  CHECK(rd(LOGF).find("v0.35")==std::string::npos); CHECK(rd(LOGF).find("v0.70")!=std::string::npos);
   /* 6: why0 */
   g_hook_state=0; CHECK(why0_reason().find("hook_not_active")!=std::string::npos);
   g_hook_state=1; g_cand=5; g_sk_delay=5; CHECK(why0_reason()=="delay(5)");
